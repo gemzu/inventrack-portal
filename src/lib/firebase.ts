@@ -1,6 +1,6 @@
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getAuth, browserLocalPersistence, setPersistence } from "firebase/auth";
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -12,6 +12,19 @@ const firebaseConfig = {
 };
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+setPersistence(auth, browserLocalPersistence).catch(() => {});
+
+let db: ReturnType<typeof getFirestore>;
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+  });
+} catch {
+  // Already initialized
+  db = getFirestore(app);
+}
+
+export { db };
 export default app;

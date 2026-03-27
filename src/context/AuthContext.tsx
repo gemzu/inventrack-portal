@@ -9,7 +9,7 @@ import {
   sendPasswordResetEmail,
   User,
 } from "firebase/auth";
-import { doc, getDoc, setDoc, collection, getDocs, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, getDocs, serverTimestamp, enableNetwork, disableNetwork } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 
 interface Facility {
@@ -61,11 +61,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Ensure Firestore network is enabled
+    enableNetwork(db).catch(() => {});
+
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
         try {
-          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+          const userDocRef = doc(db, "users", firebaseUser.uid);
+          let userDoc;
+          try {
+            userDoc = await getDoc(userDocRef);
+          } catch (fetchErr) {
+            // If offline or permission error, still resolve loading
+            console.warn("Could not fetch user doc:", fetchErr);
+            setLoading(false);
+            return;
+          }
+
           if (userDoc.exists()) {
             const data = userDoc.data();
             setUserRole(data.role || null);
@@ -77,17 +90,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUserFacilityId(data.facilityId || null);
 
             if (data.orgId) {
-              const orgDoc = await getDoc(doc(db, "organizations", data.orgId));
-              if (orgDoc.exists()) {
-                setOrgData(orgDoc.data() as OrgData);
+              try {
+                const orgDoc = await getDoc(doc(db, "organizations", data.orgId));
+                if (orgDoc.exists()) {
+                  setOrgData(orgDoc.data() as OrgData);
+                }
+                const facSnap = await getDocs(
+                  collection(db, "organizations", data.orgId, "facilities")
+                );
+                setFacilities(
+                  facSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Facility))
+                );
+              } catch (orgErr) {
+                console.warn("Could not fetch org data:", orgErr);
               }
-              const facSnap = await getDocs(
-                collection(db, "organizations", data.orgId, "facilities")
-              );
-              setFacilities(
-                facSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Facility))
-              );
             }
+          } else {
+            // User doc doesn't exist yet (just signed up, Firestore write may be pending)
+            setUserName(firebaseUser.displayName || firebaseUser.email?.split("@")[0] || null);
+            setUserRole("buyer");
           }
         } catch (err) {
           console.error("Error fetching user data:", err);

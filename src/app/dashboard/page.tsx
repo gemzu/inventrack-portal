@@ -75,6 +75,33 @@ export default function DashboardPage() {
     );
   }
 
+  if (!orgId) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="glass-card p-10 max-w-md text-center">
+          <div className="w-16 h-16 rounded-2xl gradient-bg flex items-center justify-center mx-auto mb-5">
+            <Package className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-xl font-bold mb-2">Welcome to INVENTRACK</h2>
+          <p className="text-sm mb-6" style={{ color: "var(--muted)" }}>
+            You&apos;re not part of an organization yet. Download the mobile app and join or create an organization to get started.
+          </p>
+          <div className="space-y-3">
+            <a
+              href="/dashboard/billing"
+              className="block py-3 rounded-xl bg-primary text-white font-semibold hover:bg-primary-dark transition shadow-lg shadow-primary/25"
+            >
+              View Subscription
+            </a>
+            <p className="text-xs" style={{ color: "var(--muted)" }}>
+              Use the INVENTRACK mobile app to create or join an organization
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
