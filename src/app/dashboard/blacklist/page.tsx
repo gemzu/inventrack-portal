@@ -1,4 +1,5 @@
 "use client";
+import AdminGuard from "@/components/AdminGuard";
 
 import { useEffect, useState } from "react";
 import { collection, query, where, getDocs, addDoc, deleteDoc, doc, serverTimestamp } from "firebase/firestore";
@@ -62,7 +63,7 @@ export default function BlacklistPage() {
     return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
   }
 
-  return (
+  return (<AdminGuard>
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -152,5 +153,5 @@ export default function BlacklistPage() {
         </div>
       )}
     </div>
-  );
+  </AdminGuard>);
 }

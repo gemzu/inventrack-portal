@@ -1,4 +1,5 @@
 "use client";
+import AdminGuard from "@/components/AdminGuard";
 
 import { useState, useEffect } from "react";
 import { doc, updateDoc } from "firebase/firestore";
@@ -33,7 +34,7 @@ export default function SettingsPage() {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  return (
+  return (<AdminGuard>
     <div className="space-y-6 max-w-2xl">
       <div>
         <h1 className="text-2xl font-bold">Settings</h1>
@@ -91,5 +92,5 @@ export default function SettingsPage() {
         </button>
       </div>
     </div>
-  );
+  </AdminGuard>);
 }

@@ -1,4 +1,5 @@
 "use client";
+import AdminGuard from "@/components/AdminGuard";
 
 import { useEffect, useState } from "react";
 import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
@@ -74,7 +75,7 @@ export default function UsersPage() {
     );
   }
 
-  return (
+  return (<AdminGuard>
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Users</h1>
@@ -198,5 +199,5 @@ export default function UsersPage() {
         </div>
       </div>
     </div>
-  );
+  </AdminGuard>);
 }

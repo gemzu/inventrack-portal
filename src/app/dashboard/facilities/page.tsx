@@ -1,4 +1,5 @@
 "use client";
+import AdminGuard from "@/components/AdminGuard";
 
 import { useEffect, useState } from "react";
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, serverTimestamp, query, where } from "firebase/firestore";
@@ -76,7 +77,7 @@ export default function FacilitiesPage() {
     );
   }
 
-  return (
+  return (<AdminGuard>
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -171,5 +172,5 @@ export default function FacilitiesPage() {
         </div>
       )}
     </div>
-  );
+  </AdminGuard>);
 }
