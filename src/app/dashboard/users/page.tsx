@@ -7,6 +7,8 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { Users as UsersIcon, Search, ChevronDown, Shield, UserCheck, UserX } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import EmptyState from "@/components/EmptyState";
+import { useToast } from "@/components/Toast";
 
 interface UserDoc {
   id: string;
@@ -27,6 +29,7 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!orgId) { setLoading(false); return; }
@@ -51,20 +54,35 @@ export default function UsersPage() {
   }, [search, roleFilter, users]);
 
   const toggleActive = async (user: UserDoc) => {
-    const newActive = !user.active;
-    await updateDoc(doc(db, "users", user.id), { active: newActive });
-    setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, active: newActive } : u)));
+    try {
+      const newActive = !user.active;
+      await updateDoc(doc(db, "users", user.id), { active: newActive });
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, active: newActive } : u)));
+      toast(`User ${newActive ? "activated" : "deactivated"}`, "success");
+    } catch {
+      toast("Failed to update user status", "error");
+    }
   };
 
   const changeRole = async (user: UserDoc, newRole: string) => {
-    await updateDoc(doc(db, "users", user.id), { role: newRole });
-    setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, role: newRole } : u)));
+    try {
+      await updateDoc(doc(db, "users", user.id), { role: newRole });
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, role: newRole } : u)));
+      toast(`Role updated to ${newRole}`, "success");
+    } catch {
+      toast("Failed to change role", "error");
+    }
   };
 
   const assignFacility = async (user: UserDoc, facilityId: string) => {
-    const val = facilityId === "" ? null : facilityId;
-    await updateDoc(doc(db, "users", user.id), { facilityId: val });
-    setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, facilityId: val || undefined } : u)));
+    try {
+      const val = facilityId === "" ? null : facilityId;
+      await updateDoc(doc(db, "users", user.id), { facilityId: val });
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, facilityId: val || undefined } : u)));
+      toast("Facility assignment updated", "success");
+    } catch {
+      toast("Failed to assign facility", "error");
+    }
   };
 
   if (loading) {
@@ -188,9 +206,8 @@ export default function UsersPage() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center" style={{ color: "var(--muted)" }}>
-                    <UsersIcon className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                    No users found
+                  <td colSpan={6}>
+                    <EmptyState icon={UsersIcon} title="No users found" description="Team members who join your organization will appear here." />
                   </td>
                 </tr>
               )}

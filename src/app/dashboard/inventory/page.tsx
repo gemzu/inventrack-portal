@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { collection, query, where, getDocs, doc, updateDoc, addDoc, writeBatch, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import { Search, Filter, Download, Package, ChevronDown, Upload, Loader2, X, FileSpreadsheet } from "lucide-react";
+import { Search, Filter, Download, Package, ChevronDown, Upload, Loader2, X, FileSpreadsheet, Save } from "lucide-react";
 import { statusColor, formatDate } from "@/lib/utils";
+import EmptyState from "@/components/EmptyState";
+import { useToast } from "@/components/Toast";
 
 interface Item {
   id: string;
@@ -21,8 +23,15 @@ interface Item {
   updatedAt: unknown;
 }
 
+const STATUS_DOT: Record<string, string> = {
+  available: "bg-green-500",
+  reserved: "bg-amber-500",
+  sold: "bg-blue-500",
+};
+
 export default function InventoryPage() {
   const { orgId, facilities } = useAuth();
+  const { toast } = useToast();
   const [items, setItems] = useState<Item[]>([]);
   const [filtered, setFiltered] = useState<Item[]>([]);
   const [search, setSearch] = useState("");
@@ -34,6 +43,8 @@ export default function InventoryPage() {
   const [importData, setImportData] = useState<{ modelId: string; quantity: number }[]>([]);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ added: number; updated: number; errors: number } | null>(null);
+  const [editQty, setEditQty] = useState(0);
+  const [panelOpen, setPanelOpen] = useState(false);
 
   const handleCsvFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -90,6 +101,7 @@ export default function InventoryPage() {
     }
     setImportResult(result);
     setImporting(false);
+    toast(`Import complete: ${result.added} added, ${result.updated} updated`, "success");
     // Reload inventory
     const snap = await getDocs(query(collection(db, "inventory"), where("orgId", "==", orgId)));
     const data = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Item));
@@ -141,9 +153,37 @@ export default function InventoryPage() {
   };
 
   const updateStatus = async (item: Item, newStatus: string) => {
-    await updateDoc(doc(db, "inventory", item.id), { status: newStatus });
-    setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: newStatus } : i)));
-    setEditItem(null);
+    try {
+      await updateDoc(doc(db, "inventory", item.id), { status: newStatus });
+      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: newStatus } : i)));
+      setEditItem((prev) => prev ? { ...prev, status: newStatus } : null);
+      toast(`Status updated to ${newStatus}`, "success");
+    } catch {
+      toast("Failed to update status", "error");
+    }
+  };
+
+  const saveQuantity = async () => {
+    if (!editItem) return;
+    try {
+      await updateDoc(doc(db, "inventory", editItem.id), { quantity: editQty });
+      setItems((prev) => prev.map((i) => (i.id === editItem.id ? { ...i, quantity: editQty } : i)));
+      setEditItem((prev) => prev ? { ...prev, quantity: editQty } : null);
+      toast("Quantity updated", "success");
+    } catch {
+      toast("Failed to update quantity", "error");
+    }
+  };
+
+  const openPanel = (item: Item) => {
+    setEditItem(item);
+    setEditQty(item.quantity);
+    setPanelOpen(true);
+  };
+
+  const closePanel = () => {
+    setPanelOpen(false);
+    setTimeout(() => setEditItem(null), 300);
   };
 
   if (loading) {
@@ -237,7 +277,8 @@ export default function InventoryPage() {
                   <td className="px-4 py-3 font-mono text-xs">{item.barcode}</td>
                   <td className="px-4 py-3 hidden md:table-cell">{item.displayName || "-"}</td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusColor(item.status)}`}>
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusColor(item.status)}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[item.status] || "bg-gray-400"}`} />
                       {item.status}
                     </span>
                   </td>
@@ -247,7 +288,7 @@ export default function InventoryPage() {
                   </td>
                   <td className="px-4 py-3">
                     <button
-                      onClick={() => setEditItem(editItem?.id === item.id ? null : item)}
+                      onClick={() => openPanel(item)}
                       className="text-xs text-primary hover:underline"
                     >
                       Edit
@@ -257,9 +298,8 @@ export default function InventoryPage() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center" style={{ color: "var(--muted)" }}>
-                    <Package className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                    No items found
+                  <td colSpan={7}>
+                    <EmptyState icon={Package} title="No items found" description="Import a CSV or add items from the mobile app to get started." />
                   </td>
                 </tr>
               )}
@@ -345,42 +385,94 @@ export default function InventoryPage() {
         </div>
       )}
 
-      {/* Edit Modal */}
+      {/* Slide-out Panel */}
       {editItem && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setEditItem(null)}>
-          <div className="glass-card p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold mb-4">Edit Item</h3>
-            <div className="space-y-3 text-sm">
-              <div><span style={{ color: "var(--muted)" }}>Model:</span> <strong>{editItem.modelId}</strong></div>
-              <div><span style={{ color: "var(--muted)" }}>Barcode:</span> <strong>{editItem.barcode}</strong></div>
-              <div><span style={{ color: "var(--muted)" }}>Qty:</span> <strong>{editItem.quantity}</strong></div>
-              <div>
-                <span style={{ color: "var(--muted)" }}>Status:</span>
-                <div className="flex gap-2 mt-2">
-                  {["available", "reserved", "sold"].map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => updateStatus(editItem, s)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
-                        editItem.status === s ? "bg-primary text-white border-primary" : "hover:border-primary"
-                      }`}
-                      style={editItem.status !== s ? { borderColor: "var(--border)" } : undefined}
-                    >
-                      {s}
-                    </button>
-                  ))}
+        <>
+          <div
+            className={`fixed inset-0 bg-black/40 z-40 transition-opacity duration-300 ${panelOpen ? "opacity-100" : "opacity-0"}`}
+            onClick={closePanel}
+          />
+          <div
+            className={`fixed top-0 right-0 h-full w-96 max-w-full z-50 transition-transform duration-300 ${panelOpen ? "translate-x-0" : "translate-x-full"}`}
+            style={{ background: "var(--background)" }}
+          >
+            <div className="h-full flex flex-col border-l" style={{ borderColor: "var(--border)" }}>
+              <div className="flex items-center justify-between p-6" style={{ borderBottom: "1px solid var(--border)" }}>
+                <h3 className="text-lg font-bold">Item Details</h3>
+                <button onClick={closePanel} className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: "var(--muted)" }}>Model ID</label>
+                  <div className="text-sm font-semibold">{editItem.modelId}</div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: "var(--muted)" }}>Barcode</label>
+                  <div className="text-sm font-mono">{editItem.barcode}</div>
+                </div>
+                {editItem.displayName && (
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: "var(--muted)" }}>Display Name</label>
+                    <div className="text-sm">{editItem.displayName}</div>
+                  </div>
+                )}
+                {editItem.description && (
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: "var(--muted)" }}>Description</label>
+                    <div className="text-sm">{editItem.description}</div>
+                  </div>
+                )}
+                <div>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--muted)" }}>Quantity</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={editQty}
+                      onChange={(e) => setEditQty(parseInt(e.target.value) || 0)}
+                      min={0}
+                      className="w-24 px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
+                      style={{ background: "var(--input-bg)", borderColor: "var(--border)", color: "var(--foreground)" }}
+                    />
+                    {editQty !== editItem.quantity && (
+                      <button onClick={saveQuantity} className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition">
+                        <Save className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--muted)" }}>Status</label>
+                  <div className="flex gap-2">
+                    {["available", "reserved", "sold"].map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => updateStatus(editItem, s)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
+                          editItem.status === s ? "bg-primary text-white border-primary" : "hover:border-primary"
+                        }`}
+                        style={editItem.status !== s ? { borderColor: "var(--border)" } : undefined}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${editItem.status === s ? "bg-white" : STATUS_DOT[s] || "bg-gray-400"}`} />
+                        {s}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
+              <div className="p-6" style={{ borderTop: "1px solid var(--border)" }}>
+                <button
+                  onClick={closePanel}
+                  className="w-full py-2.5 rounded-xl border text-sm font-medium hover:border-primary transition"
+                  style={{ borderColor: "var(--border)" }}
+                >
+                  Close
+                </button>
+              </div>
             </div>
-            <button
-              onClick={() => setEditItem(null)}
-              className="mt-6 w-full py-2 rounded-xl border text-sm font-medium hover:border-primary transition"
-              style={{ borderColor: "var(--border)" }}
-            >
-              Close
-            </button>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

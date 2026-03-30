@@ -7,6 +7,8 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { Ban, Plus, Trash2, Search, X } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import EmptyState from "@/components/EmptyState";
+import { useToast } from "@/components/Toast";
 
 interface BlacklistItem {
   id: string;
@@ -25,6 +27,7 @@ export default function BlacklistPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ barcode: "", label: "", reason: "" });
+  const { toast } = useToast();
 
   const load = async () => {
     if (!orgId) return;
@@ -45,18 +48,28 @@ export default function BlacklistPage() {
 
   const handleAdd = async () => {
     if (!orgId || !form.barcode) return;
-    await addDoc(collection(db, "blacklist"), {
-      barcode: form.barcode, label: form.label, reason: form.reason,
-      orgId, createdAt: serverTimestamp(),
-    });
-    setShowForm(false);
-    setForm({ barcode: "", label: "", reason: "" });
-    await load();
+    try {
+      await addDoc(collection(db, "blacklist"), {
+        barcode: form.barcode, label: form.label, reason: form.reason,
+        orgId, createdAt: serverTimestamp(),
+      });
+      setShowForm(false);
+      setForm({ barcode: "", label: "", reason: "" });
+      await load();
+      toast("Barcode added to blacklist", "success");
+    } catch {
+      toast("Failed to add barcode", "error");
+    }
   };
 
   const handleDelete = async (item: BlacklistItem) => {
-    await deleteDoc(doc(db, "blacklist", item.id));
-    await load();
+    try {
+      await deleteDoc(doc(db, "blacklist", item.id));
+      await load();
+      toast("Barcode removed from blacklist", "success");
+    } catch {
+      toast("Failed to remove barcode", "error");
+    }
   };
 
   if (loading) {
@@ -110,9 +123,11 @@ export default function BlacklistPage() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-12 text-center" style={{ color: "var(--muted)" }}>
-                  <Ban className="w-8 h-8 mx-auto mb-2 opacity-40" />No blacklisted barcodes
-                </td></tr>
+                <tr>
+                  <td colSpan={5}>
+                    <EmptyState icon={Ban} title="No blacklisted barcodes" description="Add barcodes here to prevent them from being scanned or submitted." />
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>

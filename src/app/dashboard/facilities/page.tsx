@@ -6,6 +6,8 @@ import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, serverTimestamp
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { Building2, Plus, Pencil, Trash2, MapPin, Users, X } from "lucide-react";
+import EmptyState from "@/components/EmptyState";
+import { useToast } from "@/components/Toast";
 
 interface Facility {
   id: string;
@@ -22,6 +24,7 @@ export default function FacilitiesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Facility | null>(null);
   const [form, setForm] = useState({ name: "", state: "", address: "" });
+  const { toast } = useToast();
 
   const loadFacilities = async () => {
     if (!orgId) return;
@@ -42,25 +45,36 @@ export default function FacilitiesPage() {
 
   const handleSave = async () => {
     if (!orgId || !form.name) return;
-    if (editing) {
-      await updateDoc(doc(db, "organizations", orgId, "facilities", editing.id), {
-        name: form.name, state: form.state, address: form.address, updatedAt: serverTimestamp(),
-      });
-    } else {
-      await addDoc(collection(db, "organizations", orgId, "facilities"), {
-        name: form.name, state: form.state, address: form.address, createdAt: serverTimestamp(),
-      });
+    try {
+      if (editing) {
+        await updateDoc(doc(db, "organizations", orgId, "facilities", editing.id), {
+          name: form.name, state: form.state, address: form.address, updatedAt: serverTimestamp(),
+        });
+        toast("Facility updated", "success");
+      } else {
+        await addDoc(collection(db, "organizations", orgId, "facilities"), {
+          name: form.name, state: form.state, address: form.address, createdAt: serverTimestamp(),
+        });
+        toast("Facility added", "success");
+      }
+      setShowForm(false);
+      setEditing(null);
+      setForm({ name: "", state: "", address: "" });
+      await loadFacilities();
+    } catch {
+      toast("Failed to save facility", "error");
     }
-    setShowForm(false);
-    setEditing(null);
-    setForm({ name: "", state: "", address: "" });
-    await loadFacilities();
   };
 
   const handleDelete = async (fac: Facility) => {
     if (!orgId) return;
-    await deleteDoc(doc(db, "organizations", orgId, "facilities", fac.id));
-    await loadFacilities();
+    try {
+      await deleteDoc(doc(db, "organizations", orgId, "facilities", fac.id));
+      await loadFacilities();
+      toast("Facility deleted", "success");
+    } catch {
+      toast("Failed to delete facility", "error");
+    }
   };
 
   const openEdit = (fac: Facility) => {
@@ -118,9 +132,8 @@ export default function FacilitiesPage() {
           </div>
         ))}
         {facilities.length === 0 && (
-          <div className="col-span-full glass-card p-12 text-center" style={{ color: "var(--muted)" }}>
-            <Building2 className="w-8 h-8 mx-auto mb-2 opacity-40" />
-            <p>No facilities yet. Add your first location.</p>
+          <div className="col-span-full">
+            <EmptyState icon={Building2} title="No facilities yet" description="Add your first warehouse or storage location to get started." />
           </div>
         )}
       </div>

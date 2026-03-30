@@ -7,6 +7,7 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { Activity, Search, ChevronDown } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
+import EmptyState from "@/components/EmptyState";
 
 interface ScanLog {
   id: string;
@@ -110,9 +111,11 @@ export default function ActivityPage() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-12 text-center" style={{ color: "var(--muted)" }}>
-                  <Activity className="w-8 h-8 mx-auto mb-2 opacity-40" />No activity logs
-                </td></tr>
+                <tr>
+                  <td colSpan={5}>
+                    <EmptyState icon={Activity} title="No activity logs" description="Scan events and inventory changes will be recorded here." />
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>

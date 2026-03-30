@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import { Package, ShoppingCart, Users as UsersIcon, AlertTriangle, TrendingUp, Activity } from "lucide-react";
+import { Package, ShoppingCart, Users as UsersIcon, AlertTriangle, TrendingUp, Activity, Upload, UserPlus, ArrowRight } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
+import { SkeletonCard, SkeletonChart } from "@/components/Skeleton";
+import Link from "next/link";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -69,8 +71,20 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="space-y-6">
+        <div>
+          <div className="h-8 w-40 rounded-lg animate-pulse" style={{ background: "var(--border)" }} />
+          <div className="h-4 w-64 rounded-lg animate-pulse mt-2" style={{ background: "var(--border)" }} />
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+        <div className="grid lg:grid-cols-2 gap-6">
+          <SkeletonChart />
+          <SkeletonChart />
+        </div>
       </div>
     );
   }
@@ -125,6 +139,26 @@ export default function DashboardPage() {
         ))}
       </div>
 
+      {/* Quick Actions */}
+      <div className="grid sm:grid-cols-3 gap-4">
+        {[
+          { icon: Upload, title: "Import Inventory", desc: "Upload CSV to add items in bulk", href: "/dashboard/inventory" },
+          { icon: UserPlus, title: "Invite Team", desc: "Add workers, admins, or buyers", href: "/dashboard/users" },
+          { icon: ShoppingCart, title: "View Orders", desc: "Review and manage incoming orders", href: "/dashboard/orders" },
+        ].map((action) => (
+          <Link key={action.title} href={action.href} className="glass-card p-5 flex items-center gap-4 group hover:scale-[1.02] transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <action.icon className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-sm">{action.title}</div>
+              <div className="text-xs" style={{ color: "var(--muted)" }}>{action.desc}</div>
+            </div>
+            <ArrowRight className="w-4 h-4 shrink-0 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" style={{ color: "var(--muted)" }} />
+          </Link>
+        ))}
+      </div>
+
       {/* Charts */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Status Pie */}
@@ -158,7 +192,7 @@ export default function DashboardPage() {
               <XAxis dataKey="name" fontSize={12} tick={{ fill: "var(--muted)" }} />
               <YAxis fontSize={12} tick={{ fill: "var(--muted)" }} />
               <Tooltip />
-              <Bar dataKey="value" fill="#2563eb" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="value" fill="#2563eb" radius={[6, 6, 0, 0]} animationDuration={1200} />
             </BarChart>
           </ResponsiveContainer>
         </div>

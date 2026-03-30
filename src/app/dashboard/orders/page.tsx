@@ -6,6 +6,8 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { ShoppingCart, ChevronDown, Search, Eye, Check, X } from "lucide-react";
 import { statusColor, formatDateTime } from "@/lib/utils";
+import EmptyState from "@/components/EmptyState";
+import { useToast } from "@/components/Toast";
 
 interface OrderItem {
   modelId: string;
@@ -37,6 +39,7 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!orgId) { setLoading(false); return; }
@@ -68,9 +71,14 @@ export default function OrdersPage() {
   }, [search, statusFilter, orders]);
 
   const updateOrderStatus = async (order: Order, newStatus: string) => {
-    await updateDoc(doc(db, "orders", order.id), { status: newStatus });
-    setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: newStatus } : o)));
-    if (selectedOrder?.id === order.id) setSelectedOrder({ ...order, status: newStatus });
+    try {
+      await updateDoc(doc(db, "orders", order.id), { status: newStatus });
+      setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: newStatus } : o)));
+      if (selectedOrder?.id === order.id) setSelectedOrder({ ...order, status: newStatus });
+      toast(`Order ${newStatus === "confirmed" ? "approved" : newStatus === "cancelled" ? "rejected" : "updated to " + newStatus}`, "success");
+    } catch {
+      toast("Failed to update order status", "error");
+    }
   };
 
   if (loading) {
@@ -166,9 +174,8 @@ export default function OrdersPage() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center" style={{ color: "var(--muted)" }}>
-                    <ShoppingCart className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                    No orders found
+                  <td colSpan={6}>
+                    <EmptyState icon={ShoppingCart} title="No orders found" description="Orders placed by buyers will appear here for review and approval." />
                   </td>
                 </tr>
               )}

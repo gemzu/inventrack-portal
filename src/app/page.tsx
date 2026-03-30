@@ -3,7 +3,7 @@
 import Link from "next/link";
 import {
   Package, BarChart3, Users, ScanLine, ShieldCheck, Building2,
-  ArrowRight, Menu, X, Sun, Moon, Boxes,
+  ArrowRight, Menu, X, Sun, Moon, Boxes, Apple, Smartphone, Quote,
 } from "lucide-react";
 import { useState } from "react";
 import { useTheme } from "@/context/ThemeContext";
@@ -143,6 +143,15 @@ export default function LandingPage() {
               View Pricing
             </Link>
           </div>
+
+          <div className="mt-6 flex items-center justify-center gap-3 animate-fade-in-up-delay-2">
+            <button className="flex items-center gap-2 px-4 py-2 rounded-xl border text-xs font-medium transition hover:border-primary" style={{ borderColor: "var(--border)", color: "var(--muted)" }}>
+              <Apple className="w-4 h-4" /> App Store
+            </button>
+            <button className="flex items-center gap-2 px-4 py-2 rounded-xl border text-xs font-medium transition hover:border-primary" style={{ borderColor: "var(--border)", color: "var(--muted)" }}>
+              <Smartphone className="w-4 h-4" /> Google Play
+            </button>
+          </div>
         </div>
       </section>
 
@@ -205,6 +214,53 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">{s.title}</h3>
                 <p className="text-sm" style={{ color: "var(--muted)" }}>{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-20 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold">Trusted by warehouse teams</h2>
+            <p className="mt-3 text-lg" style={{ color: "var(--muted)" }}>
+              See what operations managers are saying about INVENTRACK.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                quote: "We cut our inventory count time in half. The barcode scanning is incredibly fast and the real-time sync means no more spreadsheet nightmares.",
+                name: "Marcus Chen",
+                role: "Warehouse Manager",
+                company: "Pacific Freight Co.",
+              },
+              {
+                quote: "Managing three warehouses used to take an entire team. Now one person can oversee everything from the dashboard. The approval workflows saved us from costly errors.",
+                name: "Sarah Donovan",
+                role: "Operations Director",
+                company: "Northpoint Logistics",
+              },
+              {
+                quote: "Our seasonal staff can start scanning on day one with the mobile app. No training needed. The role-based access gives us confidence nothing slips through.",
+                name: "James Okafor",
+                role: "Supply Chain Lead",
+                company: "Metro Distribution",
+              },
+            ].map((t) => (
+              <div key={t.name} className="glass-card p-6 flex flex-col">
+                <Quote className="w-8 h-8 text-primary/20 mb-3" />
+                <p className="text-sm leading-relaxed flex-1" style={{ color: "var(--muted)" }}>
+                  {t.quote}
+                </p>
+                <div className="mt-5 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
+                  <div className="font-semibold text-sm">{t.name}</div>
+                  <div className="text-xs" style={{ color: "var(--muted)" }}>
+                    {t.role}, {t.company}
+                  </div>
+                </div>
               </div>
             ))}
           </div>

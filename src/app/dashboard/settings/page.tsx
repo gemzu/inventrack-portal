@@ -5,7 +5,8 @@ import { useState, useEffect } from "react";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import { Settings, Save, Check } from "lucide-react";
+import { Settings, Save } from "lucide-react";
+import { useToast } from "@/components/Toast";
 
 export default function SettingsPage() {
   const { orgId, orgData } = useAuth();
@@ -13,7 +14,7 @@ export default function SettingsPage() {
   const [sheetId, setSheetId] = useState("");
   const [threshold, setThreshold] = useState(2);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (orgData) {
@@ -26,12 +27,16 @@ export default function SettingsPage() {
   const handleSave = async () => {
     if (!orgId) return;
     setSaving(true);
-    await updateDoc(doc(db, "organizations", orgId), {
-      name, sheetId, lowStockThreshold: threshold,
-    });
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    try {
+      await updateDoc(doc(db, "organizations", orgId), {
+        name, sheetId, lowStockThreshold: threshold,
+      });
+      toast("Settings saved successfully", "success");
+    } catch {
+      toast("Failed to save settings", "error");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (<AdminGuard>
@@ -87,8 +92,8 @@ export default function SettingsPage() {
           disabled={saving}
           className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-white font-medium hover:bg-primary-dark transition shadow-lg shadow-primary/25 disabled:opacity-60"
         >
-          {saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-          {saving ? "Saving..." : saved ? "Saved!" : "Save Changes"}
+          <Save className="w-4 h-4" />
+          {saving ? "Saving..." : "Save Changes"}
         </button>
       </div>
     </div>

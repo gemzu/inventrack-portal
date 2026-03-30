@@ -8,8 +8,10 @@ import { useTheme } from "@/context/ThemeContext";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Building2,
   Ban, Activity, Settings, CreditCard, LogOut, Menu, X,
-  Sun, Moon, Boxes, ChevronRight, Bell, Loader2,
+  Sun, Moon, Boxes, ChevronRight, Bell, Loader2, ClipboardCheck,
 } from "lucide-react";
+import Breadcrumb from "@/components/Breadcrumb";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -19,12 +21,13 @@ const navItems = [
   { href: "/dashboard/facilities", label: "Facilities", icon: Building2 },
   { href: "/dashboard/blacklist", label: "Blacklist", icon: Ban },
   { href: "/dashboard/activity", label: "Activity", icon: Activity },
+  { href: "/dashboard/approvals", label: "Approvals", icon: ClipboardCheck },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
   { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
 ];
 
 // Filter sidebar items by role
-const adminOnlyPages = ["/dashboard/users", "/dashboard/facilities", "/dashboard/blacklist", "/dashboard/activity", "/dashboard/settings"];
+const adminOnlyPages = ["/dashboard/users", "/dashboard/facilities", "/dashboard/blacklist", "/dashboard/activity", "/dashboard/settings", "/dashboard/approvals"];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, userName, userRole, userActive, orgId, orgData, loading, logout } = useAuth();
@@ -173,7 +176,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Page content */}
         <main className="flex-1 p-4 lg:p-6 overflow-auto">
-          {children}
+          <Breadcrumb />
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
         </main>
       </div>
     </div>
