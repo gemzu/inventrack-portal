@@ -40,7 +40,7 @@ interface AuthContextType {
   userFacilityId: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (name: string, email: string, password: string, company?: string) => Promise<void>;
+  signup: (name: string, email: string, password: string, company?: string, role?: string) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
 }
@@ -133,14 +133,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signInWithEmailAndPassword(auth, email, password);
   };
 
-  const signup = async (name: string, email: string, password: string, company?: string) => {
+  const signup = async (name: string, email: string, password: string, company?: string, role?: string) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
+    const assignedRole = role || "buyer";
     await setDoc(doc(db, "users", cred.user.uid), {
       name,
       email,
       company: company || "",
-      role: "buyer",
-      active: false,
+      role: assignedRole,
+      active: assignedRole === "admin",
       createdAt: serverTimestamp(),
     });
   };

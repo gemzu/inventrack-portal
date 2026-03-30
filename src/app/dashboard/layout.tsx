@@ -23,8 +23,11 @@ const navItems = [
   { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
 ];
 
+// Filter sidebar items by role
+const adminOnlyPages = ["/dashboard/users", "/dashboard/facilities", "/dashboard/blacklist", "/dashboard/activity", "/dashboard/settings"];
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, userName, userRole, orgData, loading, logout } = useAuth();
+  const { user, userName, userRole, userActive, orgId, orgData, loading, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
@@ -45,6 +48,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   if (!user) return null;
+
+  // Block inactive buyers
+  if (userRole === "buyer" && userActive === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--background)", color: "var(--foreground)" }}>
+        <div className="glass-card p-10 max-w-md text-center">
+          <div className="w-16 h-16 rounded-2xl bg-warning/10 flex items-center justify-center mx-auto mb-5">
+            <Bell className="w-8 h-8 text-warning" />
+          </div>
+          <h2 className="text-xl font-bold mb-2">Account Pending</h2>
+          <p className="text-sm mb-6" style={{ color: "var(--muted)" }}>
+            Your account is awaiting activation. Contact your admin to get access.
+          </p>
+          <button onClick={async () => { await logout(); router.push("/login"); }} className="px-6 py-2.5 rounded-xl border text-sm font-medium hover:border-primary transition" style={{ borderColor: "var(--border)" }}>
+            Sign Out
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Filter nav items by role
+  const visibleNavItems = userRole === "admin"
+    ? navItems
+    : navItems.filter((item) => !adminOnlyPages.includes(item.href));
 
   const handleLogout = async () => {
     await logout();
@@ -78,7 +106,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const active = pathname === item.href;
             return (
               <Link

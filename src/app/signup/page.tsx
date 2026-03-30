@@ -11,6 +11,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [company, setCompany] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("buyer");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,7 +27,7 @@ export default function SignupPage() {
     }
     setLoading(true);
     try {
-      await signup(name, email, password, company);
+      await signup(name, email, password, company, role);
       router.push("/dashboard");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Signup failed";
@@ -92,6 +93,29 @@ export default function SignupPage() {
                 style={{ background: "var(--input-bg)", borderColor: "var(--border)", color: "var(--foreground)" }}
                 placeholder="Acme Warehousing"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--foreground)" }}>I am a...</label>
+              <div className="flex gap-2">
+                {[
+                  { value: "admin", label: "Business Owner", desc: "Manage inventory & team" },
+                  { value: "buyer", label: "Buyer", desc: "Browse & order products" },
+                ].map((r) => (
+                  <button
+                    key={r.value}
+                    type="button"
+                    onClick={() => setRole(r.value)}
+                    className={`flex-1 p-3 rounded-xl border text-left transition ${
+                      role === r.value ? "border-primary bg-primary/5 ring-2 ring-primary/20" : ""
+                    }`}
+                    style={role !== r.value ? { borderColor: "var(--border)" } : undefined}
+                  >
+                    <div className="text-sm font-medium" style={{ color: "var(--foreground)" }}>{r.label}</div>
+                    <div className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>{r.desc}</div>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div>
