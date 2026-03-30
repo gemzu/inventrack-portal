@@ -162,15 +162,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className="flex items-center gap-2">
-            <button className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition relative">
-              <Bell className="w-4.5 h-4.5" style={{ color: "var(--muted)" }} />
-            </button>
             <button onClick={toggleTheme} className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition">
               {theme === "dark" ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
             </button>
-            <div className="w-8 h-8 rounded-full gradient-bg flex items-center justify-center text-white text-xs font-bold ml-1">
+            <Link href="/dashboard/settings" className="w-8 h-8 rounded-full gradient-bg flex items-center justify-center text-white text-xs font-bold ml-1">
               {userName?.charAt(0).toUpperCase() || "U"}
-            </div>
+            </Link>
           </div>
         </header>
 
