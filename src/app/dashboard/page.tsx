@@ -34,6 +34,33 @@ export default function DashboardPage() {
   const [teamBreakdown, setTeamBreakdown] = useState({ admins: 0, workers: 0, buyers: 0, active: 0 });
   const [recentOrders, setRecentOrders] = useState<{ id: string; buyerName: string; itemCount: number; status: string; createdAt: unknown }[]>([]);
   const [facilityItems, setFacilityItems] = useState<Record<string, number>>({});
+  const [announcement, setAnnouncement] = useState<{ id: string; title: string; message: string; type: string } | null>(null);
+
+  useEffect(() => {
+    // Fetch announcement (no org_id needed)
+    const loadAnnouncement = async () => {
+      try {
+        const dismissed = typeof window !== "undefined" ? localStorage.getItem("dismissed_announcement") : null;
+        const { data } = await supabase
+          .from("announcements")
+          .select("*")
+          .eq("active", true)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (data && data.length > 0 && dismissed !== data[0].id) {
+          setAnnouncement(data[0]);
+        }
+      } catch (_) {}
+    };
+    loadAnnouncement();
+  }, []);
+
+  const dismissAnnouncement = () => {
+    if (announcement) {
+      localStorage.setItem("dismissed_announcement", announcement.id);
+      setAnnouncement(null);
+    }
+  };
 
   useEffect(() => {
     if (!orgId) { setLoading(false); return; }
@@ -193,6 +220,55 @@ export default function DashboardPage() {
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <p className="text-sm" style={{ color: "var(--muted)" }}>Overview of your warehouse operations</p>
       </div>
+
+      {/* Announcement Banner */}
+      {announcement && (
+        <div
+          className="glass-card p-4 flex items-start gap-3"
+          style={{
+            background: announcement.type === "warning"
+              ? "rgba(217,119,6,0.08)"
+              : announcement.type === "success"
+              ? "rgba(22,163,74,0.08)"
+              : "rgba(37,99,235,0.08)",
+            borderColor: announcement.type === "warning"
+              ? "rgba(217,119,6,0.2)"
+              : announcement.type === "success"
+              ? "rgba(22,163,74,0.2)"
+              : "rgba(37,99,235,0.2)",
+          }}
+        >
+          <div
+            className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+              announcement.type === "warning" ? "bg-amber-500/10" : announcement.type === "success" ? "bg-green-500/10" : "bg-blue-500/10"
+            }`}
+          >
+            <AlertTriangle
+              className={`w-4 h-4 ${
+                announcement.type === "warning" ? "text-amber-500" : announcement.type === "success" ? "text-green-500" : "text-blue-500"
+              }`}
+            />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3
+              className={`text-sm font-bold ${
+                announcement.type === "warning" ? "text-amber-500" : announcement.type === "success" ? "text-green-500" : "text-blue-500"
+              }`}
+            >
+              {announcement.title}
+            </h3>
+            <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
+              {announcement.message}
+            </p>
+          </div>
+          <button
+            onClick={dismissAnnouncement}
+            className="p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition shrink-0"
+          >
+            <span className="text-xs" style={{ color: "var(--muted)" }}>&#10005;</span>
+          </button>
+        </div>
+      )}
 
       {/* Subscription Status Card */}
       {!isSubscribed ? (

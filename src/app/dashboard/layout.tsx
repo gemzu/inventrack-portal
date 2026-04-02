@@ -9,6 +9,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, Users, Building2,
   Ban, Activity, Settings, CreditCard, LogOut, Menu, X,
   Sun, Moon, Boxes, ChevronRight, Bell, Loader2, ClipboardCheck,
+  TrendingUp, FileBarChart,
 } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -30,7 +31,7 @@ const navItems = [
 const adminOnlyPages = ["/dashboard/users", "/dashboard/facilities", "/dashboard/blacklist", "/dashboard/activity", "/dashboard/settings", "/dashboard/approvals"];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, userName, userRole, userActive, orgId, orgData, loading, logout } = useAuth();
+  const { user, userName, userRole, userActive, userPermissions, orgId, orgData, loading, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
@@ -72,10 +73,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
+  // Build dynamic nav items based on role and permissions
+  const dynamicNavItems = [...navItems];
+  if (userPermissions === "superadmin") {
+    dynamicNavItems.push({ href: "/dashboard/analytics", label: "Platform Analytics", icon: TrendingUp });
+  }
+  if (userRole === "admin") {
+    dynamicNavItems.push({ href: "/dashboard/reports", label: "Reports", icon: FileBarChart });
+  }
+
   // Filter nav items by role
   const visibleNavItems = userRole === "admin"
-    ? navItems
-    : navItems.filter((item) => !adminOnlyPages.includes(item.href));
+    ? dynamicNavItems
+    : dynamicNavItems.filter((item) => !adminOnlyPages.includes(item.href));
 
   const handleLogout = async () => {
     await logout();
