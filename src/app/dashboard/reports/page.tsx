@@ -216,7 +216,7 @@ export default function ReportsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="animate-page-enter space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Reports</h1>
         <p className="text-sm" style={{ color: "var(--muted)" }}>
@@ -232,7 +232,7 @@ export default function ReportsPage() {
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {statCards.map((card) => (
-            <div key={card.label} className="glass-card p-5">
+            <div key={card.label} className="glass-card p-5 hover-lift">
               <div className="flex items-center justify-between mb-3">
                 <div className={`w-10 h-10 rounded-xl ${card.bg} flex items-center justify-center`}>
                   <card.icon className={`w-5 h-5 ${card.color}`} />
@@ -325,7 +325,7 @@ export default function ReportsPage() {
         </div>
         <div className="grid sm:grid-cols-3 gap-4">
           {reportCards.map((report) => (
-            <div key={report.type} className="glass-card p-5">
+            <div key={report.type} className="glass-card p-5 hover-lift">
               <div className={`w-10 h-10 rounded-xl ${report.bg} flex items-center justify-center mb-4`}>
                 <report.icon className={`w-5 h-5 ${report.color}`} />
               </div>

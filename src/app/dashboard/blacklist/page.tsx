@@ -89,7 +89,7 @@ export default function BlacklistPage() {
   }
 
   return (<AdminGuard>
-    <div className="space-y-6">
+    <div className="animate-page-enter space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Blacklist</h1>
@@ -147,8 +147,8 @@ export default function BlacklistPage() {
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
-          <div className="glass-card p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 animate-backdrop" onClick={() => setShowForm(false)}>
+          <div className="glass-card p-6 w-full max-w-md animate-modal" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold">Blacklist Barcode</h3>
               <button onClick={() => setShowForm(false)}><X className="w-5 h-5" /></button>
@@ -172,7 +172,7 @@ export default function BlacklistPage() {
                   className="w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
                   style={{ background: "var(--input-bg)", borderColor: "var(--border)", color: "var(--foreground)" }} placeholder="Why is this blocked?" />
               </div>
-              <button onClick={handleAdd} className="w-full py-2.5 rounded-xl bg-danger text-white font-medium hover:opacity-90 transition">
+              <button onClick={handleAdd} className="w-full py-2.5 rounded-xl bg-danger text-white font-medium hover:opacity-90 transition press-scale">
                 Add to Blacklist
               </button>
             </div>

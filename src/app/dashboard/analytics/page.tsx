@@ -162,7 +162,7 @@ export default function PlatformAnalyticsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="animate-page-enter space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Platform Analytics</h1>
         <p className="text-sm" style={{ color: "var(--muted)" }}>
@@ -173,7 +173,7 @@ export default function PlatformAnalyticsPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi) => (
-          <div key={kpi.label} className="glass-card p-5">
+          <div key={kpi.label} className="glass-card p-5 hover-lift">
             <div className="flex items-center justify-between mb-3">
               <div className={`w-10 h-10 rounded-xl ${kpi.bg} flex items-center justify-center`}>
                 <kpi.icon className={`w-5 h-5 ${kpi.color}`} />

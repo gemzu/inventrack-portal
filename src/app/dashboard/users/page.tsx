@@ -110,7 +110,7 @@ export default function UsersPage() {
   }
 
   return (<AdminGuard>
-    <div className="space-y-6">
+    <div className="animate-page-enter space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Users</h1>
         <p className="text-sm" style={{ color: "var(--muted)" }}>{filtered.length} members</p>

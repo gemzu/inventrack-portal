@@ -105,7 +105,7 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="animate-page-enter space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Orders</h1>
         <p className="text-sm" style={{ color: "var(--muted)" }}>{filtered.length} orders</p>
@@ -201,8 +201,8 @@ export default function OrdersPage() {
 
       {/* Order Detail Modal */}
       {selectedOrder && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setSelectedOrder(null)}>
-          <div className="glass-card p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 animate-backdrop" onClick={() => setSelectedOrder(null)}>
+          <div className="glass-card p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto animate-modal" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold mb-4">Order Details</h3>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between"><span style={{ color: "var(--muted)" }}>Buyer:</span> <strong>{selectedOrder.buyerName}</strong></div>

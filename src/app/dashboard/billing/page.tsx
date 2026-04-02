@@ -20,7 +20,7 @@ export default function BillingPage() {
   const isSubscribed = orgData?.subscribed === true;
 
   return (
-    <div className="max-w-lg mx-auto py-8">
+    <div className="animate-page-enter max-w-lg mx-auto py-8">
       {/* Status */}
       <div className="text-center mb-8">
         <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 ${isSubscribed ? "bg-success/10" : "gradient-bg"}`}>
@@ -37,7 +37,7 @@ export default function BillingPage() {
       </div>
 
       {/* Plan Card */}
-      <div className={`glass-card p-6 mb-6 ${isSubscribed ? "ring-2 ring-success" : "ring-2 ring-primary"}`}>
+      <div className={`glass-card p-6 mb-6 hover-lift ${isSubscribed ? "ring-2 ring-success" : "ring-2 ring-primary"}`}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold text-lg">INVENTRACK Full Access</h3>
           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
@@ -60,7 +60,7 @@ export default function BillingPage() {
 
         {!isSubscribed && (
           <button
-            className="w-full py-3.5 rounded-xl bg-primary text-white font-semibold hover:bg-primary-dark transition shadow-lg shadow-primary/25 flex items-center justify-center gap-2 text-lg"
+            className="w-full py-3.5 rounded-xl bg-primary text-white font-semibold hover:bg-primary-dark transition shadow-lg shadow-primary/25 flex items-center justify-center gap-2 text-lg press-scale"
           >
             Subscribe Now <ArrowRight className="w-5 h-5" />
           </button>

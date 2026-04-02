@@ -160,7 +160,7 @@ function ApprovalsContent() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="animate-page-enter space-y-4">
       <h1 className="text-2xl font-bold">Approvals</h1>
 
       {approvals.length === 0 ? (

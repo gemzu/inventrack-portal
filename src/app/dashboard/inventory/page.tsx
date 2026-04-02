@@ -208,14 +208,14 @@ export default function InventoryPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="animate-page-enter space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Inventory</h1>
           <p className="text-sm" style={{ color: "var(--muted)" }}>{filtered.length} items</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setShowImport(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-dark transition shadow-lg shadow-primary/25">
+          <button onClick={() => setShowImport(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-dark transition shadow-lg shadow-primary/25 press-scale">
             <Upload className="w-4 h-4" /> Import CSV
           </button>
           <button onClick={exportCsv} className="flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium hover:border-primary transition" style={{ borderColor: "var(--border)" }}>
@@ -323,8 +323,8 @@ export default function InventoryPage() {
 
       {/* Import CSV Modal */}
       {showImport && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => { setShowImport(false); setImportData([]); setImportResult(null); }}>
-          <div className="glass-card p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 animate-backdrop" onClick={() => { setShowImport(false); setImportData([]); setImportResult(null); }}>
+          <div className="glass-card p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto animate-modal" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold">Import CSV</h3>
               <button onClick={() => { setShowImport(false); setImportData([]); setImportResult(null); }}><X className="w-5 h-5" /></button>

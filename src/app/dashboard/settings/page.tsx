@@ -123,7 +123,7 @@ export default function SettingsPage() {
   const inputStyle = { background: "var(--input-bg)", borderColor: "var(--border)", color: "var(--foreground)" };
 
   return (<AdminGuard>
-    <div className="space-y-6 max-w-2xl">
+    <div className="animate-page-enter space-y-6 max-w-2xl">
       <div>
         <h1 className="text-2xl font-bold">Settings</h1>
         <p className="text-sm" style={{ color: "var(--muted)" }}>Manage your organization settings</p>
@@ -271,7 +271,7 @@ export default function SettingsPage() {
       <button
         onClick={handleSave}
         disabled={saving}
-        className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-white font-medium hover:bg-primary-dark transition shadow-lg shadow-primary/25 disabled:opacity-60"
+        className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-white font-medium hover:bg-primary-dark transition shadow-lg shadow-primary/25 disabled:opacity-60 press-scale"
       >
         <Save className="w-4 h-4" />
         {saving ? "Saving..." : "Save Changes"}

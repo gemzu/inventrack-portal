@@ -100,7 +100,7 @@ export default function FacilitiesPage() {
   }
 
   return (<AdminGuard>
-    <div className="space-y-6">
+    <div className="animate-page-enter space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Facilities</h1>
@@ -108,7 +108,7 @@ export default function FacilitiesPage() {
         </div>
         <button
           onClick={() => { setShowForm(true); setEditing(null); setForm({ name: "", state: "", address: "" }); }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-dark transition shadow-lg shadow-primary/25"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-dark transition shadow-lg shadow-primary/25 press-scale"
         >
           <Plus className="w-4 h-4" /> Add Facility
         </button>
@@ -116,7 +116,7 @@ export default function FacilitiesPage() {
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {facilities.map((fac) => (
-          <div key={fac.id} className="glass-card p-5">
+          <div key={fac.id} className="glass-card p-5 hover-lift">
             <div className="flex items-start justify-between mb-3">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <Building2 className="w-5 h-5 text-primary" />
@@ -148,8 +148,8 @@ export default function FacilitiesPage() {
 
       {/* Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
-          <div className="glass-card p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 animate-backdrop" onClick={() => setShowForm(false)}>
+          <div className="glass-card p-6 w-full max-w-md animate-modal" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold">{editing ? "Edit Facility" : "Add Facility"}</h3>
               <button onClick={() => setShowForm(false)}><X className="w-5 h-5" /></button>
@@ -185,7 +185,7 @@ export default function FacilitiesPage() {
                   placeholder="123 Main St"
                 />
               </div>
-              <button onClick={handleSave} className="w-full py-2.5 rounded-xl bg-primary text-white font-medium hover:bg-primary-dark transition">
+              <button onClick={handleSave} className="w-full py-2.5 rounded-xl bg-primary text-white font-medium hover:bg-primary-dark transition press-scale">
                 {editing ? "Update" : "Add"} Facility
               </button>
             </div>

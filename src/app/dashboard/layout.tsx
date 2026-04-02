@@ -127,7 +127,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 key={item.href}
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition nav-item ${
                   active
                     ? "bg-primary/10 text-primary"
                     : "hover:bg-black/5 dark:hover:bg-white/5"
