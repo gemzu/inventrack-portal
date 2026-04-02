@@ -17,6 +17,14 @@ interface OrgData {
   sheetId?: string;
   lowStockThreshold?: number;
   subscribed?: boolean;
+  address?: string;
+  phone?: string;
+  timezone?: string;
+  reservationHours?: number;
+  orderApprovalRequired?: boolean;
+  notifyLowStock?: boolean;
+  notifyNewOrders?: boolean;
+  notifySubmissions?: boolean;
 }
 
 interface AuthContextType {
