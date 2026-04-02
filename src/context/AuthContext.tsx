@@ -1,16 +1,8 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import {
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  sendPasswordResetEmail,
-  User,
-} from "firebase/auth";
-import { doc, getDoc, setDoc, collection, getDocs, serverTimestamp, enableNetwork, disableNetwork } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
+import type { User } from "@supabase/supabase-js";
 
 interface Facility {
   id: string;
@@ -60,59 +52,88 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userFacilityId, setUserFacilityId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Ensure Firestore network is enabled
-    enableNetwork(db).catch(() => {});
+  const fetchUserProfile = async (supabaseUser: User) => {
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", supabaseUser.id)
+        .single();
 
-    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      if (firebaseUser) {
+      if (error || !data) {
+        // User row doesn't exist yet (just signed up, trigger may be pending)
+        setUserName(supabaseUser.user_metadata?.name || supabaseUser.email?.split("@")[0] || null);
+        setUserRole("buyer");
+        setLoading(false);
+        return;
+      }
+
+      setUserRole(data.role || null);
+      setUserName(data.name || null);
+      setUserCompany(data.company || null);
+      setUserActive(data.active ?? false);
+      setUserPermissions(data.permissions || null);
+      setOrgId(data.org_id || null);
+      setUserFacilityId(data.facility_id || null);
+
+      if (data.org_id) {
         try {
-          const userDocRef = doc(db, "users", firebaseUser.uid);
-          let userDoc;
-          try {
-            userDoc = await getDoc(userDocRef);
-          } catch (fetchErr) {
-            // If offline or permission error, still resolve loading
-            console.warn("Could not fetch user doc:", fetchErr);
-            setLoading(false);
-            return;
+          const { data: orgDoc } = await supabase
+            .from("organizations")
+            .select("*")
+            .eq("id", data.org_id)
+            .single();
+
+          if (orgDoc) {
+            setOrgData({
+              name: orgDoc.name,
+              ownerId: orgDoc.owner_id,
+              sheetId: orgDoc.sheet_id,
+              lowStockThreshold: orgDoc.low_stock_threshold,
+              subscribed: orgDoc.subscribed,
+            });
           }
 
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            setUserRole(data.role || null);
-            setUserName(data.name || null);
-            setUserCompany(data.company || null);
-            setUserActive(data.active ?? false);
-            setUserPermissions(data.permissions || null);
-            setOrgId(data.orgId || null);
-            setUserFacilityId(data.facilityId || null);
+          const { data: facData } = await supabase
+            .from("facilities")
+            .select("*")
+            .eq("org_id", data.org_id);
 
-            if (data.orgId) {
-              try {
-                const orgDoc = await getDoc(doc(db, "organizations", data.orgId));
-                if (orgDoc.exists()) {
-                  setOrgData(orgDoc.data() as OrgData);
-                }
-                const facSnap = await getDocs(
-                  collection(db, "organizations", data.orgId, "facilities")
-                );
-                setFacilities(
-                  facSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Facility))
-                );
-              } catch (orgErr) {
-                console.warn("Could not fetch org data:", orgErr);
-              }
-            }
-          } else {
-            // User doc doesn't exist yet (just signed up, Firestore write may be pending)
-            setUserName(firebaseUser.displayName || firebaseUser.email?.split("@")[0] || null);
-            setUserRole("buyer");
-          }
-        } catch (err) {
-          console.error("Error fetching user data:", err);
+          setFacilities(
+            (facData || []).map((f: Record<string, unknown>) => ({
+              id: f.id as string,
+              name: f.name as string,
+              state: f.state as string,
+              address: f.address as string,
+            }))
+          );
+        } catch (orgErr) {
+          console.warn("Could not fetch org data:", orgErr);
         }
+      }
+    } catch (err) {
+      console.error("Error fetching user data:", err);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) {
+        fetchUserProfile(currentUser);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) {
+        fetchUserProfile(currentUser);
       } else {
         setUserRole(null);
         setUserName(null);
@@ -123,35 +144,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setOrgData(null);
         setFacilities([]);
         setUserFacilityId(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
-    return () => unsub();
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const login = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
   };
 
   const signup = async (name: string, email: string, password: string, company?: string, role?: string) => {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    const assignedRole = role || "buyer";
-    await setDoc(doc(db, "users", cred.user.uid), {
-      name,
+    const { error } = await supabase.auth.signUp({
       email,
-      company: company || "",
-      role: assignedRole,
-      active: assignedRole === "admin",
-      createdAt: serverTimestamp(),
+      password,
+      options: {
+        data: {
+          name,
+          role: role || "buyer",
+          company: company || "",
+        },
+      },
     });
+    if (error) throw error;
+    // A database trigger auto-creates the users table row
   };
 
   const logout = async () => {
-    await signOut(auth);
+    await supabase.auth.signOut();
   };
 
   const resetPassword = async (email: string) => {
-    await sendPasswordResetEmail(auth, email);
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) throw error;
   };
 
   return (

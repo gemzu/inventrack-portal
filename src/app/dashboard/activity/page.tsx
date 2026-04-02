@@ -2,8 +2,7 @@
 import AdminGuard from "@/components/AdminGuard";
 
 import { useEffect, useState } from "react";
-import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { Activity, Search, ChevronDown } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
@@ -19,6 +18,18 @@ interface ScanLog {
   createdAt: unknown;
 }
 
+function mapLog(row: Record<string, unknown>): ScanLog {
+  return {
+    id: row.id as string,
+    barcode: (row.barcode as string) || "",
+    result: row.result as string | undefined,
+    action: (row.action as string) || "",
+    note: row.note as string | undefined,
+    scannedBy: (row.scanned_by as string) || "",
+    createdAt: row.created_at,
+  };
+}
+
 export default function ActivityPage() {
   const { orgId } = useAuth();
   const [logs, setLogs] = useState<ScanLog[]>([]);
@@ -30,12 +41,15 @@ export default function ActivityPage() {
   useEffect(() => {
     if (!orgId) { setLoading(false); return; }
     const load = async () => {
-      const snap = await getDocs(
-        query(collection(db, "scan_logs"), where("orgId", "==", orgId), orderBy("createdAt", "desc"), limit(200))
-      );
-      const data = snap.docs.map((d) => ({ id: d.id, ...d.data() } as ScanLog));
-      setLogs(data);
-      setFiltered(data);
+      const { data } = await supabase
+        .from("scan_logs")
+        .select("*")
+        .eq("org_id", orgId)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      const mapped = (data || []).map(mapLog);
+      setLogs(mapped);
+      setFiltered(mapped);
       setLoading(false);
     };
     load();
@@ -106,7 +120,7 @@ export default function ActivityPage() {
                   <td className="px-4 py-3 hidden md:table-cell text-xs" style={{ color: "var(--muted)" }}>{log.result || "-"}</td>
                   <td className="px-4 py-3 text-xs">{log.scannedBy}</td>
                   <td className="px-4 py-3 hidden sm:table-cell text-xs" style={{ color: "var(--muted)" }}>
-                    {formatDateTime(log.createdAt as { seconds: number })}
+                    {formatDateTime(log.createdAt as string)}
                   </td>
                 </tr>
               ))}

@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/Toast";
 import { Skeleton } from "@/components/Skeleton";
@@ -23,6 +22,20 @@ interface ApprovalDoc {
   [key: string]: unknown;
 }
 
+function mapApproval(row: Record<string, unknown>): ApprovalDoc {
+  return {
+    id: row.id as string,
+    modelId: row.model_id as string | undefined,
+    partNumber: row.part_number as string | undefined,
+    brand: row.brand as string | undefined,
+    quantity: row.quantity as number | undefined,
+    type: row.type as string | undefined,
+    barcode: row.barcode as string | undefined,
+    submittedBy: row.submitted_by as string | undefined,
+    orgId: row.org_id as string | undefined,
+  };
+}
+
 export default function ApprovalsPage() {
   return (
     <AdminGuard>
@@ -40,36 +53,64 @@ function ApprovalsContent() {
 
   useEffect(() => {
     if (!orgId) return;
-    const q = query(
-      collection(db, "approvals"),
-      where("orgId", "==", orgId),
-      where("status", "==", "pending")
-    );
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        setApprovals(snap.docs.map((d) => ({ id: d.id, ...d.data() } as ApprovalDoc)));
-        setLoading(false);
-      },
-      (err) => {
-        console.error("Approvals listener error:", err);
-        setLoading(false);
+
+    // Initial fetch
+    const fetchApprovals = async () => {
+      const { data, error } = await supabase
+        .from("approvals")
+        .select("*")
+        .eq("org_id", orgId)
+        .eq("status", "pending");
+      if (!error) {
+        setApprovals((data || []).map(mapApproval));
       }
-    );
-    return unsub;
+      setLoading(false);
+    };
+    fetchApprovals();
+
+    // Realtime subscription
+    const channel = supabase
+      .channel("approvals-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "approvals",
+          filter: `org_id=eq.${orgId}`,
+        },
+        () => {
+          // Re-fetch on any change
+          fetchApprovals();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [orgId]);
 
   const handleApprove = async (item: ApprovalDoc) => {
     setActionId(item.id);
     try {
-      const { id, status, submittedBy, ...productFields } = item as Record<string, unknown>;
-      await setDoc(doc(collection(db, "inventory")), {
-        ...productFields,
+      // Insert into inventory
+      const { error: insertErr } = await supabase.from("inventory").insert({
+        model_id: item.modelId,
+        part_number: item.partNumber,
+        brand: item.brand,
+        quantity: item.quantity,
+        type: item.type,
+        barcode: item.barcode,
         status: "available",
-        orgId,
-        createdAt: new Date(),
+        org_id: orgId,
       });
-      await deleteDoc(doc(db, "approvals", item.id));
+      if (insertErr) throw insertErr;
+
+      // Delete from approvals
+      const { error: delErr } = await supabase.from("approvals").delete().eq("id", item.id);
+      if (delErr) throw delErr;
+
       toast("Item approved and added to inventory", "success");
     } catch (err) {
       console.error("Approve error:", err);
@@ -82,7 +123,8 @@ function ApprovalsContent() {
   const handleReject = async (item: ApprovalDoc) => {
     setActionId(item.id);
     try {
-      await updateDoc(doc(db, "approvals", item.id), { status: "rejected" });
+      const { error } = await supabase.from("approvals").update({ status: "rejected" }).eq("id", item.id);
+      if (error) throw error;
       toast("Item rejected", "info");
     } catch (err) {
       console.error("Reject error:", err);

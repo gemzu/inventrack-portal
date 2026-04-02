@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import {
   Package, ShoppingCart, Users as UsersIcon, AlertTriangle, TrendingUp, Activity,
@@ -40,18 +39,18 @@ export default function DashboardPage() {
     if (!orgId) { setLoading(false); return; }
     const load = async () => {
       try {
-        const invSnap = await getDocs(query(collection(db, "inventory"), where("orgId", "==", orgId)));
-        const items = invSnap.docs;
-        const available = items.filter((d) => d.data().status === "available").length;
-        const reserved = items.filter((d) => d.data().status === "reserved").length;
-        const sold = items.filter((d) => d.data().status === "sold").length;
-        const lowStock = items.filter((d) => (d.data().quantity || 0) <= 2 && d.data().status === "available").length;
+        const { data: invData } = await supabase.from("inventory").select("*").eq("org_id", orgId);
+        const items = invData || [];
+        const available = items.filter((d) => d.status === "available").length;
+        const reserved = items.filter((d) => d.status === "reserved").length;
+        const sold = items.filter((d) => d.status === "sold").length;
+        const lowStock = items.filter((d) => (d.quantity || 0) <= 2 && d.status === "available").length;
 
-        const ordSnap = await getDocs(query(collection(db, "orders"), where("orgId", "==", orgId)));
-        const usrSnap = await getDocs(query(collection(db, "users"), where("orgId", "==", orgId)));
+        const { count: ordCount } = await supabase.from("orders").select("*", { count: "exact", head: true }).eq("org_id", orgId);
+        const { data: usrData } = await supabase.from("users").select("*").eq("org_id", orgId);
+        const usrDocs = usrData || [];
 
         // Team breakdown
-        const usrDocs = usrSnap.docs.map((d) => d.data());
         const admins = usrDocs.filter((u) => u.role === "admin").length;
         const workers = usrDocs.filter((u) => u.role === "worker").length;
         const buyers = usrDocs.filter((u) => u.role === "buyer").length;
@@ -61,8 +60,8 @@ export default function DashboardPage() {
         setStats({
           items: items.length,
           lowStock,
-          orders: ordSnap.size,
-          users: usrSnap.size,
+          orders: ordCount || 0,
+          users: usrDocs.length,
         });
 
         setStatusData([
@@ -73,20 +72,21 @@ export default function DashboardPage() {
 
         // Recent orders
         try {
-          const recentOrdSnap = await getDocs(
-            query(collection(db, "orders"), where("orgId", "==", orgId), orderBy("createdAt", "desc"), limit(5))
-          );
+          const { data: recentOrdData } = await supabase
+            .from("orders")
+            .select("*")
+            .eq("org_id", orgId)
+            .order("created_at", { ascending: false })
+            .limit(5);
+
           setRecentOrders(
-            recentOrdSnap.docs.map((d) => {
-              const data = d.data();
-              return {
-                id: d.id,
-                buyerName: data.buyerName || data.buyerEmail || "Unknown",
-                itemCount: Array.isArray(data.items) ? data.items.length : (data.itemCount || 0),
-                status: data.status || "pending",
-                createdAt: data.createdAt,
-              };
-            })
+            (recentOrdData || []).map((d) => ({
+              id: d.id,
+              buyerName: d.buyer_name || d.buyer_email || "Unknown",
+              itemCount: Array.isArray(d.items) ? d.items.length : (d.item_count || 0),
+              status: d.status || "pending",
+              createdAt: d.created_at,
+            }))
           );
         } catch (ordErr) {
           console.error("Recent orders load error:", ordErr);
@@ -97,7 +97,7 @@ export default function DashboardPage() {
           try {
             const facCounts: Record<string, number> = {};
             for (const fac of facilities) {
-              const count = items.filter((d) => d.data().facilityId === fac.id).length;
+              const count = items.filter((d) => d.facility_id === fac.id).length;
               facCounts[fac.id] = count;
             }
             setFacilityItems(facCounts);
@@ -106,10 +106,22 @@ export default function DashboardPage() {
           }
         }
 
-        const logSnap = await getDocs(
-          query(collection(db, "scan_logs"), where("orgId", "==", orgId), orderBy("createdAt", "desc"), limit(10))
+        const { data: logData } = await supabase
+          .from("scan_logs")
+          .select("*")
+          .eq("org_id", orgId)
+          .order("created_at", { ascending: false })
+          .limit(10);
+
+        setRecentLogs(
+          (logData || []).map((d) => ({
+            id: d.id,
+            barcode: d.barcode,
+            action: d.action,
+            scannedBy: d.scanned_by,
+            createdAt: d.created_at,
+          }))
         );
-        setRecentLogs(logSnap.docs.map((d) => ({ id: d.id, ...d.data() } as typeof recentLogs[0])));
       } catch (err) {
         console.error("Dashboard load error:", err);
       } finally {
@@ -393,7 +405,7 @@ export default function DashboardPage() {
                     {order.status}
                   </span>
                   <span className="text-xs" style={{ color: "var(--muted)" }}>
-                    {formatDateTime(order.createdAt as { seconds: number })}
+                    {formatDateTime(order.createdAt as string)}
                   </span>
                 </div>
               </div>
@@ -420,7 +432,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="text-right">
                   <div className="text-xs" style={{ color: "var(--muted)" }}>{log.scannedBy}</div>
-                  <div className="text-xs" style={{ color: "var(--muted)" }}>{formatDateTime(log.createdAt as { seconds: number })}</div>
+                  <div className="text-xs" style={{ color: "var(--muted)" }}>{formatDateTime(log.createdAt as string)}</div>
                 </div>
               </div>
             ))}

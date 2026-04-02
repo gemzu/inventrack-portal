@@ -2,8 +2,7 @@
 import AdminGuard from "@/components/AdminGuard";
 
 import { useEffect, useState } from "react";
-import { collection, query, where, getDocs, addDoc, deleteDoc, doc, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { Ban, Plus, Trash2, Search, X } from "lucide-react";
 import { formatDate } from "@/lib/utils";
@@ -19,6 +18,17 @@ interface BlacklistItem {
   createdAt: unknown;
 }
 
+function mapBlacklistItem(row: Record<string, unknown>): BlacklistItem {
+  return {
+    id: row.id as string,
+    barcode: (row.barcode as string) || "",
+    label: row.label as string | undefined,
+    quantity: row.quantity as number | undefined,
+    reason: row.reason as string | undefined,
+    createdAt: row.created_at,
+  };
+}
+
 export default function BlacklistPage() {
   const { orgId } = useAuth();
   const [items, setItems] = useState<BlacklistItem[]>([]);
@@ -31,10 +41,10 @@ export default function BlacklistPage() {
 
   const load = async () => {
     if (!orgId) return;
-    const snap = await getDocs(query(collection(db, "blacklist"), where("orgId", "==", orgId)));
-    const data = snap.docs.map((d) => ({ id: d.id, ...d.data() } as BlacklistItem));
-    setItems(data);
-    setFiltered(data);
+    const { data } = await supabase.from("blacklist").select("*").eq("org_id", orgId);
+    const mapped = (data || []).map(mapBlacklistItem);
+    setItems(mapped);
+    setFiltered(mapped);
     setLoading(false);
   };
 
@@ -49,10 +59,11 @@ export default function BlacklistPage() {
   const handleAdd = async () => {
     if (!orgId || !form.barcode) return;
     try {
-      await addDoc(collection(db, "blacklist"), {
+      const { error } = await supabase.from("blacklist").insert({
         barcode: form.barcode, label: form.label, reason: form.reason,
-        orgId, createdAt: serverTimestamp(),
+        org_id: orgId,
       });
+      if (error) throw error;
       setShowForm(false);
       setForm({ barcode: "", label: "", reason: "" });
       await load();
@@ -64,7 +75,8 @@ export default function BlacklistPage() {
 
   const handleDelete = async (item: BlacklistItem) => {
     try {
-      await deleteDoc(doc(db, "blacklist", item.id));
+      const { error } = await supabase.from("blacklist").delete().eq("id", item.id);
+      if (error) throw error;
       await load();
       toast("Barcode removed from blacklist", "success");
     } catch {
@@ -114,7 +126,7 @@ export default function BlacklistPage() {
                   <td className="px-4 py-3 font-mono text-xs font-medium">{item.barcode}</td>
                   <td className="px-4 py-3 hidden sm:table-cell">{item.label || "-"}</td>
                   <td className="px-4 py-3 hidden md:table-cell text-xs" style={{ color: "var(--muted)" }}>{item.reason || "-"}</td>
-                  <td className="px-4 py-3 hidden sm:table-cell text-xs" style={{ color: "var(--muted)" }}>{formatDate(item.createdAt as { seconds: number })}</td>
+                  <td className="px-4 py-3 hidden sm:table-cell text-xs" style={{ color: "var(--muted)" }}>{formatDate(item.createdAt as string)}</td>
                   <td className="px-4 py-3">
                     <button onClick={() => handleDelete(item)} className="p-1.5 rounded-lg hover:bg-danger/10 text-danger transition">
                       <Trash2 className="w-4 h-4" />

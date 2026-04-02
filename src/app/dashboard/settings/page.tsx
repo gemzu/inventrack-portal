@@ -2,8 +2,7 @@
 import AdminGuard from "@/components/AdminGuard";
 
 import { useState, useEffect } from "react";
-import { doc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { Settings, Save } from "lucide-react";
 import { useToast } from "@/components/Toast";
@@ -28,9 +27,10 @@ export default function SettingsPage() {
     if (!orgId) return;
     setSaving(true);
     try {
-      await updateDoc(doc(db, "organizations", orgId), {
-        name, sheetId, lowStockThreshold: threshold,
-      });
+      const { error } = await supabase.from("organizations").update({
+        name, sheet_id: sheetId, low_stock_threshold: threshold,
+      }).eq("id", orgId);
+      if (error) throw error;
       toast("Settings saved successfully", "success");
     } catch {
       toast("Failed to save settings", "error");

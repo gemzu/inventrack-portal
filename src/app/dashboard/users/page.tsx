@@ -2,8 +2,7 @@
 import AdminGuard from "@/components/AdminGuard";
 
 import { useEffect, useState } from "react";
-import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { Users as UsersIcon, Search, ChevronDown, Shield, UserCheck, UserX } from "lucide-react";
 import { formatDate } from "@/lib/utils";
@@ -22,6 +21,20 @@ interface UserDoc {
   createdAt: unknown;
 }
 
+function mapUser(row: Record<string, unknown>): UserDoc {
+  return {
+    id: row.id as string,
+    name: (row.name as string) || "",
+    email: (row.email as string) || "",
+    company: row.company as string | undefined,
+    role: (row.role as string) || "buyer",
+    active: (row.active as boolean) ?? false,
+    permissions: row.permissions as string | undefined,
+    facilityId: row.facility_id as string | undefined,
+    createdAt: row.created_at,
+  };
+}
+
 export default function UsersPage() {
   const { orgId, facilities } = useAuth();
   const [users, setUsers] = useState<UserDoc[]>([]);
@@ -34,10 +47,10 @@ export default function UsersPage() {
   useEffect(() => {
     if (!orgId) { setLoading(false); return; }
     const load = async () => {
-      const snap = await getDocs(query(collection(db, "users"), where("orgId", "==", orgId)));
-      const data = snap.docs.map((d) => ({ id: d.id, ...d.data() } as UserDoc));
-      setUsers(data);
-      setFiltered(data);
+      const { data } = await supabase.from("users").select("*").eq("org_id", orgId);
+      const mapped = (data || []).map(mapUser);
+      setUsers(mapped);
+      setFiltered(mapped);
       setLoading(false);
     };
     load();
@@ -56,7 +69,8 @@ export default function UsersPage() {
   const toggleActive = async (user: UserDoc) => {
     try {
       const newActive = !user.active;
-      await updateDoc(doc(db, "users", user.id), { active: newActive });
+      const { error } = await supabase.from("users").update({ active: newActive }).eq("id", user.id);
+      if (error) throw error;
       setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, active: newActive } : u)));
       toast(`User ${newActive ? "activated" : "deactivated"}`, "success");
     } catch {
@@ -66,7 +80,8 @@ export default function UsersPage() {
 
   const changeRole = async (user: UserDoc, newRole: string) => {
     try {
-      await updateDoc(doc(db, "users", user.id), { role: newRole });
+      const { error } = await supabase.from("users").update({ role: newRole }).eq("id", user.id);
+      if (error) throw error;
       setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, role: newRole } : u)));
       toast(`Role updated to ${newRole}`, "success");
     } catch {
@@ -77,7 +92,8 @@ export default function UsersPage() {
   const assignFacility = async (user: UserDoc, facilityId: string) => {
     try {
       const val = facilityId === "" ? null : facilityId;
-      await updateDoc(doc(db, "users", user.id), { facilityId: val });
+      const { error } = await supabase.from("users").update({ facility_id: val }).eq("id", user.id);
+      if (error) throw error;
       setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, facilityId: val || undefined } : u)));
       toast("Facility assignment updated", "success");
     } catch {
@@ -189,7 +205,7 @@ export default function UsersPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 hidden sm:table-cell text-xs" style={{ color: "var(--muted)" }}>
-                    {formatDate(user.createdAt as { seconds: number })}
+                    {formatDate(user.createdAt as string)}
                   </td>
                   <td className="px-4 py-3">
                     <button

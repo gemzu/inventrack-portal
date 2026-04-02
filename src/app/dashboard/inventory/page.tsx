@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, query, where, getDocs, doc, updateDoc, addDoc, writeBatch, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { Search, Filter, Download, Package, ChevronDown, Upload, Loader2, X, FileSpreadsheet, Save } from "lucide-react";
 import { statusColor, formatDate } from "@/lib/utils";
@@ -28,6 +27,22 @@ const STATUS_DOT: Record<string, string> = {
   reserved: "bg-amber-500",
   sold: "bg-blue-500",
 };
+
+function mapItem(row: Record<string, unknown>): Item {
+  return {
+    id: row.id as string,
+    modelId: row.model_id as string,
+    barcode: row.barcode as string,
+    displayName: row.display_name as string | undefined,
+    brand: row.brand as string | undefined,
+    description: row.description as string | undefined,
+    quantity: row.quantity as number,
+    status: row.status as string,
+    facilityId: row.facility_id as string | undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
 
 export default function InventoryPage() {
   const { orgId, facilities } = useAuth();
@@ -77,45 +92,41 @@ export default function InventoryPage() {
     const existingMap = new Map<string, string>();
     items.forEach((i) => { if (i.barcode) existingMap.set(i.barcode, i.id); if (i.modelId) existingMap.set(i.modelId, i.id); });
 
-    const BATCH_SIZE = 500;
-    for (let i = 0; i < importData.length; i += BATCH_SIZE) {
-      const chunk = importData.slice(i, i + BATCH_SIZE);
-      const batch = writeBatch(db);
-      for (const item of chunk) {
-        const existingId = existingMap.get(item.modelId);
-        if (existingId) {
-          batch.update(doc(db, "inventory", existingId), { quantity: item.quantity });
-          result.updated++;
-        } else {
-          const newRef = doc(collection(db, "inventory"));
-          batch.set(newRef, {
-            modelId: item.modelId, barcode: item.modelId, quantity: item.quantity,
-            status: "available", reservedBy: null, reservedAt: null, reservationExpiry: null,
-            orgId, createdAt: serverTimestamp(),
-          });
+    for (const item of importData) {
+      const existingId = existingMap.get(item.modelId);
+      if (existingId) {
+        const { error } = await supabase.from("inventory").update({ quantity: item.quantity }).eq("id", existingId);
+        if (error) { result.errors++; } else { result.updated++; }
+      } else {
+        const { data: newRow, error } = await supabase.from("inventory").insert({
+          model_id: item.modelId, barcode: item.modelId, quantity: item.quantity,
+          status: "available", reserved_by: null, reserved_at: null, reservation_expiry: null,
+          org_id: orgId,
+        }).select("id").single();
+        if (error) { result.errors++; } else {
           result.added++;
-          existingMap.set(item.modelId, newRef.id);
+          if (newRow) existingMap.set(item.modelId, newRow.id);
         }
       }
-      try { await batch.commit(); } catch { result.errors++; }
     }
+
     setImportResult(result);
     setImporting(false);
     toast(`Import complete: ${result.added} added, ${result.updated} updated`, "success");
     // Reload inventory
-    const snap = await getDocs(query(collection(db, "inventory"), where("orgId", "==", orgId)));
-    const data = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Item));
-    setItems(data);
-    setFiltered(data);
+    const { data } = await supabase.from("inventory").select("*").eq("org_id", orgId);
+    const mapped = (data || []).map(mapItem);
+    setItems(mapped);
+    setFiltered(mapped);
   };
 
   useEffect(() => {
     if (!orgId) { setLoading(false); return; }
     const load = async () => {
-      const snap = await getDocs(query(collection(db, "inventory"), where("orgId", "==", orgId)));
-      const data = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Item));
-      setItems(data);
-      setFiltered(data);
+      const { data } = await supabase.from("inventory").select("*").eq("org_id", orgId);
+      const mapped = (data || []).map(mapItem);
+      setItems(mapped);
+      setFiltered(mapped);
       setLoading(false);
     };
     load();
@@ -154,7 +165,8 @@ export default function InventoryPage() {
 
   const updateStatus = async (item: Item, newStatus: string) => {
     try {
-      await updateDoc(doc(db, "inventory", item.id), { status: newStatus });
+      const { error } = await supabase.from("inventory").update({ status: newStatus }).eq("id", item.id);
+      if (error) throw error;
       setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: newStatus } : i)));
       setEditItem((prev) => prev ? { ...prev, status: newStatus } : null);
       toast(`Status updated to ${newStatus}`, "success");
@@ -166,7 +178,8 @@ export default function InventoryPage() {
   const saveQuantity = async () => {
     if (!editItem) return;
     try {
-      await updateDoc(doc(db, "inventory", editItem.id), { quantity: editQty });
+      const { error } = await supabase.from("inventory").update({ quantity: editQty }).eq("id", editItem.id);
+      if (error) throw error;
       setItems((prev) => prev.map((i) => (i.id === editItem.id ? { ...i, quantity: editQty } : i)));
       setEditItem((prev) => prev ? { ...prev, quantity: editQty } : null);
       toast("Quantity updated", "success");

@@ -2,8 +2,7 @@
 import AdminGuard from "@/components/AdminGuard";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, serverTimestamp, query, where } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { Building2, Plus, Pencil, Trash2, MapPin, Users, X } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
@@ -28,15 +27,21 @@ export default function FacilitiesPage() {
 
   const loadFacilities = async () => {
     if (!orgId) return;
-    const facSnap = await getDocs(collection(db, "organizations", orgId, "facilities"));
-    const usrSnap = await getDocs(query(collection(db, "users"), where("orgId", "==", orgId)));
+    const { data: facData } = await supabase.from("facilities").select("*").eq("org_id", orgId);
+    const { data: usrData } = await supabase.from("users").select("facility_id").eq("org_id", orgId);
     const userCounts: Record<string, number> = {};
-    usrSnap.docs.forEach((d) => {
-      const fid = d.data().facilityId;
+    (usrData || []).forEach((d) => {
+      const fid = d.facility_id;
       if (fid) userCounts[fid] = (userCounts[fid] || 0) + 1;
     });
     setFacilities(
-      facSnap.docs.map((d) => ({ id: d.id, ...d.data(), userCount: userCounts[d.id] || 0 } as Facility))
+      (facData || []).map((d: Record<string, unknown>) => ({
+        id: d.id as string,
+        name: d.name as string,
+        state: (d.state as string) || "",
+        address: (d.address as string) || "",
+        userCount: userCounts[d.id as string] || 0,
+      }))
     );
     setLoading(false);
   };
@@ -47,14 +52,16 @@ export default function FacilitiesPage() {
     if (!orgId || !form.name) return;
     try {
       if (editing) {
-        await updateDoc(doc(db, "organizations", orgId, "facilities", editing.id), {
-          name: form.name, state: form.state, address: form.address, updatedAt: serverTimestamp(),
-        });
+        const { error } = await supabase.from("facilities").update({
+          name: form.name, state: form.state, address: form.address,
+        }).eq("id", editing.id);
+        if (error) throw error;
         toast("Facility updated", "success");
       } else {
-        await addDoc(collection(db, "organizations", orgId, "facilities"), {
-          name: form.name, state: form.state, address: form.address, createdAt: serverTimestamp(),
+        const { error } = await supabase.from("facilities").insert({
+          name: form.name, state: form.state, address: form.address, org_id: orgId,
         });
+        if (error) throw error;
         toast("Facility added", "success");
       }
       setShowForm(false);
@@ -69,7 +76,8 @@ export default function FacilitiesPage() {
   const handleDelete = async (fac: Facility) => {
     if (!orgId) return;
     try {
-      await deleteDoc(doc(db, "organizations", orgId, "facilities", fac.id));
+      const { error } = await supabase.from("facilities").delete().eq("id", fac.id);
+      if (error) throw error;
       await loadFacilities();
       toast("Facility deleted", "success");
     } catch {

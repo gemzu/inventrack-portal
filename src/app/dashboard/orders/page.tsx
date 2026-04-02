@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, query, where, getDocs, doc, updateDoc, writeBatch } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { ShoppingCart, ChevronDown, Search, Eye, Check, X } from "lucide-react";
 import { statusColor, formatDateTime } from "@/lib/utils";
@@ -29,6 +28,22 @@ interface Order {
   updatedAt: unknown;
 }
 
+function mapOrder(row: Record<string, unknown>): Order {
+  const items = Array.isArray(row.items) ? (row.items as OrderItem[]) : [];
+  return {
+    id: row.id as string,
+    buyerName: (row.buyer_name as string) || "",
+    buyerEmail: (row.buyer_email as string) || "",
+    buyerCompany: row.buyer_company as string | undefined,
+    items,
+    totalQty: (row.total_qty as number) || items.length,
+    status: (row.status as string) || "pending",
+    orderedBy: (row.ordered_by as string) || "",
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 const ORDER_STATUSES = ["pending", "pending_approval", "confirmed", "processing", "shipped", "delivered", "completed", "cancelled"];
 
 export default function OrdersPage() {
@@ -44,15 +59,14 @@ export default function OrdersPage() {
   useEffect(() => {
     if (!orgId) { setLoading(false); return; }
     const load = async () => {
-      const snap = await getDocs(query(collection(db, "orders"), where("orgId", "==", orgId)));
-      const data = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Order));
-      data.sort((a, b) => {
-        const at = (a.createdAt as { seconds: number })?.seconds || 0;
-        const bt = (b.createdAt as { seconds: number })?.seconds || 0;
-        return bt - at;
-      });
-      setOrders(data);
-      setFiltered(data);
+      const { data } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("org_id", orgId)
+        .order("created_at", { ascending: false });
+      const mapped = (data || []).map(mapOrder);
+      setOrders(mapped);
+      setFiltered(mapped);
       setLoading(false);
     };
     load();
@@ -72,7 +86,8 @@ export default function OrdersPage() {
 
   const updateOrderStatus = async (order: Order, newStatus: string) => {
     try {
-      await updateDoc(doc(db, "orders", order.id), { status: newStatus });
+      const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", order.id);
+      if (error) throw error;
       setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: newStatus } : o)));
       if (selectedOrder?.id === order.id) setSelectedOrder({ ...order, status: newStatus });
       toast(`Order ${newStatus === "confirmed" ? "approved" : newStatus === "cancelled" ? "rejected" : "updated to " + newStatus}`, "success");
@@ -151,7 +166,7 @@ export default function OrdersPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 hidden sm:table-cell text-xs" style={{ color: "var(--muted)" }}>
-                    {formatDateTime(order.createdAt as { seconds: number })}
+                    {formatDateTime(order.createdAt as string)}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
