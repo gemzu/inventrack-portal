@@ -22,13 +22,14 @@ const navItems = [
   { href: "/dashboard/facilities", label: "Facilities", icon: Building2 },
   { href: "/dashboard/blacklist", label: "Blacklist", icon: Ban },
   { href: "/dashboard/activity", label: "Activity", icon: Activity },
+  { href: "/dashboard/team", label: "Team", icon: Users },
   { href: "/dashboard/approvals", label: "Approvals", icon: ClipboardCheck },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
   { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
 ];
 
 // Filter sidebar items by role
-const adminOnlyPages = ["/dashboard/users", "/dashboard/facilities", "/dashboard/blacklist", "/dashboard/activity", "/dashboard/settings", "/dashboard/approvals"];
+const adminOnlyPages = ["/dashboard/users", "/dashboard/facilities", "/dashboard/blacklist", "/dashboard/activity", "/dashboard/settings", "/dashboard/approvals", "/dashboard/team"];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, userName, userRole, userActive, userPermissions, orgId, orgData, loading, logout } = useAuth();
