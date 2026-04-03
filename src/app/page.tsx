@@ -299,6 +299,8 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-6 text-sm" style={{ color: "var(--muted)" }}>
             <Link href="/pricing" className="hover:text-primary transition">Pricing</Link>
+            <Link href="/terms" className="hover:text-primary transition">Terms</Link>
+            <Link href="/privacy" className="hover:text-primary transition">Privacy</Link>
             <Link href="/login" className="hover:text-primary transition">Login</Link>
             <Link href="/signup" className="hover:text-primary transition">Sign Up</Link>
           </div>

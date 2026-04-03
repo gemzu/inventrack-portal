@@ -18,6 +18,8 @@ interface Item {
   quantity: number;
   status: string;
   facilityId?: string;
+  costPrice?: number;
+  sellingPrice?: number;
   createdAt: unknown;
   updatedAt: unknown;
 }
@@ -39,6 +41,8 @@ function mapItem(row: Record<string, unknown>): Item {
     quantity: row.quantity as number,
     status: row.status as string,
     facilityId: row.facility_id as string | undefined,
+    costPrice: row.cost_price as number | undefined,
+    sellingPrice: row.selling_price as number | undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -149,11 +153,13 @@ export default function InventoryPage() {
     setFiltered(result);
   }, [search, statusFilter, facilityFilter, items]);
 
+  const totalInventoryValue = filtered.reduce((sum, i) => sum + (i.quantity * (i.sellingPrice || 0)), 0);
+
   const exportCsv = () => {
-    const header = "Model ID,Barcode,Name,Brand,Status,Quantity,Facility\n";
+    const header = "Model ID,Barcode,Name,Brand,Status,Quantity,Cost,Price,Facility\n";
     const rows = filtered.map((i) => {
       const fac = facilities.find((f) => f.id === i.facilityId)?.name || "";
-      return `"${i.modelId}","${i.barcode}","${i.displayName || ""}","${i.brand || ""}","${i.status}",${i.quantity},"${fac}"`;
+      return `"${i.modelId}","${i.barcode}","${i.displayName || ""}","${i.brand || ""}","${i.status}",${i.quantity},${i.costPrice || ""},${i.sellingPrice || ""},"${fac}"`;
     }).join("\n");
     const blob = new Blob([header + rows], { type: "text/csv" });
     const url = URL.createObjectURL(blob);

@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, Users, Building2,
   Ban, Activity, Settings, CreditCard, LogOut, Menu, X,
   Sun, Moon, Boxes, ChevronRight, Bell, Loader2, ClipboardCheck,
-  TrendingUp, FileBarChart,
+  TrendingUp, FileBarChart, MessageCircle, FileText,
 } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -24,6 +24,8 @@ const navItems = [
   { href: "/dashboard/activity", label: "Activity", icon: Activity },
   { href: "/dashboard/team", label: "Team", icon: Users },
   { href: "/dashboard/approvals", label: "Approvals", icon: ClipboardCheck },
+  { href: "/dashboard/chat", label: "Messages", icon: MessageCircle },
+  { href: "/dashboard/invoices", label: "Invoices", icon: FileText },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
   { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
 ];
