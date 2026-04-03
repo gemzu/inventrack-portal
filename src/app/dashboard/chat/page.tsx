@@ -12,6 +12,8 @@ interface Message {
   receiver_id: string;
   org_id: string;
   text: string;
+  image_url?: string;
+  read: boolean;
   created_at: string;
   sender_name?: string;
   receiver_name?: string;
