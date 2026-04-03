@@ -67,7 +67,6 @@ export default function LandingPage() {
 
             <div className="hidden md:flex items-center gap-8">
               <Link href="#features" className="text-sm hover:text-primary transition">Features</Link>
-              <Link href="/pricing" className="text-sm hover:text-primary transition">Pricing</Link>
               <button onClick={toggleTheme} className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition">
                 {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
@@ -90,7 +89,6 @@ export default function LandingPage() {
           <div className="md:hidden border-t" style={{ borderColor: "var(--border)" }}>
             <div className="px-4 py-4 space-y-3">
               <Link href="#features" className="block text-sm" onClick={() => setMobileMenu(false)}>Features</Link>
-              <Link href="/pricing" className="block text-sm">Pricing</Link>
               <Link href="/login" className="block text-sm">Log in</Link>
               <Link href="/signup" className="block px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium text-center">
                 Get Started
@@ -133,14 +131,7 @@ export default function LandingPage() {
               href="/signup"
               className="px-8 py-3.5 rounded-2xl bg-primary text-white font-semibold hover:bg-primary-dark transition shadow-xl shadow-primary/25 flex items-center gap-2 text-lg"
             >
-              Start Free <ArrowRight className="w-5 h-5" />
-            </Link>
-            <Link
-              href="/pricing"
-              className="px-8 py-3.5 rounded-2xl font-semibold border transition flex items-center gap-2 text-lg hover:border-primary"
-              style={{ borderColor: "var(--border)" }}
-            >
-              View Pricing
+              Get Started <ArrowRight className="w-5 h-5" />
             </Link>
           </div>
 
@@ -298,7 +289,6 @@ export default function LandingPage() {
             <span className="font-bold">INVENTRACK</span>
           </div>
           <div className="flex items-center gap-6 text-sm" style={{ color: "var(--muted)" }}>
-            <Link href="/pricing" className="hover:text-primary transition">Pricing</Link>
             <Link href="/terms" className="hover:text-primary transition">Terms</Link>
             <Link href="/privacy" className="hover:text-primary transition">Privacy</Link>
             <Link href="/login" className="hover:text-primary transition">Login</Link>

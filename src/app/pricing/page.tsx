@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, Boxes, Sun, Moon, ArrowLeft, Zap, ArrowRight } from "lucide-react";
+import { CheckCircle2, Boxes, Sun, Moon, ArrowLeft, ArrowRight } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 
 const features = [
@@ -53,29 +53,29 @@ export default function PricingPage() {
               <ArrowLeft className="w-4 h-4" /> Back to home
             </Link>
             <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight">
-              One plan. Full access.
+              INVENTRACK is free for everyone.
             </h1>
             <p className="mt-4 text-lg" style={{ color: "var(--muted)" }}>
-              No hidden fees. No app store markups. Pay directly and save 30%.
+              Full access to every feature. No payment required. No limits.
             </p>
           </div>
 
           {/* Single plan card */}
-          <div className="glass-card p-8 sm:p-10 relative ring-2 ring-primary">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-primary text-white text-xs font-semibold flex items-center gap-1">
-              <Zap className="w-3 h-3" /> Full Access
+          <div className="glass-card p-8 sm:p-10 relative ring-2 ring-success">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-success text-white text-xs font-semibold flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3" /> Free Forever
             </div>
 
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold mb-2">INVENTRACK Subscription</h2>
+              <h2 className="text-2xl font-bold mb-2">INVENTRACK Full Access</h2>
               <p className="text-sm" style={{ color: "var(--muted)" }}>
                 Everything you need to manage your warehouse operations.
               </p>
               <div className="mt-6">
                 <span className="text-5xl font-extrabold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  Coming Soon
+                  $0
                 </span>
-                <p className="text-sm mt-2" style={{ color: "var(--muted)" }}>Pricing will be announced shortly</p>
+                <p className="text-sm mt-2" style={{ color: "var(--muted)" }}>Free forever — no credit card needed</p>
               </div>
             </div>
 
@@ -94,25 +94,6 @@ export default function PricingPage() {
             >
               Get Started <ArrowRight className="w-5 h-5" />
             </Link>
-          </div>
-
-          {/* Why pay on web */}
-          <div className="mt-12 glass-card p-8 text-center">
-            <h3 className="text-lg font-bold mb-3">Why pay on our website?</h3>
-            <div className="grid sm:grid-cols-3 gap-6 text-sm" style={{ color: "var(--muted)" }}>
-              <div>
-                <div className="text-2xl font-bold text-danger mb-1">30%</div>
-                <p>App stores charge up to 30% on every payment</p>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-success mb-1">0%</div>
-                <p>We pass those savings directly to you</p>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-primary mb-1">Instant</div>
-                <p>Subscribe on web, access unlocks immediately in the app</p>
-              </div>
-            </div>
           </div>
 
           <div className="text-center mt-8">

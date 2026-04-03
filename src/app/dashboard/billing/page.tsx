@@ -1,7 +1,7 @@
 "use client";
 
-import { useAuth } from "@/context/AuthContext";
-import { CheckCircle2, Zap, Shield, ArrowRight } from "lucide-react";
+import { CheckCircle2, Boxes } from "lucide-react";
+import Link from "next/link";
 
 const features = [
   "Unlimited users",
@@ -16,67 +16,44 @@ const features = [
 ];
 
 export default function BillingPage() {
-  const { orgData, userName } = useAuth();
-  const isSubscribed = orgData?.subscribed === true;
-
   return (
     <div className="animate-page-enter max-w-lg mx-auto py-8">
-      {/* Status */}
       <div className="text-center mb-8">
-        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 ${isSubscribed ? "bg-success/10" : "gradient-bg"}`}>
-          {isSubscribed ? <Shield className="w-8 h-8 text-success" /> : <Zap className="w-8 h-8 text-white" />}
+        <div className="w-16 h-16 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-4">
+          <CheckCircle2 className="w-8 h-8 text-success" />
         </div>
-        <h1 className="text-2xl font-bold mb-1">
-          {isSubscribed ? "You're Subscribed" : "Subscribe to INVENTRACK"}
-        </h1>
+        <h1 className="text-2xl font-bold mb-1">INVENTRACK is Free</h1>
         <p className="text-sm" style={{ color: "var(--muted)" }}>
-          {isSubscribed
-            ? "You have full access to all features."
-            : "Unlock full access to your warehouse management platform."}
+          You have full access to all features at no cost.
         </p>
       </div>
 
-      {/* Plan Card */}
-      <div className={`glass-card p-6 mb-6 hover-lift ${isSubscribed ? "ring-2 ring-success" : "ring-2 ring-primary"}`}>
+      <div className="glass-card p-6 mb-6 ring-2 ring-success">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-lg">INVENTRACK Full Access</h3>
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-            isSubscribed
-              ? "bg-success/10 text-success border border-success/20"
-              : "bg-primary/10 text-primary border border-primary/20"
-          }`}>
-            {isSubscribed ? "Active" : "Subscribe"}
+          <h3 className="font-bold text-lg">Full Access</h3>
+          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-success/10 text-success border border-success/20">
+            Free
           </span>
         </div>
 
         <div className="space-y-2.5 mb-6">
           {features.map((f) => (
             <div key={f} className="flex items-center gap-2.5 text-sm">
-              <CheckCircle2 className={`w-4 h-4 shrink-0 ${isSubscribed ? "text-success" : "text-primary"}`} />
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-success" />
               {f}
             </div>
           ))}
         </div>
 
-        {!isSubscribed && (
-          <button
-            className="w-full py-3.5 rounded-xl bg-primary text-white font-semibold hover:bg-primary-dark transition shadow-lg shadow-primary/25 flex items-center justify-center gap-2 text-lg press-scale"
-          >
-            Subscribe Now <ArrowRight className="w-5 h-5" />
-          </button>
-        )}
-
-        {isSubscribed && (
-          <div className="text-center py-3 rounded-xl bg-success/10 text-success text-sm font-medium">
-            Your subscription is active
-          </div>
-        )}
+        <div className="text-center py-3 rounded-xl bg-success/10 text-success text-sm font-medium">
+          All features included — no payment required
+        </div>
       </div>
 
-      {/* Info */}
-      <div className="text-center text-xs space-y-2" style={{ color: "var(--muted)" }}>
-        <p>Pay directly on our website — no app store fees.</p>
-        <p>Subscription activates instantly across web and mobile.</p>
+      <div className="text-center">
+        <Link href="/dashboard" className="text-sm text-primary font-medium hover:underline">
+          Back to Dashboard
+        </Link>
       </div>
     </div>
   );

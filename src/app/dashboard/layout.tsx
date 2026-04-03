@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Building2,
-  Ban, Activity, Settings, CreditCard, LogOut, Menu, X,
+  Ban, Activity, Settings, LogOut, Menu, X,
   Sun, Moon, Boxes, ChevronRight, Bell, Loader2, ClipboardCheck,
   TrendingUp, FileBarChart, MessageCircle, FileText,
 } from "lucide-react";
@@ -27,7 +27,6 @@ const navItems = [
   { href: "/dashboard/chat", label: "Messages", icon: MessageCircle },
   { href: "/dashboard/invoices", label: "Invoices", icon: FileText },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
-  { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
 ];
 
 // Filter sidebar items by role

@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import {
   Package, ShoppingCart, Users as UsersIcon, AlertTriangle, TrendingUp, Activity,
-  Upload, UserPlus, ArrowRight, Crown, CheckCircle, MapPin, Clock,
+  Upload, UserPlus, ArrowRight, MapPin, Clock,
 } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
 import { SkeletonCard, SkeletonChart } from "@/components/Skeleton";
@@ -196,23 +196,13 @@ export default function DashboardPage() {
           <p className="text-sm mb-6" style={{ color: "var(--muted)" }}>
             You&apos;re not part of an organization yet. Download the mobile app and join or create an organization to get started.
           </p>
-          <div className="space-y-3">
-            <a
-              href="/dashboard/billing"
-              className="block py-3 rounded-xl bg-primary text-white font-semibold hover:bg-primary-dark transition shadow-lg shadow-primary/25"
-            >
-              View Subscription
-            </a>
-            <p className="text-xs" style={{ color: "var(--muted)" }}>
-              Use the INVENTRACK mobile app to create or join an organization
-            </p>
-          </div>
+          <p className="text-xs" style={{ color: "var(--muted)" }}>
+            Use the INVENTRACK mobile app to create or join an organization
+          </p>
         </div>
       </div>
     );
   }
-
-  const isSubscribed = orgData?.subscribed === true;
 
   return (
     <div className="animate-page-enter space-y-6">
@@ -267,43 +257,6 @@ export default function DashboardPage() {
           >
             <span className="text-xs" style={{ color: "var(--muted)" }}>&#10005;</span>
           </button>
-        </div>
-      )}
-
-      {/* Subscription Status Card */}
-      {!isSubscribed ? (
-        <div
-          className="glass-card p-5 relative overflow-hidden"
-          style={{
-            background: "linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(139,92,246,0.08) 100%)",
-            borderColor: "rgba(99,102,241,0.2)",
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #2563eb, #7c3aed)" }}>
-                <Crown className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="font-bold text-sm">Upgrade your plan</h3>
-                <p className="text-xs" style={{ color: "var(--muted)" }}>
-                  Unlock unlimited users, facilities, and advanced analytics
-                </p>
-              </div>
-            </div>
-            <Link
-              href="/dashboard/billing"
-              className="px-5 py-2.5 rounded-xl text-white text-sm font-semibold transition-all hover:scale-105 active:scale-95 shrink-0"
-              style={{ background: "linear-gradient(135deg, #2563eb, #7c3aed)" }}
-            >
-              Subscribe
-            </Link>
-          </div>
-        </div>
-      ) : (
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 w-fit">
-          <CheckCircle className="w-3.5 h-3.5 text-green-500" />
-          <span className="text-xs font-semibold text-green-500">Active Subscription</span>
         </div>
       )}
 
