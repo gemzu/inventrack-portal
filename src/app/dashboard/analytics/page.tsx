@@ -7,6 +7,7 @@ import {
   TrendingUp, Users as UsersIcon, Package, ShoppingCart,
   Building2, Activity, Loader2,
 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -124,15 +125,15 @@ export default function PlatformAnalyticsPage() {
   if (userPermissions !== "superadmin" && !loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
-        <div className="glass-card p-10 max-w-md text-center">
+        <Card><CardContent className="p-10 max-w-md text-center">
           <div className="w-16 h-16 rounded-2xl bg-danger/10 flex items-center justify-center mx-auto mb-5">
             <TrendingUp className="w-8 h-8 text-danger" />
           </div>
           <h2 className="text-xl font-bold mb-2">Access Denied</h2>
-          <p className="text-sm" style={{ color: "var(--muted)" }}>
+          <p className="text-sm text-muted-foreground">
             Platform Analytics is only available to superadmins.
           </p>
-        </div>
+        </CardContent></Card>
       </div>
     );
   }
@@ -141,8 +142,8 @@ export default function PlatformAnalyticsPage() {
     return (
       <div className="space-y-6">
         <div>
-          <div className="h-8 w-56 rounded-lg animate-pulse" style={{ background: "var(--border)" }} />
-          <div className="h-4 w-80 rounded-lg animate-pulse mt-2" style={{ background: "var(--border)" }} />
+          <div className="h-8 w-56 rounded-lg animate-pulse bg-border" />
+          <div className="h-4 w-80 rounded-lg animate-pulse mt-2 bg-border" />
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -165,7 +166,7 @@ export default function PlatformAnalyticsPage() {
     <div className="animate-page-enter space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Platform Analytics</h1>
-        <p className="text-sm" style={{ color: "var(--muted)" }}>
+        <p className="text-sm text-muted-foreground">
           Cross-organization metrics and growth insights
         </p>
       </div>
@@ -173,21 +174,21 @@ export default function PlatformAnalyticsPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi) => (
-          <div key={kpi.label} className="glass-card p-5 hover-lift">
+          <Card key={kpi.label}><CardContent className="p-5">
             <div className="flex items-center justify-between mb-3">
               <div className={`w-10 h-10 rounded-xl ${kpi.bg} flex items-center justify-center`}>
                 <kpi.icon className={`w-5 h-5 ${kpi.color}`} />
               </div>
-              <TrendingUp className="w-4 h-4" style={{ color: "var(--muted)" }} />
+              <TrendingUp className="w-4 h-4 text-muted-foreground" />
             </div>
             <div className="text-2xl font-bold">{kpi.value}</div>
-            <div className="text-xs" style={{ color: "var(--muted)" }}>{kpi.label}</div>
-          </div>
+            <div className="text-xs text-muted-foreground">{kpi.label}</div>
+          </CardContent></Card>
         ))}
       </div>
 
       {/* Growth Chart */}
-      <div className="glass-card p-6">
+      <Card><CardContent className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="w-4 h-4 text-primary" />
           <h3 className="font-semibold">User Growth (Last 30 Days)</h3>
@@ -208,14 +209,14 @@ export default function PlatformAnalyticsPage() {
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <div className="h-[300px] flex items-center justify-center text-sm" style={{ color: "var(--muted)" }}>
+          <div className="h-[300px] flex items-center justify-center text-sm text-muted-foreground">
             No signup data in the last 30 days
           </div>
         )}
-      </div>
+      </CardContent></Card>
 
       {/* Top Organizations */}
-      <div className="glass-card p-6">
+      <Card><CardContent className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <Building2 className="w-4 h-4 text-primary" />
           <h3 className="font-semibold">Top Organizations by Inventory</h3>
@@ -224,24 +225,24 @@ export default function PlatformAnalyticsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b" style={{ borderColor: "var(--border)" }}>
-                  <th className="text-left py-2 font-semibold" style={{ color: "var(--muted)" }}>#</th>
-                  <th className="text-left py-2 font-semibold" style={{ color: "var(--muted)" }}>Organization</th>
-                  <th className="text-right py-2 font-semibold" style={{ color: "var(--muted)" }}>Items</th>
-                  <th className="text-right py-2 font-semibold" style={{ color: "var(--muted)" }}>Created</th>
+                <tr className="border-b">
+                  <th className="text-left py-2 font-semibold text-muted-foreground">#</th>
+                  <th className="text-left py-2 font-semibold text-muted-foreground">Organization</th>
+                  <th className="text-right py-2 font-semibold text-muted-foreground">Items</th>
+                  <th className="text-right py-2 font-semibold text-muted-foreground">Created</th>
                 </tr>
               </thead>
               <tbody>
                 {topOrgs.map((org, i) => (
-                  <tr key={org.id} className="border-b last:border-0" style={{ borderColor: "var(--border)" }}>
-                    <td className="py-2.5 font-medium" style={{ color: "var(--muted)" }}>{i + 1}</td>
+                  <tr key={org.id} className="border-b last:border-0">
+                    <td className="py-2.5 font-medium text-muted-foreground">{i + 1}</td>
                     <td className="py-2.5 font-semibold">{org.name}</td>
                     <td className="py-2.5 text-right">
                       <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary">
                         {org.itemCount}
                       </span>
                     </td>
-                    <td className="py-2.5 text-right text-xs" style={{ color: "var(--muted)" }}>
+                    <td className="py-2.5 text-right text-xs text-muted-foreground">
                       {new Date(org.createdAt).toLocaleDateString()}
                     </td>
                   </tr>
@@ -250,12 +251,12 @@ export default function PlatformAnalyticsPage() {
             </table>
           </div>
         ) : (
-          <p className="text-sm" style={{ color: "var(--muted)" }}>No organizations found</p>
+          <p className="text-sm text-muted-foreground">No organizations found</p>
         )}
-      </div>
+      </CardContent></Card>
 
       {/* Active Users */}
-      <div className="glass-card p-6">
+      <Card><CardContent className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <Activity className="w-4 h-4 text-primary" />
           <h3 className="font-semibold">Active Users (Last 7 Days)</h3>
@@ -266,7 +267,6 @@ export default function PlatformAnalyticsPage() {
               <div
                 key={u.email}
                 className="flex items-center justify-between py-2 border-b last:border-0"
-                style={{ borderColor: "var(--border)" }}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-success/10 flex items-center justify-center">
@@ -274,12 +274,12 @@ export default function PlatformAnalyticsPage() {
                   </div>
                   <div>
                     <div className="text-sm font-medium">{u.name}</div>
-                    <div className="text-xs" style={{ color: "var(--muted)" }}>{u.email}</div>
+                    <div className="text-xs text-muted-foreground">{u.email}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                  <span className="text-xs" style={{ color: "var(--muted)" }}>
+                  <span className="text-xs text-muted-foreground">
                     {new Date(u.lastScan).toLocaleDateString()}
                   </span>
                 </div>
@@ -287,9 +287,9 @@ export default function PlatformAnalyticsPage() {
             ))}
           </div>
         ) : (
-          <p className="text-sm" style={{ color: "var(--muted)" }}>No active users in the last 7 days</p>
+          <p className="text-sm text-muted-foreground">No active users in the last 7 days</p>
         )}
-      </div>
+      </CardContent></Card>
     </div>
   );
 }

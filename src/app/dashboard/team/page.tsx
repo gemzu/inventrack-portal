@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { Users, Clock, TrendingUp, Monitor, RefreshCw, Loader2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface ActiveUser {
   id: string;
@@ -134,15 +135,14 @@ export default function TeamPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Team Activity</h1>
-            <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>
+            <p className="text-sm mt-1 text-muted-foreground">
               Live team status & shift tracking
             </p>
           </div>
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition hover:bg-black/5 dark:hover:bg-white/5"
-            style={{ border: "1px solid var(--border)" }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition hover:bg-black/5 dark:hover:bg-white/5 border border-border"
           >
             {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             Refresh
@@ -156,23 +156,23 @@ export default function TeamPage() {
             { label: "Total Hours Today", value: formatDuration(totalMinutes), icon: Clock, color: "text-primary", bg: "bg-primary/10" },
             { label: "Avg Shift", value: formatDuration(avgDuration), icon: TrendingUp, color: "text-amber-500", bg: "bg-amber-500/10" },
           ].map((stat) => (
-            <div key={stat.label} className="glass-card p-5 rounded-2xl">
+            <Card key={stat.label}><CardContent className="p-5">
               <div className="flex items-center gap-3 mb-3">
                 <div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center`}>
                   <stat.icon className={`w-5 h-5 ${stat.color}`} />
                 </div>
-                <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted)" }}>
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   {stat.label}
                 </span>
               </div>
               <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-            </div>
+            </CardContent></Card>
           ))}
         </div>
 
         {/* Currently Active */}
-        <div className="glass-card rounded-2xl overflow-hidden">
-          <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border)" }}>
+        <Card className="rounded-2xl overflow-hidden"><CardContent className="p-0">
+          <div className="px-5 py-4 flex items-center gap-2 border-b border-border">
             <Users className="w-4 h-4 text-green-500" />
             <h2 className="font-semibold">Currently Active</h2>
             <span className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full bg-green-500/10 text-green-500">
@@ -184,7 +184,7 @@ export default function TeamPage() {
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : activeUsers.length > 0 ? (
-            <div className="divide-y" style={{ borderColor: "var(--border)" }}>
+            <div className="divide-y">
               {activeUsers.map((u) => (
                 <div key={u.id} className="px-5 py-3.5 flex items-center gap-3">
                   <div className="relative">
@@ -199,12 +199,12 @@ export default function TeamPage() {
                     </div>
                     <div className="flex items-center gap-3 mt-0.5">
                       {u.currentScreen && (
-                        <span className="text-xs flex items-center gap-1" style={{ color: "var(--muted)" }}>
+                        <span className="text-xs flex items-center gap-1 text-muted-foreground">
                           <Monitor className="w-3 h-3" />
                           {u.currentScreen}
                         </span>
                       )}
-                      <span className="text-xs" style={{ color: "var(--muted)" }}>
+                      <span className="text-xs text-muted-foreground">
                         {relativeTime(u.lastActiveAt)}
                       </span>
                     </div>
@@ -219,15 +219,15 @@ export default function TeamPage() {
             </div>
           ) : (
             <div className="flex flex-col items-center py-10">
-              <Users className="w-8 h-8 mb-2" style={{ color: "var(--muted)" }} />
-              <p className="text-sm" style={{ color: "var(--muted)" }}>No active users right now</p>
+              <Users className="w-8 h-8 mb-2 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">No active users right now</p>
             </div>
           )}
-        </div>
+        </CardContent></Card>
 
         {/* Today's Shifts */}
-        <div className="glass-card rounded-2xl overflow-hidden">
-          <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border)" }}>
+        <Card className="rounded-2xl overflow-hidden"><CardContent className="p-0">
+          <div className="px-5 py-4 flex items-center gap-2 border-b border-border">
             <Clock className="w-4 h-4 text-primary" />
             <h2 className="font-semibold">Today&apos;s Shifts</h2>
             <span className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
@@ -242,26 +242,26 @@ export default function TeamPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                    <th className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style={{ color: "var(--muted)" }}>User</th>
-                    <th className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style={{ color: "var(--muted)" }}>Clock In</th>
-                    <th className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style={{ color: "var(--muted)" }}>Clock Out</th>
-                    <th className="text-right px-5 py-3 font-semibold text-xs uppercase tracking-wider" style={{ color: "var(--muted)" }}>Duration</th>
+                  <tr className="border-b border-border">
+                    <th className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">User</th>
+                    <th className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Clock In</th>
+                    <th className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Clock Out</th>
+                    <th className="text-right px-5 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Duration</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y" style={{ borderColor: "var(--border)" }}>
+                <tbody className="divide-y">
                   {todayShifts.map((shift) => (
                     <tr key={shift.id}>
                       <td className="px-5 py-3">
                         <div className="font-medium">{shift.userName || "Unknown"}</div>
                         {shift.userEmail && (
-                          <div className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>{shift.userEmail}</div>
+                          <div className="text-xs mt-0.5 text-muted-foreground">{shift.userEmail}</div>
                         )}
                       </td>
-                      <td className="px-5 py-3" style={{ color: "var(--muted)" }}>{formatTime(shift.clockIn)}</td>
+                      <td className="px-5 py-3 text-muted-foreground">{formatTime(shift.clockIn)}</td>
                       <td className="px-5 py-3">
                         {shift.clockOut ? (
-                          <span style={{ color: "var(--muted)" }}>{formatTime(shift.clockOut)}</span>
+                          <span className="text-muted-foreground">{formatTime(shift.clockOut)}</span>
                         ) : (
                           <span className="text-green-500 font-medium">Still active</span>
                         )}
@@ -280,11 +280,11 @@ export default function TeamPage() {
             </div>
           ) : (
             <div className="flex flex-col items-center py-10">
-              <Clock className="w-8 h-8 mb-2" style={{ color: "var(--muted)" }} />
-              <p className="text-sm" style={{ color: "var(--muted)" }}>No shifts recorded today</p>
+              <Clock className="w-8 h-8 mb-2 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">No shifts recorded today</p>
             </div>
           )}
-        </div>
+        </CardContent></Card>
       </div>
     </AdminGuard>
   );

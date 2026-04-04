@@ -2,6 +2,8 @@
 
 import React from "react";
 import { AlertTriangle } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   children: React.ReactNode;
@@ -33,21 +35,20 @@ export default class ErrorBoundary extends React.Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="flex items-center justify-center h-[60vh]">
-          <div className="glass-card p-10 max-w-md text-center">
-            <div className="w-14 h-14 rounded-2xl bg-warning/10 flex items-center justify-center mx-auto mb-4">
-              <AlertTriangle className="w-7 h-7 text-warning" />
-            </div>
-            <h2 className="text-xl font-bold mb-2">Something went wrong</h2>
-            <p className="text-sm mb-6" style={{ color: "var(--muted)" }}>
-              An unexpected error occurred. Please try again.
-            </p>
-            <button
-              onClick={this.handleReset}
-              className="px-6 py-2.5 rounded-xl bg-primary text-white font-medium hover:bg-primary-dark transition"
-            >
-              Try Again
-            </button>
-          </div>
+          <Card className="max-w-md">
+            <CardContent className="p-10 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="w-7 h-7 text-amber-500" />
+              </div>
+              <h2 className="text-xl font-bold text-foreground mb-2">Something went wrong</h2>
+              <p className="text-sm text-muted-foreground mb-6">
+                An unexpected error occurred. Please try again.
+              </p>
+              <Button onClick={this.handleReset}>
+                Try Again
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       );
     }

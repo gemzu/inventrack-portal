@@ -5,6 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Boxes, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -58,91 +61,82 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 relative" style={{ background: "var(--background)" }}>
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full bg-primary/8 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-[400px] h-[400px] rounded-full bg-accent/8 blur-3xl" />
-      </div>
-
-      <div className="w-full max-w-md relative">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-background">
+      <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-10 h-10 rounded-xl gradient-bg flex items-center justify-center">
-              <Boxes className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-xl bg-zinc-900 dark:bg-zinc-800 flex items-center justify-center">
+              <Boxes className="w-5 h-5 text-zinc-100" />
             </div>
-            <span className="text-2xl font-bold tracking-tight" style={{ color: "var(--foreground)" }}>INVENTRACK</span>
+            <span className="text-2xl font-bold tracking-tight text-foreground">INVENTRACK</span>
           </Link>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>Welcome back</h1>
-          <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>Sign in to your account</p>
         </div>
 
-        <div className="glass-card p-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {error && (
-              <div className="p-3 rounded-xl bg-danger/10 border border-danger/20 text-danger text-sm">
-                {error}
-              </div>
-            )}
-            {resetSent && (
-              <div className="p-3 rounded-xl bg-success/10 border border-success/20 text-success text-sm">
-                Password reset email sent! Check your inbox.
-              </div>
-            )}
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Welcome back</CardTitle>
+            <CardDescription>Sign in to your account</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {error && (
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                  {error}
+                </div>
+              )}
+              {resetSent && (
+                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 text-sm">
+                  Password reset email sent! Check your inbox.
+                </div>
+              )}
 
-            <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--foreground)" }}>Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
-                style={{ background: "var(--input-bg)", borderColor: "var(--border)", color: "var(--foreground)" }}
-                placeholder="you@company.com"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--foreground)" }}>Password</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-foreground">Email</label>
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition pr-10"
-                  style={{ background: "var(--input-bg)", borderColor: "var(--border)", color: "var(--foreground)" }}
-                  placeholder="Enter your password"
+                  placeholder="you@company.com"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2"
-                  style={{ color: "var(--muted)" }}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-foreground">Password</label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    placeholder="Enter your password"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end">
+                <button type="button" onClick={handleReset} className="text-sm text-primary hover:underline">
+                  Forgot password?
                 </button>
               </div>
-            </div>
 
-            <div className="flex items-center justify-end">
-              <button type="button" onClick={handleReset} className="text-sm text-primary hover:underline">
-                Forgot password?
-              </button>
-            </div>
+              <Button type="submit" disabled={loading} className="w-full">
+                {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                {loading ? "Signing in..." : "Sign In"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-xl bg-primary text-white font-semibold hover:bg-primary-dark transition shadow-lg shadow-primary/25 flex items-center justify-center gap-2 disabled:opacity-60"
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-              {loading ? "Signing in..." : "Sign In"}
-            </button>
-          </form>
-        </div>
-
-        <p className="text-center mt-6 text-sm" style={{ color: "var(--muted)" }}>
+        <p className="text-center mt-6 text-sm text-muted-foreground">
           Don&apos;t have an account?{" "}
           <Link href="/signup" className="text-primary font-medium hover:underline">Sign up</Link>
         </p>

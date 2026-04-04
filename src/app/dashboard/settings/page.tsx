@@ -6,26 +6,18 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { Settings, Save, Building2, Phone, MapPin, Package, Clock, ShoppingCart, Bell, AlertTriangle, Upload } from "lucide-react";
 import { useToast } from "@/components/Toast";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
       type="button"
       onClick={() => onChange(!value)}
-      className="relative inline-flex items-center shrink-0 rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary/30"
-      style={{
-        width: 40,
-        height: 24,
-        backgroundColor: value ? "var(--primary)" : "var(--border)",
-      }}
+      className={`relative inline-flex items-center shrink-0 rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary/30 w-10 h-6 ${value ? "bg-primary" : "bg-border"}`}
     >
       <span
-        className="inline-block rounded-full bg-white shadow transition-transform duration-200 ease-in-out"
-        style={{
-          width: 18,
-          height: 18,
-          transform: value ? "translateX(19px)" : "translateX(3px)",
-        }}
+        className={`inline-block rounded-full bg-white shadow transition-transform duration-200 ease-in-out w-[18px] h-[18px] ${value ? "translate-x-[19px]" : "translate-x-[3px]"}`}
       />
     </button>
   );
@@ -46,12 +38,12 @@ function ToggleRow({
 }) {
   return (
     <div className="flex items-center gap-4 py-3">
-      <div className="shrink-0" style={{ color: "var(--muted)" }}>
+      <div className="shrink-0 text-muted-foreground">
         <Icon className="w-4 h-4" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium">{label}</p>
-        <p className="text-xs" style={{ color: "var(--muted)" }}>{description}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
       </div>
       <Toggle value={value} onChange={onChange} />
     </div>
@@ -119,20 +111,19 @@ export default function SettingsPage() {
     }
   };
 
-  const inputClass = "w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition";
-  const inputStyle = { background: "var(--input-bg)", borderColor: "var(--border)", color: "var(--foreground)" };
+  const inputClass = "w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground";
 
   return (<AdminGuard>
     <div className="animate-page-enter space-y-6 max-w-2xl">
-      <div className="animate-slide-up">
+      <div>
         <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-sm" style={{ color: "var(--muted)" }}>Manage your organization settings</p>
+        <p className="text-sm text-muted-foreground">Manage your organization settings</p>
       </div>
 
       {/* Section 1: Organization Info */}
-      <div className="glass-card p-6 space-y-5 animate-slide-up-delay-1">
+      <Card><CardContent className="p-6 space-y-5">
         <div className="flex items-center gap-2 mb-1">
-          <Building2 className="w-4 h-4" style={{ color: "var(--primary)" }} />
+          <Building2 className="w-4 h-4" />
           <h2 className="text-sm font-semibold">Organization Info</h2>
         </div>
 
@@ -142,7 +133,6 @@ export default function SettingsPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             className={inputClass}
-            style={inputStyle}
             placeholder="My Organization"
           />
         </div>
@@ -153,7 +143,6 @@ export default function SettingsPage() {
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             className={inputClass}
-            style={inputStyle}
             placeholder="123 Main St, City, State"
           />
         </div>
@@ -164,16 +153,15 @@ export default function SettingsPage() {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             className={inputClass}
-            style={inputStyle}
             placeholder="+1 (555) 123-4567"
           />
         </div>
-      </div>
+      </CardContent></Card>
 
       {/* Section 2: Inventory Settings */}
-      <div className="glass-card p-6 space-y-5 animate-slide-up-delay-2">
+      <Card><CardContent className="p-6 space-y-5">
         <div className="flex items-center gap-2 mb-1">
-          <Package className="w-4 h-4" style={{ color: "var(--primary)" }} />
+          <Package className="w-4 h-4" />
           <h2 className="text-sm font-semibold">Inventory Settings</h2>
         </div>
 
@@ -185,9 +173,8 @@ export default function SettingsPage() {
             onChange={(e) => setThreshold(parseInt(e.target.value) || 0)}
             min={0}
             className={inputClass}
-            style={inputStyle}
           />
-          <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>
+          <p className="text-xs mt-1 text-muted-foreground">
             Items at or below this quantity will trigger low stock alerts.
           </p>
         </div>
@@ -198,30 +185,29 @@ export default function SettingsPage() {
             value={reservationHours}
             onChange={(e) => setReservationHours(parseInt(e.target.value))}
             className={inputClass}
-            style={inputStyle}
           >
             <option value={12}>12 hours</option>
             <option value={24}>24 hours</option>
             <option value={48}>48 hours</option>
             <option value={72}>72 hours</option>
           </select>
-          <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>
+          <p className="text-xs mt-1 text-muted-foreground">
             How long reserved items are held before being released.
           </p>
         </div>
-      </div>
+      </CardContent></Card>
 
       {/* Section 3: Order Settings */}
-      <div className="glass-card p-6 animate-slide-up-delay-3">
+      <Card><CardContent className="p-6">
         <div className="flex items-center gap-2 mb-4">
-          <ShoppingCart className="w-4 h-4" style={{ color: "var(--primary)" }} />
+          <ShoppingCart className="w-4 h-4" />
           <h2 className="text-sm font-semibold">Order Settings</h2>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium">Order Approval Required</p>
-            <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
+            <p className="text-xs mt-0.5 text-muted-foreground">
               {orderApproval
                 ? "Buyer orders require admin approval before processing"
                 : "Buyer orders are confirmed instantly"}
@@ -229,12 +215,12 @@ export default function SettingsPage() {
           </div>
           <Toggle value={orderApproval} onChange={setOrderApproval} />
         </div>
-      </div>
+      </CardContent></Card>
 
       {/* Section 4: Notifications */}
-      <div className="glass-card p-6 animate-slide-up-delay-3">
+      <Card><CardContent className="p-6">
         <div className="flex items-center gap-2 mb-2">
-          <Bell className="w-4 h-4" style={{ color: "var(--primary)" }} />
+          <Bell className="w-4 h-4" />
           <h2 className="text-sm font-semibold">Notifications</h2>
         </div>
 
@@ -246,7 +232,7 @@ export default function SettingsPage() {
           onChange={setNotifyLowStock}
         />
 
-        <div className="border-t" style={{ borderColor: "var(--border)" }} />
+        <div className="border-t" />
 
         <ToggleRow
           icon={ShoppingCart}
@@ -256,7 +242,7 @@ export default function SettingsPage() {
           onChange={setNotifyNewOrders}
         />
 
-        <div className="border-t" style={{ borderColor: "var(--border)" }} />
+        <div className="border-t" />
 
         <ToggleRow
           icon={Upload}
@@ -265,13 +251,13 @@ export default function SettingsPage() {
           value={notifySubmissions}
           onChange={setNotifySubmissions}
         />
-      </div>
+      </CardContent></Card>
 
       {/* Save button */}
       <button
         onClick={handleSave}
         disabled={saving}
-        className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-white font-medium hover:bg-primary-dark transition shadow-lg shadow-primary/25 disabled:opacity-60 press-scale"
+        className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-white font-medium hover:bg-primary-dark transition shadow-lg shadow-primary/25 disabled:opacity-60"
       >
         <Save className="w-4 h-4" />
         {saving ? "Saving..." : "Save Changes"}

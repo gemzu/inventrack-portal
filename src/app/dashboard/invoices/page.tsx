@@ -7,6 +7,7 @@ import AdminGuard from "@/components/AdminGuard";
 import {
   Plus, X, Download, FileText, Loader2, ChevronDown,
 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface InvoiceItem {
   name: string;
@@ -194,8 +195,7 @@ export default function InvoicesPage() {
             {invoices.length > 0 && (
               <button
                 onClick={downloadCsv}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition hover:bg-black/5 dark:hover:bg-white/5"
-                style={{ border: "1px solid var(--border)" }}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition hover:bg-black/5 dark:hover:bg-white/5 border border-border"
               >
                 <Download className="w-4 h-4" />
                 Export CSV
@@ -216,25 +216,24 @@ export default function InvoicesPage() {
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : invoices.length === 0 ? (
-          <div className="glass-card flex flex-col items-center justify-center py-20">
-            <FileText className="w-12 h-12 mb-3" style={{ color: "var(--muted)" }} />
+          <Card><CardContent className="flex flex-col items-center justify-center py-20">
+            <FileText className="w-12 h-12 mb-3 text-muted-foreground" />
             <p className="font-semibold mb-1">No invoices yet</p>
-            <p className="text-sm" style={{ color: "var(--muted)" }}>
+            <p className="text-sm text-muted-foreground">
               Create your first invoice to get started
             </p>
-          </div>
+          </CardContent></Card>
         ) : (
-          <div className="glass-card overflow-hidden">
+          <Card className="overflow-hidden"><CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                  <tr className="border-b border-border">
                     {["Invoice #", "Buyer", "Total", "Status", "Date", ""].map(
                       (h) => (
                         <th
                           key={h}
-                          className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider"
-                          style={{ color: "var(--muted)" }}
+                          className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground"
                         >
                           {h}
                         </th>
@@ -246,8 +245,7 @@ export default function InvoicesPage() {
                   {invoices.map((inv) => (
                     <tr
                       key={inv.id}
-                      className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition"
-                      style={{ borderBottom: "1px solid var(--border)" }}
+                      className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition border-b border-border"
                     >
                       <td className="px-5 py-4 font-medium">{inv.invoice_number}</td>
                       <td className="px-5 py-4">{inv.buyer_name}</td>
@@ -268,7 +266,7 @@ export default function InvoicesPage() {
                           )}
                         </button>
                       </td>
-                      <td className="px-5 py-4" style={{ color: "var(--muted)" }}>
+                      <td className="px-5 py-4 text-muted-foreground">
                         {new Date(inv.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-5 py-4"></td>
@@ -277,18 +275,14 @@ export default function InvoicesPage() {
                 </tbody>
               </table>
             </div>
-          </div>
+      </CardContent></Card>
         )}
 
         {/* Create Invoice Modal */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
             <div
-              className="rounded-2xl p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto"
-              style={{
-                background: "var(--background)",
-                border: "1px solid var(--border)",
-              }}
+              className="rounded-2xl p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto bg-background border border-border"
             >
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-lg font-bold">Create Invoice</h2>
@@ -307,12 +301,7 @@ export default function InvoicesPage() {
               <select
                 value={selectedOrderId}
                 onChange={(e) => handleSelectOrder(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl text-sm mb-4 outline-none"
-                style={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  color: "var(--foreground)",
-                }}
+                className="w-full px-3 py-2.5 rounded-xl text-sm mb-4 outline-none bg-muted border border-border text-foreground"
               >
                 <option value="">Select an order...</option>
                 {orders.map((o) => (
@@ -332,18 +321,13 @@ export default function InvoicesPage() {
                 value={buyerName}
                 onChange={(e) => setBuyerName(e.target.value)}
                 placeholder="Enter buyer name"
-                className="w-full px-3 py-2.5 rounded-xl text-sm mb-4 outline-none"
-                style={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  color: "var(--foreground)",
-                }}
+                className="w-full px-3 py-2.5 rounded-xl text-sm mb-4 outline-none bg-muted border border-border text-foreground"
               />
 
               {/* Items */}
               <label className="block text-sm font-medium mb-1.5">Items</label>
               {invoiceItems.length === 0 && (
-                <p className="text-xs mb-2" style={{ color: "var(--muted)" }}>
+                <p className="text-xs mb-2 text-muted-foreground">
                   Select an order to auto-fill items, or add manually.
                 </p>
               )}
@@ -358,12 +342,7 @@ export default function InvoicesPage() {
                       setInvoiceItems(updated);
                     }}
                     placeholder="Item name"
-                    className="flex-1 px-3 py-2 rounded-lg text-sm outline-none"
-                    style={{
-                      background: "var(--surface)",
-                      border: "1px solid var(--border)",
-                      color: "var(--foreground)",
-                    }}
+                    className="flex-1 px-3 py-2 rounded-lg text-sm outline-none bg-muted border border-border text-foreground"
                   />
                   <input
                     type="number"
@@ -374,12 +353,7 @@ export default function InvoicesPage() {
                       setInvoiceItems(updated);
                     }}
                     placeholder="Qty"
-                    className="w-16 px-3 py-2 rounded-lg text-sm outline-none text-center"
-                    style={{
-                      background: "var(--surface)",
-                      border: "1px solid var(--border)",
-                      color: "var(--foreground)",
-                    }}
+                    className="w-16 px-3 py-2 rounded-lg text-sm outline-none text-center bg-muted border border-border text-foreground"
                   />
                   <input
                     type="number"
@@ -390,12 +364,7 @@ export default function InvoicesPage() {
                       setInvoiceItems(updated);
                     }}
                     placeholder="Price"
-                    className="w-24 px-3 py-2 rounded-lg text-sm outline-none"
-                    style={{
-                      background: "var(--surface)",
-                      border: "1px solid var(--border)",
-                      color: "var(--foreground)",
-                    }}
+                    className="w-24 px-3 py-2 rounded-lg text-sm outline-none bg-muted border border-border text-foreground"
                   />
                   <button
                     onClick={() =>
@@ -403,7 +372,7 @@ export default function InvoicesPage() {
                     }
                     className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
                   >
-                    <X className="w-4 h-4" style={{ color: "var(--muted)" }} />
+                    <X className="w-4 h-4 text-muted-foreground" />
                   </button>
                 </div>
               ))}
@@ -436,8 +405,7 @@ export default function InvoicesPage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 transition"
-                  style={{ border: "1px solid var(--border)" }}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 transition border border-border"
                 >
                   Cancel
                 </button>

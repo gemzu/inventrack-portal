@@ -7,6 +7,9 @@ import { ShoppingCart, ChevronDown, Search, Eye, Check, X } from "lucide-react";
 import { statusColor, formatDateTime } from "@/lib/utils";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface OrderItem {
   modelId: string;
@@ -107,56 +110,54 @@ export default function OrdersPage() {
   return (
     <div className="animate-page-enter space-y-6">
       <div>
-        <h1 className="text-2xl font-bold animate-slide-up">Orders</h1>
-        <p className="text-sm animate-slide-up-delay-1" style={{ color: "var(--muted)" }}>{filtered.length} orders</p>
+        <h1 className="text-2xl font-bold">Orders</h1>
+        <p className="text-sm text-muted-foreground">{filtered.length} orders</p>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 animate-fade-in">
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--muted)" }} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by buyer name, email..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
-            style={{ background: "var(--input-bg)", borderColor: "var(--border)", color: "var(--foreground)" }}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
           />
         </div>
         <div className="relative">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border text-sm outline-none cursor-pointer"
-            style={{ background: "var(--input-bg)", borderColor: "var(--border)", color: "var(--foreground)" }}
+            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border text-sm outline-none cursor-pointer bg-input border-border text-foreground"
           >
             <option value="all">All Status</option>
             {ORDER_STATUSES.map((s) => (
               <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
             ))}
           </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: "var(--muted)" }} />
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />
         </div>
       </div>
 
-      <div className="glass-card overflow-hidden">
+      <Card className="overflow-hidden"><CardContent className="p-0">
         <div className="overflow-x-auto">
-          <table className="data-table w-full text-sm">
+          <table className="w-full text-sm">
             <thead>
-              <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider" style={{ color: "var(--muted)" }}>Buyer</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden md:table-cell" style={{ color: "var(--muted)" }}>Company</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider" style={{ color: "var(--muted)" }}>Items</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider" style={{ color: "var(--muted)" }}>Status</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden sm:table-cell" style={{ color: "var(--muted)" }}>Date</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider" style={{ color: "var(--muted)" }}>Actions</th>
+              <tr className="border-b border-border">
+                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Buyer</th>
+                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden md:table-cell text-muted-foreground">Company</th>
+                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Items</th>
+                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Status</th>
+                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden sm:table-cell text-muted-foreground">Date</th>
+                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((order) => (
-                <tr key={order.id} className="hover:bg-black/3 dark:hover:bg-white/3 transition" style={{ borderBottom: "1px solid var(--border)" }}>
+                <tr key={order.id} className="hover:bg-black/3 dark:hover:bg-white/3 transition border-b border-border">
                   <td className="px-4 py-3">
                     <div className="font-medium">{order.buyerName}</div>
-                    <div className="text-xs" style={{ color: "var(--muted)" }}>{order.buyerEmail}</div>
+                    <div className="text-xs text-muted-foreground">{order.buyerEmail}</div>
                   </td>
                   <td className="px-4 py-3 hidden md:table-cell text-xs">{order.buyerCompany || "-"}</td>
                   <td className="px-4 py-3 font-medium">{order.totalQty}</td>
@@ -165,7 +166,7 @@ export default function OrdersPage() {
                       {order.status.replace(/_/g, " ")}
                     </span>
                   </td>
-                  <td className="px-4 py-3 hidden sm:table-cell text-xs" style={{ color: "var(--muted)" }}>
+                  <td className="px-4 py-3 hidden sm:table-cell text-xs text-muted-foreground">
                     {formatDateTime(order.createdAt as string)}
                   </td>
                   <td className="px-4 py-3">
@@ -197,31 +198,31 @@ export default function OrdersPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </CardContent></Card>
 
       {/* Order Detail Modal */}
       {selectedOrder && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 animate-backdrop" onClick={() => setSelectedOrder(null)}>
-          <div className="glass-card p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto animate-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setSelectedOrder(null)}>
+          <Card className="w-full max-w-lg max-h-[80vh] overflow-y-auto"><CardContent className="p-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold mb-4">Order Details</h3>
             <div className="space-y-3 text-sm">
-              <div className="flex justify-between"><span style={{ color: "var(--muted)" }}>Buyer:</span> <strong>{selectedOrder.buyerName}</strong></div>
-              <div className="flex justify-between"><span style={{ color: "var(--muted)" }}>Email:</span> <span>{selectedOrder.buyerEmail}</span></div>
-              <div className="flex justify-between"><span style={{ color: "var(--muted)" }}>Company:</span> <span>{selectedOrder.buyerCompany || "-"}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Buyer:</span> <strong>{selectedOrder.buyerName}</strong></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Email:</span> <span>{selectedOrder.buyerEmail}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Company:</span> <span>{selectedOrder.buyerCompany || "-"}</span></div>
               <div className="flex justify-between">
-                <span style={{ color: "var(--muted)" }}>Status:</span>
+                <span className="text-muted-foreground">Status:</span>
                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusColor(selectedOrder.status)}`}>
                   {selectedOrder.status.replace(/_/g, " ")}
                 </span>
               </div>
-              <div className="flex justify-between"><span style={{ color: "var(--muted)" }}>Total Qty:</span> <strong>{selectedOrder.totalQty}</strong></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Total Qty:</span> <strong>{selectedOrder.totalQty}</strong></div>
 
-              <h4 className="font-semibold mt-4 pt-4" style={{ borderTop: "1px solid var(--border)" }}>Line Items</h4>
+              <h4 className="font-semibold mt-4 pt-4 border-t border-border">Line Items</h4>
               {selectedOrder.items?.map((item, i) => (
-                <div key={i} className="flex justify-between py-2" style={{ borderBottom: "1px solid var(--border)" }}>
+                <div key={i} className="flex justify-between py-2 border-b border-border">
                   <div>
                     <div className="font-medium">{item.modelId}</div>
-                    <div className="text-xs font-mono" style={{ color: "var(--muted)" }}>{item.barcode}</div>
+                    <div className="text-xs font-mono text-muted-foreground">{item.barcode}</div>
                   </div>
                   <div className="font-medium">x{item.quantity}</div>
                 </div>
@@ -256,11 +257,10 @@ export default function OrdersPage() {
             <button
               onClick={() => setSelectedOrder(null)}
               className="mt-4 w-full py-2 rounded-xl border text-sm font-medium hover:border-primary transition"
-              style={{ borderColor: "var(--border)" }}
             >
               Close
             </button>
-          </div>
+          </CardContent></Card>
         </div>
       )}
     </div>

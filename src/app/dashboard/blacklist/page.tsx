@@ -8,6 +8,9 @@ import { Ban, Plus, Trash2, Search, X } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface BlacklistItem {
   id: string;
@@ -93,7 +96,7 @@ export default function BlacklistPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Blacklist</h1>
-          <p className="text-sm" style={{ color: "var(--muted)" }}>{filtered.length} blocked barcodes</p>
+          <p className="text-sm text-muted-foreground">{filtered.length} blocked barcodes</p>
         </div>
         <button onClick={() => setShowForm(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-danger text-white text-sm font-medium hover:opacity-90 transition">
           <Plus className="w-4 h-4" /> Add Barcode
@@ -101,32 +104,31 @@ export default function BlacklistPage() {
       </div>
 
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--muted)" }} />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search barcodes..."
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
-          style={{ background: "var(--input-bg)", borderColor: "var(--border)", color: "var(--foreground)" }}
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
         />
       </div>
 
-      <div className="glass-card overflow-hidden">
+      <Card className="overflow-hidden"><CardContent className="p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider" style={{ color: "var(--muted)" }}>Barcode</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden sm:table-cell" style={{ color: "var(--muted)" }}>Label</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden md:table-cell" style={{ color: "var(--muted)" }}>Reason</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden sm:table-cell" style={{ color: "var(--muted)" }}>Added</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider" style={{ color: "var(--muted)" }}>Remove</th>
+              <tr className="border-b border-border">
+                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Barcode</th>
+                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden sm:table-cell text-muted-foreground">Label</th>
+                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden md:table-cell text-muted-foreground">Reason</th>
+                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden sm:table-cell text-muted-foreground">Added</th>
+                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Remove</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((item) => (
-                <tr key={item.id} className="hover:bg-black/3 dark:hover:bg-white/3 transition" style={{ borderBottom: "1px solid var(--border)" }}>
+                <tr key={item.id} className="hover:bg-black/3 dark:hover:bg-white/3 transition border-b border-border">
                   <td className="px-4 py-3 font-mono text-xs font-medium">{item.barcode}</td>
                   <td className="px-4 py-3 hidden sm:table-cell">{item.label || "-"}</td>
-                  <td className="px-4 py-3 hidden md:table-cell text-xs" style={{ color: "var(--muted)" }}>{item.reason || "-"}</td>
-                  <td className="px-4 py-3 hidden sm:table-cell text-xs" style={{ color: "var(--muted)" }}>{formatDate(item.createdAt as string)}</td>
+                  <td className="px-4 py-3 hidden md:table-cell text-xs text-muted-foreground">{item.reason || "-"}</td>
+                  <td className="px-4 py-3 hidden sm:table-cell text-xs text-muted-foreground">{formatDate(item.createdAt as string)}</td>
                   <td className="px-4 py-3">
                     <button onClick={() => handleDelete(item)} className="p-1.5 rounded-lg hover:bg-danger/10 text-danger transition">
                       <Trash2 className="w-4 h-4" />
@@ -144,11 +146,11 @@ export default function BlacklistPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </CardContent></Card>
 
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 animate-backdrop" onClick={() => setShowForm(false)}>
-          <div className="glass-card p-6 w-full max-w-md animate-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
+          <Card className="w-full max-w-md"><CardContent className="p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold">Blacklist Barcode</h3>
               <button onClick={() => setShowForm(false)}><X className="w-5 h-5" /></button>
@@ -157,26 +159,23 @@ export default function BlacklistPage() {
               <div>
                 <label className="block text-sm font-medium mb-1">Barcode</label>
                 <input value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
-                  style={{ background: "var(--input-bg)", borderColor: "var(--border)", color: "var(--foreground)" }} placeholder="Enter barcode" />
+                  className="w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground" placeholder="Enter barcode" />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Label (optional)</label>
                 <input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
-                  style={{ background: "var(--input-bg)", borderColor: "var(--border)", color: "var(--foreground)" }} placeholder="Item name" />
+                  className="w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground" placeholder="Item name" />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Reason (optional)</label>
                 <input value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
-                  style={{ background: "var(--input-bg)", borderColor: "var(--border)", color: "var(--foreground)" }} placeholder="Why is this blocked?" />
+                  className="w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground" placeholder="Why is this blocked?" />
               </div>
-              <button onClick={handleAdd} className="w-full py-2.5 rounded-xl bg-danger text-white font-medium hover:opacity-90 transition press-scale">
+              <button onClick={handleAdd} className="w-full py-2.5 rounded-xl bg-danger text-white font-medium hover:opacity-90 transition">
                 Add to Blacklist
               </button>
             </div>
-          </div>
+          </CardContent></Card>
         </div>
       )}
     </div>

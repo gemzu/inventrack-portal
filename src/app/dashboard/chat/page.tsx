@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import AdminGuard from "@/components/AdminGuard";
 import { Send, MessageCircle, Loader2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface Message {
   id: string;
@@ -181,18 +182,14 @@ export default function ChatPage() {
       <div className="animate-page-enter">
         <h1 className="text-2xl font-bold mb-6">Messages</h1>
 
-        <div
-          className="glass-card overflow-hidden flex"
-          style={{ height: "calc(100vh - 220px)", minHeight: 400 }}
+        <Card><CardContent className="overflow-hidden flex p-0 h-[calc(100vh-220px)] min-h-[400px]"
         >
           {/* Left panel - Conversation list */}
           <div
-            className="w-1/3 flex flex-col"
-            style={{ borderRight: "1px solid var(--border)" }}
+            className="w-1/3 flex flex-col border-r border-border"
           >
             <div
-              className="p-4 font-semibold text-sm"
-              style={{ borderBottom: "1px solid var(--border)" }}
+              className="p-4 font-semibold text-sm border-b border-border"
             >
               Conversations
             </div>
@@ -203,8 +200,8 @@ export default function ChatPage() {
                 </div>
               ) : conversations.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full px-4 text-center">
-                  <MessageCircle className="w-8 h-8 mb-2" style={{ color: "var(--muted)" }} />
-                  <p className="text-sm" style={{ color: "var(--muted)" }}>
+                  <MessageCircle className="w-8 h-8 mb-2 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
                     No conversations yet
                   </p>
                 </div>
@@ -216,28 +213,23 @@ export default function ChatPage() {
                       setActiveChat(conv.userId);
                       setActiveChatName(conv.userName);
                     }}
-                    className={`w-full text-left p-4 transition hover:bg-black/5 dark:hover:bg-white/5 ${
+                    className={`w-full text-left p-4 transition hover:bg-black/5 dark:hover:bg-white/5 border-b border-border ${
                       activeChat === conv.userId ? "bg-primary/5" : ""
                     }`}
-                    style={{
-                      borderBottom: "1px solid var(--border)",
-                    }}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-semibold text-sm truncate">
                         {conv.userName}
                       </span>
                       <span
-                        className="text-[10px] shrink-0 ml-2"
-                        style={{ color: "var(--muted)" }}
+                        className="text-[10px] shrink-0 ml-2 text-muted-foreground"
                       >
                         {formatTime(conv.lastTime)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <p
-                        className="text-xs truncate"
-                        style={{ color: "var(--muted)" }}
+                        className="text-xs truncate text-muted-foreground"
                       >
                         {conv.lastMessage}
                       </p>
@@ -259,8 +251,7 @@ export default function ChatPage() {
               <>
                 {/* Chat header */}
                 <div
-                  className="p-4 font-semibold text-sm flex items-center gap-2"
-                  style={{ borderBottom: "1px solid var(--border)" }}
+                  className="p-4 font-semibold text-sm flex items-center gap-2 border-b border-border"
                 >
                   <div className="w-8 h-8 rounded-full gradient-bg flex items-center justify-center text-white text-xs font-bold">
                     {activeChatName.charAt(0).toUpperCase()}
@@ -281,24 +272,14 @@ export default function ChatPage() {
                           className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-sm ${
                             isMine
                               ? "bg-primary text-white rounded-br-md"
-                              : "rounded-bl-md"
+                              : "rounded-bl-md bg-muted border border-border text-foreground"
                           }`}
-                          style={
-                            !isMine
-                              ? {
-                                  background: "var(--surface)",
-                                  border: "1px solid var(--border)",
-                                  color: "var(--foreground)",
-                                }
-                              : undefined
-                          }
                         >
                           <p>{msg.text}</p>
                           <p
                             className={`text-[10px] mt-1 ${
-                              isMine ? "text-white/60" : ""
+                              isMine ? "text-white/60" : "text-muted-foreground"
                             }`}
-                            style={!isMine ? { color: "var(--muted)" } : undefined}
                           >
                             {formatTime(msg.created_at)}
                           </p>
@@ -311,8 +292,7 @@ export default function ChatPage() {
 
                 {/* Input bar */}
                 <div
-                  className="p-4 flex items-center gap-3"
-                  style={{ borderTop: "1px solid var(--border)" }}
+                  className="p-4 flex items-center gap-3 border-t border-border"
                 >
                   <input
                     type="text"
@@ -325,12 +305,7 @@ export default function ChatPage() {
                       }
                     }}
                     placeholder="Type a message..."
-                    className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none"
-                    style={{
-                      background: "var(--surface)",
-                      border: "1px solid var(--border)",
-                      color: "var(--foreground)",
-                    }}
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none bg-muted border border-border text-foreground"
                   />
                   <button
                     onClick={handleSend}
@@ -347,14 +322,14 @@ export default function ChatPage() {
               </>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center">
-                <MessageCircle className="w-12 h-12 mb-3" style={{ color: "var(--muted)" }} />
-                <p className="text-sm font-medium" style={{ color: "var(--muted)" }}>
+                <MessageCircle className="w-12 h-12 mb-3 text-muted-foreground" />
+                <p className="text-sm font-medium text-muted-foreground">
                   Select a conversation to start messaging
                 </p>
               </div>
             )}
           </div>
-        </div>
+        </CardContent></Card>
       </div>
     </AdminGuard>
   );

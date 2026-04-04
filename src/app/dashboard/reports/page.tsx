@@ -7,6 +7,7 @@ import {
   FileBarChart, Package, ShoppingCart, Activity, Download,
   AlertTriangle, TrendingUp, Loader2, CheckCircle,
 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { SkeletonCard } from "@/components/Skeleton";
 
 function downloadCsv(filename: string, header: string, rows: string[][]) {
@@ -153,8 +154,8 @@ export default function ReportsPage() {
     return (
       <div className="space-y-6">
         <div>
-          <div className="h-8 w-40 rounded-lg animate-pulse" style={{ background: "var(--border)" }} />
-          <div className="h-4 w-64 rounded-lg animate-pulse mt-2" style={{ background: "var(--border)" }} />
+          <div className="h-8 w-40 rounded-lg animate-pulse bg-border" />
+          <div className="h-4 w-64 rounded-lg animate-pulse mt-2 bg-border" />
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -168,15 +169,15 @@ export default function ReportsPage() {
   if (!orgId) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
-        <div className="glass-card p-10 max-w-md text-center">
+        <Card><CardContent className="p-10 max-w-md text-center">
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-5">
             <FileBarChart className="w-8 h-8 text-primary" />
           </div>
           <h2 className="text-xl font-bold mb-2">No Organization</h2>
-          <p className="text-sm" style={{ color: "var(--muted)" }}>
+          <p className="text-sm text-muted-foreground">
             Join an organization to access reports.
           </p>
-        </div>
+        </CardContent></Card>
       </div>
     );
   }
@@ -219,7 +220,7 @@ export default function ReportsPage() {
     <div className="animate-page-enter space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Reports</h1>
-        <p className="text-sm" style={{ color: "var(--muted)" }}>
+        <p className="text-sm text-muted-foreground">
           Generate and download reports for your organization
         </p>
       </div>
@@ -232,21 +233,21 @@ export default function ReportsPage() {
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {statCards.map((card) => (
-            <div key={card.label} className="glass-card p-5 hover-lift">
+            <Card key={card.label}><CardContent className="p-5">
               <div className="flex items-center justify-between mb-3">
                 <div className={`w-10 h-10 rounded-xl ${card.bg} flex items-center justify-center`}>
                   <card.icon className={`w-5 h-5 ${card.color}`} />
                 </div>
               </div>
               <div className="text-2xl font-bold">{card.value}</div>
-              <div className="text-xs" style={{ color: "var(--muted)" }}>{card.label}</div>
-            </div>
+              <div className="text-xs text-muted-foreground">{card.label}</div>
+          </CardContent></Card>
           ))}
         </div>
       </div>
 
       {/* Orders This Month */}
-      <div className="glass-card p-6">
+      <Card><CardContent className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <ShoppingCart className="w-4 h-4 text-primary" />
           <h3 className="font-semibold">Orders This Month</h3>
@@ -254,7 +255,7 @@ export default function ReportsPage() {
         <div className="flex items-center gap-6 flex-wrap">
           <div>
             <div className="text-3xl font-bold">{snapshot.ordersThisMonth}</div>
-            <div className="text-xs" style={{ color: "var(--muted)" }}>Total Orders</div>
+            <div className="text-xs text-muted-foreground">Total Orders</div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-500">
@@ -268,11 +269,11 @@ export default function ReportsPage() {
             </span>
           </div>
         </div>
-      </div>
+      </CardContent></Card>
 
       {/* Low Stock Items */}
       {snapshot.lowStockItems.length > 0 && (
-        <div className="glass-card p-6">
+        <Card><CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-warning" />
@@ -282,7 +283,6 @@ export default function ReportsPage() {
               onClick={() => generateReport("low_stock")}
               disabled={generating === "low_stock"}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium hover:border-primary transition"
-              style={{ borderColor: "var(--border)" }}
             >
               {generating === "low_stock" ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -297,11 +297,10 @@ export default function ReportsPage() {
               <div
                 key={i}
                 className="flex items-center justify-between py-2 border-b last:border-0"
-                style={{ borderColor: "var(--border)" }}
               >
                 <div>
                   <span className="text-sm font-medium">{item.modelId}</span>
-                  <span className="text-xs ml-2" style={{ color: "var(--muted)" }}>{item.brand}</span>
+                  <span className="text-xs ml-2 text-muted-foreground">{item.brand}</span>
                 </div>
                 <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-warning/10 text-warning">
                   Qty: {item.quantity}
@@ -309,12 +308,12 @@ export default function ReportsPage() {
               </div>
             ))}
             {snapshot.lowStockItems.length > 8 && (
-              <p className="text-xs text-center pt-2" style={{ color: "var(--muted)" }}>
+              <p className="text-xs text-center pt-2 text-muted-foreground">
                 +{snapshot.lowStockItems.length - 8} more items
               </p>
             )}
           </div>
-        </div>
+        </CardContent></Card>
       )}
 
       {/* Quick Reports */}
@@ -325,19 +324,18 @@ export default function ReportsPage() {
         </div>
         <div className="grid sm:grid-cols-3 gap-4">
           {reportCards.map((report) => (
-            <div key={report.type} className="glass-card p-5 hover-lift">
+            <Card key={report.type}><CardContent className="p-5">
               <div className={`w-10 h-10 rounded-xl ${report.bg} flex items-center justify-center mb-4`}>
                 <report.icon className={`w-5 h-5 ${report.color}`} />
               </div>
               <h4 className="font-semibold text-sm mb-1">{report.title}</h4>
-              <p className="text-xs mb-4" style={{ color: "var(--muted)" }}>
+              <p className="text-xs mb-4 text-muted-foreground">
                 {report.desc}
               </p>
               <button
                 onClick={() => generateReport(report.type)}
                 disabled={generating === report.type}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium w-full justify-center hover:border-primary transition"
-                style={{ borderColor: "var(--border)" }}
               >
                 {generating === report.type ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -346,7 +344,7 @@ export default function ReportsPage() {
                 )}
                 {generating === report.type ? "Generating..." : "Download CSV"}
               </button>
-            </div>
+            </CardContent></Card>
           ))}
         </div>
       </div>

@@ -7,6 +7,8 @@ import { useAuth } from "@/context/AuthContext";
 import { Activity, Search, ChevronDown } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
 import EmptyState from "@/components/EmptyState";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 interface ScanLog {
   id: string;
@@ -75,51 +77,49 @@ export default function ActivityPage() {
     <div className="animate-page-enter space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Activity Log</h1>
-        <p className="text-sm" style={{ color: "var(--muted)" }}>{filtered.length} entries</p>
+        <p className="text-sm text-muted-foreground">{filtered.length} entries</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--muted)" }} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by barcode or user..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
-            style={{ background: "var(--input-bg)", borderColor: "var(--border)", color: "var(--foreground)" }}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
           />
         </div>
         <div className="relative">
           <select value={actionFilter} onChange={(e) => setActionFilter(e.target.value)}
-            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border text-sm outline-none cursor-pointer"
-            style={{ background: "var(--input-bg)", borderColor: "var(--border)", color: "var(--foreground)" }}
+            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border text-sm outline-none cursor-pointer bg-input border-border text-foreground"
           >
             <option value="all">All Actions</option>
             {actions.map((a) => <option key={a} value={a}>{a}</option>)}
           </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: "var(--muted)" }} />
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />
         </div>
       </div>
 
-      <div className="glass-card overflow-hidden">
+      <Card className="overflow-hidden"><CardContent className="p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider" style={{ color: "var(--muted)" }}>Barcode</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider" style={{ color: "var(--muted)" }}>Action</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden md:table-cell" style={{ color: "var(--muted)" }}>Result</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider" style={{ color: "var(--muted)" }}>User</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden sm:table-cell" style={{ color: "var(--muted)" }}>Time</th>
+              <tr className="border-b border-border">
+                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Barcode</th>
+                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Action</th>
+                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden md:table-cell text-muted-foreground">Result</th>
+                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">User</th>
+                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden sm:table-cell text-muted-foreground">Time</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((log) => (
-                <tr key={log.id} className="hover:bg-black/3 dark:hover:bg-white/3 transition" style={{ borderBottom: "1px solid var(--border)" }}>
+                <tr key={log.id} className="hover:bg-black/3 dark:hover:bg-white/3 transition border-b border-border">
                   <td className="px-4 py-3 font-mono text-xs">{log.barcode}</td>
                   <td className="px-4 py-3">
                     <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">{log.action}</span>
                   </td>
-                  <td className="px-4 py-3 hidden md:table-cell text-xs" style={{ color: "var(--muted)" }}>{log.result || "-"}</td>
+                  <td className="px-4 py-3 hidden md:table-cell text-xs text-muted-foreground">{log.result || "-"}</td>
                   <td className="px-4 py-3 text-xs">{log.scannedBy}</td>
-                  <td className="px-4 py-3 hidden sm:table-cell text-xs" style={{ color: "var(--muted)" }}>
+                  <td className="px-4 py-3 hidden sm:table-cell text-xs text-muted-foreground">
                     {formatDateTime(log.createdAt as string)}
                   </td>
                 </tr>
@@ -134,7 +134,7 @@ export default function ActivityPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </CardContent></Card>
     </div>
   </AdminGuard>);
 }
