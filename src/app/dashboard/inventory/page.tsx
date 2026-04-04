@@ -217,8 +217,8 @@ export default function InventoryPage() {
     <div className="animate-page-enter space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Inventory</h1>
-          <p className="text-sm" style={{ color: "var(--muted)" }}>{filtered.length} items</p>
+          <h1 className="text-2xl font-bold animate-slide-up">Inventory</h1>
+          <p className="text-sm animate-slide-up-delay-1" style={{ color: "var(--muted)" }}>{filtered.length} items</p>
         </div>
         <div className="flex gap-2">
           <button onClick={() => setShowImport(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-dark transition shadow-lg shadow-primary/25 press-scale">
@@ -231,7 +231,7 @@ export default function InventoryPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-3 animate-fade-in">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--muted)" }} />
           <input
@@ -277,7 +277,7 @@ export default function InventoryPage() {
       {/* Table */}
       <div className="glass-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="data-table w-full text-sm">
             <thead>
               <tr style={{ borderBottom: "1px solid var(--border)" }}>
                 <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider" style={{ color: "var(--muted)" }}>Model ID</th>

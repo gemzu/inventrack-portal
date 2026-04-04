@@ -16,7 +16,9 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950">
       {/* ── HERO (blueprint dark, always) ─────────────────── */}
-      <section className="blueprint-bg relative">
+      <section className="blueprint-bg relative overflow-hidden">
+        {/* Animated gradient overlay */}
+        <div className="absolute inset-0 animated-gradient bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 pointer-events-none" />
         {/* Top Nav */}
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -87,10 +89,10 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-4 py-5 flex flex-wrap items-center justify-center gap-3 sm:gap-5">
           <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">Built for warehouses</span>
           <span className="hidden sm:block w-px h-5 bg-slate-200 dark:bg-slate-700" />
-          {["Real-time tracking", "Multi-facility", "Role-based access", "Free forever"].map((pill) => (
+          {["Real-time tracking", "Multi-facility", "Role-based access", "Free forever"].map((pill, i) => (
             <span
               key={pill}
-              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 animate-bounce-in stagger-${i + 1}`}
             >
               {pill}
             </span>
@@ -128,8 +130,8 @@ export default function LandingPage() {
                 title: "Buyers Order",
                 desc: "Buyers browse your catalog, reserve items, and place orders. You approve and ship.",
               },
-            ].map((s) => (
-              <div key={s.step} className="text-center relative">
+            ].map((s, i) => (
+              <div key={s.step} className={`text-center relative card-enter-up stagger-${i + 1}`}>
                 <div className="w-14 h-14 rounded-full bg-blue-500 text-white text-xl font-bold flex items-center justify-center mx-auto mb-4 relative z-10">
                   {s.step}
                 </div>
@@ -172,7 +174,7 @@ export default function LandingPage() {
                 desc: "Browse available inventory, reserve items for 24 hours, and submit purchase orders.",
               },
             ].map((c) => (
-              <div key={c.title} className="card-interactive p-7">
+              <div key={c.title} className="card-interactive tilt-hover p-7">
                 <div className="w-11 h-11 rounded-lg bg-blue-50 dark:bg-slate-800 flex items-center justify-center mb-4">
                   <c.icon className="w-5 h-5 text-blue-500" />
                 </div>
@@ -202,8 +204,8 @@ export default function LandingPage() {
               { icon: MessageCircle, title: "In-App Chat", desc: "Message your team directly from the dashboard." },
               { icon: Upload, title: "Bulk Import & Export", desc: "Upload spreadsheets or export your entire catalog in one click." },
               { icon: ShieldCheck, title: "Role-Based Access", desc: "Workers, admins, and buyers each see only what they need." },
-            ].map((f) => (
-              <div key={f.title} className="flex items-start gap-4">
+            ].map((f, i) => (
+              <div key={f.title} className={`flex items-start gap-4 ${i % 2 === 0 ? 'card-enter-left' : 'card-enter-right'} stagger-${i + 1}`}>
                 <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-slate-800 flex items-center justify-center shrink-0">
                   <f.icon className="w-5 h-5 text-blue-500" />
                 </div>
@@ -220,10 +222,10 @@ export default function LandingPage() {
       {/* ── CTA ───────────────────────────────────────────── */}
       <section className="bg-slate-900 py-20 px-4">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4 animate-slide-up">
             Ready to take control of your inventory?
           </h2>
-          <div className="mt-8">
+          <div className="mt-8 animate-slide-up-delay-1">
             <Link href="/signup" className="btn-primary text-base px-8 py-3.5">
               Start Managing Your Warehouse <ArrowRight className="w-5 h-5" />
             </Link>

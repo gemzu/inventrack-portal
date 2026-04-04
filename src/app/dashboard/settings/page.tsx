@@ -124,13 +124,13 @@ export default function SettingsPage() {
 
   return (<AdminGuard>
     <div className="animate-page-enter space-y-6 max-w-2xl">
-      <div>
+      <div className="animate-slide-up">
         <h1 className="text-2xl font-bold">Settings</h1>
         <p className="text-sm" style={{ color: "var(--muted)" }}>Manage your organization settings</p>
       </div>
 
       {/* Section 1: Organization Info */}
-      <div className="glass-card p-6 space-y-5">
+      <div className="glass-card p-6 space-y-5 animate-slide-up-delay-1">
         <div className="flex items-center gap-2 mb-1">
           <Building2 className="w-4 h-4" style={{ color: "var(--primary)" }} />
           <h2 className="text-sm font-semibold">Organization Info</h2>
@@ -171,7 +171,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Section 2: Inventory Settings */}
-      <div className="glass-card p-6 space-y-5">
+      <div className="glass-card p-6 space-y-5 animate-slide-up-delay-2">
         <div className="flex items-center gap-2 mb-1">
           <Package className="w-4 h-4" style={{ color: "var(--primary)" }} />
           <h2 className="text-sm font-semibold">Inventory Settings</h2>
@@ -212,7 +212,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Section 3: Order Settings */}
-      <div className="glass-card p-6">
+      <div className="glass-card p-6 animate-slide-up-delay-3">
         <div className="flex items-center gap-2 mb-4">
           <ShoppingCart className="w-4 h-4" style={{ color: "var(--primary)" }} />
           <h2 className="text-sm font-semibold">Order Settings</h2>
@@ -232,7 +232,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Section 4: Notifications */}
-      <div className="glass-card p-6">
+      <div className="glass-card p-6 animate-slide-up-delay-3">
         <div className="flex items-center gap-2 mb-2">
           <Bell className="w-4 h-4" style={{ color: "var(--primary)" }} />
           <h2 className="text-sm font-semibold">Notifications</h2>

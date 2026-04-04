@@ -207,8 +207,8 @@ export default function DashboardPage() {
   return (
     <div className="animate-page-enter space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-sm" style={{ color: "var(--muted)" }}>Overview of your warehouse operations</p>
+        <h1 className="text-2xl font-bold animate-slide-up">Dashboard</h1>
+        <p className="text-sm animate-slide-up-delay-1" style={{ color: "var(--muted)" }}>Overview of your warehouse operations</p>
       </div>
 
       {/* Announcement Banner */}
@@ -263,7 +263,7 @@ export default function DashboardPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi) => (
-          <div key={kpi.label} className="glass-card p-5 hover-lift">
+          <div key={kpi.label} className="glass-card p-5 hover-lift kpi-panel">
             <div className="flex items-center justify-between mb-3">
               <div className={`w-10 h-10 rounded-xl ${kpi.bg} flex items-center justify-center`}>
                 <kpi.icon className={`w-5 h-5 ${kpi.color}`} />
@@ -367,7 +367,7 @@ export default function DashboardPage() {
       {/* Charts */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Status Pie */}
-        <div className="glass-card p-6">
+        <div className="glass-card p-6 card-enter-scale">
           <h3 className="font-semibold mb-4">Inventory by Status</h3>
           {statusData.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
@@ -389,7 +389,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Stats Bar */}
-        <div className="glass-card p-6">
+        <div className="glass-card p-6 card-enter-scale stagger-2">
           <h3 className="font-semibold mb-4">Summary</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={kpis.map((k) => ({ name: k.label, value: k.value }))}>
