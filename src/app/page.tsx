@@ -39,21 +39,23 @@ export default function LandingPage() {
               >
                 {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
-              {isLoggedIn ? (
+              {loading ? (
+                <div className="w-24 h-8" />
+              ) : isLoggedIn ? (
                 <>
-                  <Link href="/dashboard" className="btn-primary text-sm">
+                  <Link href="/dashboard" className="btn-primary text-sm animate-fade-in">
                     Dashboard <ArrowRight className="w-4 h-4" />
                   </Link>
-                  <Link href="/dashboard" className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                  <Link href="/dashboard" className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold animate-fade-in">
                     {userName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "U"}
                   </Link>
                 </>
               ) : (
                 <>
-                  <Link href="/login" className="text-sm font-medium text-slate-300 hover:text-white transition">
+                  <Link href="/login" className="text-sm font-medium text-slate-300 hover:text-white transition animate-fade-in">
                     Log in
                   </Link>
-                  <Link href="/signup" className="btn-primary text-sm">
+                  <Link href="/signup" className="btn-primary text-sm animate-fade-in">
                     Start Managing <ArrowRight className="w-4 h-4" />
                   </Link>
                 </>
