@@ -16,8 +16,14 @@ export default function SignupPage() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signup } = useAuth();
+  const { user, signup, loading: authLoading } = useAuth();
   const router = useRouter();
+
+  // Already logged in → go to dashboard
+  if (!authLoading && user) {
+    router.push("/dashboard");
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

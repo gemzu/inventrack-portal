@@ -13,8 +13,14 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
-  const { login, resetPassword } = useAuth();
+  const { user, login, resetPassword, loading: authLoading } = useAuth();
   const router = useRouter();
+
+  // Already logged in → go to dashboard
+  if (!authLoading && user) {
+    router.push("/dashboard");
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

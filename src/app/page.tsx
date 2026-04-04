@@ -8,10 +8,13 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useTheme } from "@/context/ThemeContext";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LandingPage() {
   const [mobileMenu, setMobileMenu] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const { user, userName, loading } = useAuth();
+  const isLoggedIn = !loading && !!user;
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950">
@@ -36,12 +39,25 @@ export default function LandingPage() {
               >
                 {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
-              <Link href="/login" className="text-sm font-medium text-slate-300 hover:text-white transition">
-                Log in
-              </Link>
-              <Link href="/signup" className="btn-primary text-sm">
-                Start Managing <ArrowRight className="w-4 h-4" />
-              </Link>
+              {isLoggedIn ? (
+                <>
+                  <Link href="/dashboard" className="btn-primary text-sm">
+                    Dashboard <ArrowRight className="w-4 h-4" />
+                  </Link>
+                  <Link href="/dashboard" className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                    {userName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "U"}
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/login" className="text-sm font-medium text-slate-300 hover:text-white transition">
+                    Log in
+                  </Link>
+                  <Link href="/signup" className="btn-primary text-sm">
+                    Start Managing <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </>
+              )}
             </div>
 
             <button className="md:hidden p-2 text-slate-400" onClick={() => setMobileMenu(!mobileMenu)}>
@@ -51,16 +67,20 @@ export default function LandingPage() {
 
           {mobileMenu && (
             <div className="md:hidden border-t border-slate-800 pb-4 pt-3 space-y-3">
-              <Link href="/login" className="block text-sm text-slate-300" onClick={() => setMobileMenu(false)}>
-                Log in
-              </Link>
-              <Link
-                href="/signup"
-                className="block btn-primary text-sm text-center"
-                onClick={() => setMobileMenu(false)}
-              >
-                Start Managing
-              </Link>
+              {isLoggedIn ? (
+                <Link href="/dashboard" className="block btn-primary text-sm text-center" onClick={() => setMobileMenu(false)}>
+                  Go to Dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link href="/login" className="block text-sm text-slate-300" onClick={() => setMobileMenu(false)}>
+                    Log in
+                  </Link>
+                  <Link href="/signup" className="block btn-primary text-sm text-center" onClick={() => setMobileMenu(false)}>
+                    Start Managing
+                  </Link>
+                </>
+              )}
             </div>
           )}
         </nav>
