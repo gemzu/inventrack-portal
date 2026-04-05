@@ -64,7 +64,7 @@ export default function LoginPage() {
         <div className="w-full max-w-sm">
           {/* Logo */}
           <div className="flex items-center gap-2.5 mb-10">
-            <div className="w-7 h-7 rounded bg-amber-500 flex items-center justify-center">
+            <div className="w-7 h-7 rounded bg-teal-500 flex items-center justify-center">
               <Boxes className="w-3.5 h-3.5 text-zinc-950" />
             </div>
             <span className="text-sm font-semibold text-zinc-100 tracking-wide">INVENTRACK</span>
@@ -115,7 +115,7 @@ export default function LoginPage() {
             </div>
 
             <div className="flex justify-end">
-              <button type="button" onClick={handleReset} className="text-xs text-amber-500 hover:text-amber-400 transition-colors">
+              <button type="button" onClick={handleReset} className="text-xs text-teal-500 hover:text-teal-400 transition-colors">
                 Forgot password?
               </button>
             </div>

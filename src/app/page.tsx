@@ -32,7 +32,7 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-zinc-800/50 bg-zinc-950/80 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-7 h-7 rounded bg-amber-500 flex items-center justify-center transition-transform group-hover:scale-105">
+            <div className="w-7 h-7 rounded bg-teal-500 flex items-center justify-center transition-transform group-hover:scale-105">
               <Boxes className="w-3.5 h-3.5 text-zinc-950" />
             </div>
             <span className="text-sm font-semibold tracking-wide">INVENTRACK</span>
@@ -71,7 +71,7 @@ export default function LandingPage() {
           {/* Left: Copy */}
           <div className="pt-4">
             <div className="fade-up inline-flex items-center gap-2 px-3 py-1 rounded-full border border-zinc-800 text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-8">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 pulse-dot" />
+              <span className="w-1.5 h-1.5 rounded-full bg-teal-500 pulse-dot" />
               Warehouse Management
             </div>
 
@@ -87,7 +87,7 @@ export default function LandingPage() {
             </p>
 
             <div className="fade-up fade-up-3 mt-10 flex items-center gap-4">
-              <Link href="/signup" className="text-sm font-medium bg-amber-500 text-zinc-950 px-5 py-2.5 rounded hover:bg-amber-400 press">
+              <Link href="/signup" className="text-sm font-medium bg-teal-500 text-zinc-950 px-5 py-2.5 rounded hover:bg-teal-400 press">
                 Start managing your warehouse
               </Link>
               <a href="#how" className="text-sm font-medium text-zinc-500 hover:text-zinc-300">
@@ -112,12 +112,12 @@ export default function LandingPage() {
                   <span className="text-zinc-600 shrink-0">{line.time}</span>
                   <span className={cn(
                     "w-16 shrink-0 font-medium",
-                    line.status === "warn" ? "text-amber-500" : "text-zinc-500"
+                    line.status === "warn" ? "text-teal-500" : "text-zinc-500"
                   )}>
                     {line.action}
                   </span>
                   <span className={cn(
-                    line.status === "warn" ? "text-amber-500/70" : "text-zinc-400"
+                    line.status === "warn" ? "text-teal-500/70" : "text-zinc-400"
                   )}>
                     {line.detail}
                   </span>
@@ -126,7 +126,7 @@ export default function LandingPage() {
               <div className="type-line flex items-center gap-3 mt-1">
                 <span className="text-zinc-600">09:42:30</span>
                 <span className="text-zinc-700">_</span>
-                <span className="w-2 h-3.5 bg-amber-500/60 animate-blink" />
+                <span className="w-2 h-3.5 bg-teal-500/60 animate-blink" />
               </div>
             </div>
           </div>
@@ -156,7 +156,7 @@ export default function LandingPage() {
       <section id="how" className="py-24 px-6">
         <div className="max-w-6xl mx-auto">
           <FadeIn direction="up">
-          <p className="text-[11px] text-amber-500 uppercase tracking-widest font-medium mb-4">How it works</p>
+          <p className="text-[11px] text-teal-500 uppercase tracking-widest font-medium mb-4">How it works</p>
           <h2 className="text-3xl sm:text-4xl font-bold text-zinc-100 mb-16">
             Three roles. One system.
           </h2>
@@ -187,7 +187,7 @@ export default function LandingPage() {
                 <div className="bg-zinc-900 p-8 group hover-up cursor-default h-full">
                   <div className="flex items-center justify-between mb-6">
                     <span className="text-xs font-mono text-zinc-600">{step.num}</span>
-                    <step.icon className="w-5 h-5 text-zinc-600 group-hover:text-amber-500 transition-colors" />
+                    <step.icon className="w-5 h-5 text-zinc-600 group-hover:text-teal-500 transition-colors" />
                   </div>
                   <h3 className="text-lg font-semibold text-zinc-200 mb-3">{step.title}</h3>
                   <p className="text-sm text-zinc-500 leading-relaxed">{step.desc}</p>
@@ -202,7 +202,7 @@ export default function LandingPage() {
       <section className="py-24 px-6 border-t border-zinc-800/50">
         <div className="max-w-6xl mx-auto">
           <FadeIn direction="up">
-            <p className="text-[11px] text-amber-500 uppercase tracking-widest font-medium mb-4">Capabilities</p>
+            <p className="text-[11px] text-teal-500 uppercase tracking-widest font-medium mb-4">Capabilities</p>
             <h2 className="text-3xl sm:text-4xl font-bold text-zinc-100 mb-16">
               Everything you need. Nothing you don&apos;t.
             </h2>
@@ -221,7 +221,7 @@ export default function LandingPage() {
             ].map((f, i) => (
               <FadeIn key={f.title} delay={i * 80} direction="up">
                 <div className="group hover-up cursor-default">
-                  <f.icon className="w-5 h-5 text-zinc-600 mb-3 group-hover:text-amber-500 transition-colors" />
+                  <f.icon className="w-5 h-5 text-zinc-600 mb-3 group-hover:text-teal-500 transition-colors" />
                   <h3 className="text-sm font-semibold text-zinc-200 mb-1">{f.title}</h3>
                   <p className="text-xs text-zinc-500 leading-relaxed">{f.desc}</p>
                 </div>
@@ -241,7 +241,7 @@ export default function LandingPage() {
             <p className="text-zinc-500 mb-10">
               Free forever. No credit card. No limits.
             </p>
-            <Link href="/signup" className="inline-flex items-center gap-2 text-sm font-medium bg-amber-500 text-zinc-950 px-6 py-3 rounded hover:bg-amber-400 press">
+            <Link href="/signup" className="inline-flex items-center gap-2 text-sm font-medium bg-teal-500 text-zinc-950 px-6 py-3 rounded hover:bg-teal-400 press">
               Start managing your warehouse <ArrowRight className="w-4 h-4" />
             </Link>
           </div>

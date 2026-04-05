@@ -8,6 +8,8 @@
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
+  --color-teal: #14b8a6;
+  --color-teal-dim: #0d9488;
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono, 'JetBrains Mono', 'Fira Code', monospace);
@@ -211,9 +213,9 @@ body {
   transform: scale(0.98);
 }
 
-/* Smooth color transitions */
-* {
-  transition-property: color, background-color, border-color, opacity;
+/* Smooth transitions on interactive elements only */
+a, button, input, select, textarea, [role="button"] {
+  transition-property: color, background-color, border-color, opacity, transform;
   transition-duration: 150ms;
   transition-timing-function: ease;
 }

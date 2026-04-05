@@ -59,7 +59,7 @@ export default function SignupPage() {
         <div className="w-full max-w-sm">
           {/* Logo */}
           <div className="flex items-center gap-2.5 mb-10">
-            <div className="w-7 h-7 rounded bg-amber-500 flex items-center justify-center">
+            <div className="w-7 h-7 rounded bg-teal-500 flex items-center justify-center">
               <Boxes className="w-3.5 h-3.5 text-zinc-950" />
             </div>
             <span className="text-sm font-semibold text-zinc-100 tracking-wide">INVENTRACK</span>
@@ -89,7 +89,7 @@ export default function SignupPage() {
                     onClick={() => setRole(r.value)}
                     className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                       role === r.value
-                        ? "bg-amber-500 text-zinc-950"
+                        ? "bg-teal-500 text-zinc-950"
                         : "bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700"
                     }`}
                   >
@@ -140,13 +140,13 @@ export default function SignupPage() {
                 id="terms"
                 checked={agreedToTerms}
                 onChange={(e) => setAgreedToTerms(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded border-zinc-700 bg-zinc-900 accent-amber-500 cursor-pointer"
+                className="mt-0.5 w-4 h-4 rounded border-zinc-700 bg-zinc-900 accent-teal-500 cursor-pointer"
               />
               <label htmlFor="terms" className="text-xs text-zinc-500 cursor-pointer leading-relaxed">
                 I agree to the{" "}
-                <a href="/terms" target="_blank" className="text-amber-500 hover:text-amber-400">Terms of Service</a>
+                <a href="/terms" target="_blank" className="text-teal-500 hover:text-teal-400">Terms of Service</a>
                 {" "}and{" "}
-                <a href="/privacy" target="_blank" className="text-amber-500 hover:text-amber-400">Privacy Policy</a>
+                <a href="/privacy" target="_blank" className="text-teal-500 hover:text-teal-400">Privacy Policy</a>
               </label>
             </div>
 

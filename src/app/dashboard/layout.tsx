@@ -94,7 +94,7 @@ function SidebarNav({
       {/* Logo area */}
       <div className="h-14 flex items-center px-5 shrink-0 border-b border-zinc-800">
         <Link href="/dashboard" className="flex items-center gap-2" onClick={onNavigate}>
-          <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-teal-500 flex items-center justify-center">
             <Boxes className="w-4 h-4 text-zinc-950" />
           </div>
           <span className="font-bold text-lg text-white tracking-tight">INVENTRACK</span>
@@ -208,21 +208,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  // Build dynamic groups based on role/permissions
-  const buildVisibleGroups = (): NavGroup[] => {
+  // Build dynamic groups based on role/permissions (no mutation!)
+  const visibleGroups = (() => {
     const isAdmin = userRole === "admin";
 
-    // Filter each group's items by role
-    const filtered = navGroups.map((group) => ({
-      ...group,
+    // Deep copy + filter by role
+    const groups: NavGroup[] = navGroups.map((group) => ({
+      label: group.label,
       items: isAdmin
-        ? group.items
+        ? [...group.items]
         : group.items.filter((item) => !adminOnlyPages.includes(item.href)),
     })).filter((group) => group.items.length > 0);
 
+    // Add Reports to TOOLS for admin (without mutating the original)
+    if (isAdmin) {
+      const toolsIdx = groups.findIndex((g) => g.label === "TOOLS");
+      if (toolsIdx !== -1) {
+        groups[toolsIdx] = {
+          ...groups[toolsIdx],
+          items: [...groups[toolsIdx].items, { href: "/dashboard/reports", label: "Reports", icon: FileBarChart }],
+        };
+      }
+    }
+
     // Add ADMIN group for superadmin
     if (userPermissions === "superadmin") {
-      filtered.push({
+      groups.push({
         label: "ADMIN",
         items: [
           { href: "/dashboard/analytics", label: "Platform Analytics", icon: TrendingUp },
@@ -230,18 +241,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       });
     }
 
-    // Add Reports for admin role
-    if (isAdmin) {
-      const toolsGroup = filtered.find((g) => g.label === "TOOLS");
-      if (toolsGroup) {
-        toolsGroup.items.push({ href: "/dashboard/reports", label: "Reports", icon: FileBarChart });
-      }
-    }
-
-    return filtered;
-  };
-
-  const visibleGroups = buildVisibleGroups();
+    return groups;
+  })();
 
   // Settings visible only to admins
   const showSettings = userRole === "admin";
