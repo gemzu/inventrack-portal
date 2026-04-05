@@ -9,6 +9,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import FadeIn from "@/components/FadeIn";
 
 /* ── Fake terminal lines for hero visual ────────────────── */
 const TERMINAL_LINES = [
@@ -134,6 +135,7 @@ export default function LandingPage() {
 
       {/* ── METRICS BAR ───────────────────────────────────── */}
       <section className="border-y border-zinc-800/50">
+        <FadeIn direction="up">
         <div className="max-w-6xl mx-auto px-6 py-6 grid grid-cols-2 sm:grid-cols-4 gap-6">
           {[
             { label: "Barcodes scanned", value: "14,200+" },
@@ -147,16 +149,19 @@ export default function LandingPage() {
             </div>
           ))}
         </div>
+        </FadeIn>
       </section>
 
       {/* ── HOW IT WORKS ──────────────────────────────────── */}
       <section id="how" className="py-24 px-6">
         <div className="max-w-6xl mx-auto">
+          <FadeIn direction="up">
           <p className="text-[11px] text-amber-500 uppercase tracking-widest font-medium mb-4">How it works</p>
           <h2 className="text-3xl sm:text-4xl font-bold text-zinc-100 mb-16">
             Three roles. One system.
           </h2>
 
+          </FadeIn>
           <div className="grid md:grid-cols-3 gap-px bg-zinc-800 rounded-lg overflow-hidden">
             {[
               {
@@ -177,15 +182,17 @@ export default function LandingPage() {
                 title: "Buyers order",
                 desc: "Buyers browse available stock, reserve items for 24 hours, and submit purchase orders. You approve and ship.",
               },
-            ].map((step) => (
-              <div key={step.num} className="bg-zinc-900 p-8 group hover-up cursor-default">
-                <div className="flex items-center justify-between mb-6">
-                  <span className="text-xs font-mono text-zinc-600">{step.num}</span>
-                  <step.icon className="w-5 h-5 text-zinc-600 group-hover:text-amber-500 transition-colors" />
+            ].map((step, i) => (
+              <FadeIn key={step.num} delay={i * 150} direction="up">
+                <div className="bg-zinc-900 p-8 group hover-up cursor-default h-full">
+                  <div className="flex items-center justify-between mb-6">
+                    <span className="text-xs font-mono text-zinc-600">{step.num}</span>
+                    <step.icon className="w-5 h-5 text-zinc-600 group-hover:text-amber-500 transition-colors" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-zinc-200 mb-3">{step.title}</h3>
+                  <p className="text-sm text-zinc-500 leading-relaxed">{step.desc}</p>
                 </div>
-                <h3 className="text-lg font-semibold text-zinc-200 mb-3">{step.title}</h3>
-                <p className="text-sm text-zinc-500 leading-relaxed">{step.desc}</p>
-              </div>
+              </FadeIn>
             ))}
           </div>
         </div>
@@ -194,10 +201,12 @@ export default function LandingPage() {
       {/* ── CAPABILITIES ──────────────────────────────────── */}
       <section className="py-24 px-6 border-t border-zinc-800/50">
         <div className="max-w-6xl mx-auto">
-          <p className="text-[11px] text-amber-500 uppercase tracking-widest font-medium mb-4">Capabilities</p>
-          <h2 className="text-3xl sm:text-4xl font-bold text-zinc-100 mb-16">
-            Everything you need. Nothing you don&apos;t.
-          </h2>
+          <FadeIn direction="up">
+            <p className="text-[11px] text-amber-500 uppercase tracking-widest font-medium mb-4">Capabilities</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-zinc-100 mb-16">
+              Everything you need. Nothing you don&apos;t.
+            </h2>
+          </FadeIn>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-y-10 gap-x-8">
             {[
@@ -209,12 +218,14 @@ export default function LandingPage() {
               { icon: MessageCircle, title: "In-app chat", desc: "Direct messaging between admins, workers, and buyers." },
               { icon: Upload, title: "Bulk import", desc: "CSV upload for inventory and export for reports." },
               { icon: ShieldCheck, title: "Role-based access", desc: "Each role sees exactly what they need. Nothing more." },
-            ].map((f) => (
-              <div key={f.title} className="group hover-up cursor-default">
-                <f.icon className="w-5 h-5 text-zinc-600 mb-3 group-hover:text-amber-500 transition-colors" />
-                <h3 className="text-sm font-semibold text-zinc-200 mb-1">{f.title}</h3>
-                <p className="text-xs text-zinc-500 leading-relaxed">{f.desc}</p>
-              </div>
+            ].map((f, i) => (
+              <FadeIn key={f.title} delay={i * 80} direction="up">
+                <div className="group hover-up cursor-default">
+                  <f.icon className="w-5 h-5 text-zinc-600 mb-3 group-hover:text-amber-500 transition-colors" />
+                  <h3 className="text-sm font-semibold text-zinc-200 mb-1">{f.title}</h3>
+                  <p className="text-xs text-zinc-500 leading-relaxed">{f.desc}</p>
+                </div>
+              </FadeIn>
             ))}
           </div>
         </div>
@@ -222,17 +233,19 @@ export default function LandingPage() {
 
       {/* ── CTA ───────────────────────────────────────────── */}
       <section className="py-24 px-6 border-t border-zinc-800/50">
-        <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-zinc-100 mb-4">
-            Ready to take control?
-          </h2>
-          <p className="text-zinc-500 mb-10">
-            Free forever. No credit card. No limits.
-          </p>
-          <Link href="/signup" className="inline-flex items-center gap-2 text-sm font-medium bg-amber-500 text-zinc-950 px-6 py-3 rounded hover:bg-amber-400 transition-colors">
-            Start managing your warehouse <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
+        <FadeIn direction="up">
+          <div className="max-w-2xl mx-auto text-center">
+            <h2 className="text-3xl sm:text-4xl font-bold text-zinc-100 mb-4">
+              Ready to take control?
+            </h2>
+            <p className="text-zinc-500 mb-10">
+              Free forever. No credit card. No limits.
+            </p>
+            <Link href="/signup" className="inline-flex items-center gap-2 text-sm font-medium bg-amber-500 text-zinc-950 px-6 py-3 rounded hover:bg-amber-400 press">
+              Start managing your warehouse <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </FadeIn>
       </section>
 
       {/* ── FOOTER ────────────────────────────────────────── */}
