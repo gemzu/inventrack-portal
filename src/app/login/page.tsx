@@ -3,11 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Boxes, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Boxes, Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -19,7 +16,6 @@ export default function LoginPage() {
   const { user, login, resetPassword, loading: authLoading } = useAuth();
   const router = useRouter();
 
-  // Already logged in → go to dashboard
   if (!authLoading && user) {
     router.push("/dashboard");
     return null;
@@ -34,112 +30,116 @@ export default function LoginPage() {
       router.push("/dashboard");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Login failed";
-      if (msg.includes("user-not-found") || msg.includes("invalid-credential")) {
-        setError("Invalid email or password.");
-      } else if (msg.includes("too-many-requests")) {
-        setError("Too many attempts. Try again later.");
-      } else {
-        setError("Login failed. Please try again.");
-      }
-    } finally {
-      setLoading(false);
-    }
+      if (msg.includes("invalid") || msg.includes("Invalid")) setError("Invalid email or password.");
+      else if (msg.includes("many")) setError("Too many attempts. Try again later.");
+      else setError("Login failed. Please try again.");
+    } finally { setLoading(false); }
   };
 
   const handleReset = async () => {
-    if (!email) {
-      setError("Enter your email first.");
-      return;
-    }
+    if (!email) { setError("Enter your email first."); return; }
     try {
       await resetPassword(email);
       setResetSent(true);
       setError("");
-    } catch {
-      setError("Could not send reset email.");
-    }
+    } catch { setError("Could not send reset email."); }
   };
 
+  const inputClass = "w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-colors";
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-background">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-zinc-900 dark:bg-zinc-800 flex items-center justify-center">
-              <Boxes className="w-5 h-5 text-zinc-100" />
-            </div>
-            <span className="text-2xl font-bold tracking-tight text-foreground">INVENTRACK</span>
+    <div className="min-h-screen bg-zinc-950 flex flex-col">
+      {/* Top bar */}
+      <div className="border-b border-zinc-800/50">
+        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center">
+          <Link href="/" className="flex items-center gap-2 text-zinc-500 hover:text-zinc-300 transition-colors text-xs font-medium">
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Back
           </Link>
         </div>
+      </div>
 
-        <Card>
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Welcome back</CardTitle>
-            <CardDescription>Sign in to your account</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {error && (
-                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
-                  {error}
-                </div>
-              )}
-              {resetSent && (
-                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 text-sm">
-                  Password reset email sent! Check your inbox.
-                </div>
-              )}
+      {/* Form */}
+      <div className="flex-1 flex items-center justify-center px-6 py-12">
+        <div className="w-full max-w-sm">
+          {/* Logo */}
+          <div className="flex items-center gap-2.5 mb-10">
+            <div className="w-7 h-7 rounded bg-amber-500 flex items-center justify-center">
+              <Boxes className="w-3.5 h-3.5 text-zinc-950" />
+            </div>
+            <span className="text-sm font-semibold text-zinc-100 tracking-wide">INVENTRACK</span>
+          </div>
 
-              <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-foreground">Email</label>
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+          <h1 className="text-2xl font-bold text-zinc-100 mb-1">Welcome back</h1>
+          <p className="text-sm text-zinc-500 mb-8">Sign in to your account.</p>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="px-3 py-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+                {error}
+              </div>
+            )}
+            {resetSent && (
+              <div className="px-3 py-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
+                Password reset email sent. Check your inbox.
+              </div>
+            )}
+
+            <div>
+              <label className="block text-[11px] text-zinc-500 uppercase tracking-wider font-medium mb-2">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setError(""); }}
+                required
+                placeholder="you@company.com"
+                className={inputClass}
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] text-zinc-500 uppercase tracking-wider font-medium mb-2">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); setError(""); }}
                   required
-                  placeholder="you@company.com"
+                  placeholder="Enter your password"
+                  className={`${inputClass} pr-10`}
                 />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-foreground">Password</label>
-                <div className="relative">
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    placeholder="Enter your password"
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end">
-                <button type="button" onClick={handleReset} className="text-sm text-primary hover:underline">
-                  Forgot password?
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400 transition-colors">
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+            </div>
 
-              <Button type="submit" disabled={loading} className="w-full">
-                {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                {loading ? "Signing in..." : "Sign In"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+            <div className="flex justify-end">
+              <button type="button" onClick={handleReset} className="text-xs text-amber-500 hover:text-amber-400 transition-colors">
+                Forgot password?
+              </button>
+            </div>
 
-        <p className="text-center mt-6 text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <Link href="/signup" className="text-primary font-medium hover:underline">Sign up</Link>
-        </p>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-zinc-100 text-zinc-950 font-medium text-sm py-2.5 rounded-lg hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Signing in...
+                </span>
+              ) : (
+                "Sign in"
+              )}
+            </button>
+          </form>
+
+          <p className="text-center mt-8 text-xs text-zinc-600">
+            Don&apos;t have an account?{" "}
+            <Link href="/signup" className="text-zinc-400 hover:text-zinc-200 transition-colors">Create account</Link>
+          </p>
+        </div>
       </div>
     </div>
   );
