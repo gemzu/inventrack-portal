@@ -69,34 +69,34 @@ export default function LandingPage() {
 
           {/* Left: Copy */}
           <div className="pt-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-zinc-800 text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-8">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            <div className="fade-up inline-flex items-center gap-2 px-3 py-1 rounded-full border border-zinc-800 text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-8">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 pulse-dot" />
               Warehouse Management
             </div>
 
-            <h1 className="text-[2.75rem] sm:text-5xl lg:text-[3.5rem] font-bold tracking-tight leading-[1.1] text-zinc-50">
+            <h1 className="fade-up fade-up-1 text-[2.75rem] sm:text-5xl lg:text-[3.5rem] font-bold tracking-tight leading-[1.1] text-zinc-50">
               Stop guessing.
               <br />
               <span className="text-zinc-500">Start managing.</span>
             </h1>
 
-            <p className="mt-6 text-base text-zinc-500 leading-relaxed max-w-md">
+            <p className="fade-up fade-up-2 mt-6 text-base text-zinc-500 leading-relaxed max-w-md">
               Real-time visibility into every box, every order, every scan.
               Built for teams that run warehouses, not spreadsheets.
             </p>
 
-            <div className="mt-10 flex items-center gap-4">
-              <Link href="/signup" className="text-sm font-medium bg-amber-500 text-zinc-950 px-5 py-2.5 rounded hover:bg-amber-400 transition-colors">
+            <div className="fade-up fade-up-3 mt-10 flex items-center gap-4">
+              <Link href="/signup" className="text-sm font-medium bg-amber-500 text-zinc-950 px-5 py-2.5 rounded hover:bg-amber-400 press">
                 Start managing your warehouse
               </Link>
-              <a href="#how" className="text-sm font-medium text-zinc-500 hover:text-zinc-300 transition-colors">
+              <a href="#how" className="text-sm font-medium text-zinc-500 hover:text-zinc-300">
                 How it works →
               </a>
             </div>
           </div>
 
           {/* Right: Terminal */}
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden lg:mt-8">
+          <div className="fade-up fade-up-4 rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden lg:mt-8">
             <div className="flex items-center gap-2 px-4 py-2.5 border-b border-zinc-800 bg-zinc-900/80">
               <div className="flex gap-1.5">
                 <div className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
@@ -107,7 +107,7 @@ export default function LandingPage() {
             </div>
             <div className="p-4 font-mono text-xs space-y-1.5">
               {TERMINAL_LINES.map((line, i) => (
-                <div key={i} className="flex items-center gap-3">
+                <div key={i} className="type-line flex items-center gap-3">
                   <span className="text-zinc-600 shrink-0">{line.time}</span>
                   <span className={cn(
                     "w-16 shrink-0 font-medium",
@@ -122,10 +122,10 @@ export default function LandingPage() {
                   </span>
                 </div>
               ))}
-              <div className="flex items-center gap-3 mt-1">
+              <div className="type-line flex items-center gap-3 mt-1">
                 <span className="text-zinc-600">09:42:30</span>
                 <span className="text-zinc-700">_</span>
-                <span className="w-2 h-3.5 bg-amber-500/60 animate-pulse" />
+                <span className="w-2 h-3.5 bg-amber-500/60 animate-blink" />
               </div>
             </div>
           </div>
@@ -140,8 +140,8 @@ export default function LandingPage() {
             { label: "Orders processed", value: "2,400+" },
             { label: "Facilities active", value: "38" },
             { label: "Uptime", value: "99.9%" },
-          ].map((s) => (
-            <div key={s.label}>
+          ].map((s, i) => (
+            <div key={s.label} className={`counter-in counter-in-${i + 1}`}>
               <div className="text-2xl font-bold text-zinc-100 font-mono tracking-tight">{s.value}</div>
               <div className="text-[11px] text-zinc-600 mt-1 uppercase tracking-wider">{s.label}</div>
             </div>
@@ -178,7 +178,7 @@ export default function LandingPage() {
                 desc: "Buyers browse available stock, reserve items for 24 hours, and submit purchase orders. You approve and ship.",
               },
             ].map((step) => (
-              <div key={step.num} className="bg-zinc-900 p-8 group">
+              <div key={step.num} className="bg-zinc-900 p-8 group hover-up cursor-default">
                 <div className="flex items-center justify-between mb-6">
                   <span className="text-xs font-mono text-zinc-600">{step.num}</span>
                   <step.icon className="w-5 h-5 text-zinc-600 group-hover:text-amber-500 transition-colors" />
@@ -210,7 +210,7 @@ export default function LandingPage() {
               { icon: Upload, title: "Bulk import", desc: "CSV upload for inventory and export for reports." },
               { icon: ShieldCheck, title: "Role-based access", desc: "Each role sees exactly what they need. Nothing more." },
             ].map((f) => (
-              <div key={f.title} className="group">
+              <div key={f.title} className="group hover-up cursor-default">
                 <f.icon className="w-5 h-5 text-zinc-600 mb-3 group-hover:text-amber-500 transition-colors" />
                 <h3 className="text-sm font-semibold text-zinc-200 mb-1">{f.title}</h3>
                 <p className="text-xs text-zinc-500 leading-relaxed">{f.desc}</p>

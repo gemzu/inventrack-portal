@@ -126,15 +126,145 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Page transition (only animation allowed) ──────────── */
+/* ── Motion System ─────────────────────────────────────── */
+
+/* Page entrance */
 @keyframes page-enter {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
 .animate-page-enter {
-  animation: page-enter 200ms ease-out forwards;
+  animation: page-enter 400ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Fade up (staggerable) */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up {
+  opacity: 0;
+  animation: fade-up 500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.fade-up-1 { animation-delay: 50ms; }
+.fade-up-2 { animation-delay: 100ms; }
+.fade-up-3 { animation-delay: 150ms; }
+.fade-up-4 { animation-delay: 200ms; }
+.fade-up-5 { animation-delay: 250ms; }
+.fade-up-6 { animation-delay: 300ms; }
+.fade-up-7 { animation-delay: 350ms; }
+.fade-up-8 { animation-delay: 400ms; }
+
+/* Fade in (no movement) */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.fade-in {
+  opacity: 0;
+  animation: fade-in 600ms ease forwards;
+}
+
+/* Scale in (cards, modals) */
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+.scale-in {
+  opacity: 0;
+  animation: scale-in 400ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Slide in from right (panels) */
+@keyframes slide-right {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.slide-right {
+  opacity: 0;
+  animation: slide-right 400ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Blink cursor for terminal */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.animate-blink {
+  animation: blink 1s step-end infinite;
+}
+
+/* Smooth hover transitions */
+.hover-up {
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms ease;
+}
+.hover-up:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+}
+
+/* Interactive press */
+.press {
+  transition: transform 100ms ease;
+}
+.press:active {
+  transform: scale(0.98);
+}
+
+/* Smooth color transitions */
+* {
+  transition-property: color, background-color, border-color, opacity;
+  transition-duration: 150ms;
+  transition-timing-function: ease;
+}
+
+/* Sidebar item hover slide */
+.nav-slide {
+  transition: padding-left 200ms cubic-bezier(0.16, 1, 0.3, 1), color 150ms ease, background-color 150ms ease;
+}
+.nav-slide:hover {
+  padding-left: 20px;
+}
+
+/* Terminal line typewriter */
+@keyframes type-in {
+  from { opacity: 0; transform: translateX(-4px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.type-line {
+  opacity: 0;
+  animation: type-in 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.type-line:nth-child(1) { animation-delay: 200ms; }
+.type-line:nth-child(2) { animation-delay: 400ms; }
+.type-line:nth-child(3) { animation-delay: 600ms; }
+.type-line:nth-child(4) { animation-delay: 800ms; }
+.type-line:nth-child(5) { animation-delay: 1000ms; }
+.type-line:nth-child(6) { animation-delay: 1200ms; }
+.type-line:nth-child(7) { animation-delay: 1400ms; }
+
+/* Pulse dot (live indicator) */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+.pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* Number counter reveal */
+@keyframes counter-in {
+  from { opacity: 0; transform: translateY(8px); filter: blur(4px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+.counter-in {
+  opacity: 0;
+  animation: counter-in 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.counter-in-1 { animation-delay: 100ms; }
+.counter-in-2 { animation-delay: 200ms; }
+.counter-in-3 { animation-delay: 300ms; }
+.counter-in-4 { animation-delay: 400ms; }
 
 /* ── Utilities ─────────────────────────────────────────── */
 .mono {
@@ -143,6 +273,7 @@ body {
 }
 
 /* ── Scrollbar ─────────────────────────────────────────── */
+* { scroll-behavior: smooth; }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 3px; }
