@@ -90,11 +90,11 @@ function SidebarNav({
   onLogout: () => void;
 }) {
   return (
-    <div className="flex flex-col h-full bg-zinc-950">
+    <div className="flex flex-col h-full bg-[#0c0c0f]">
       {/* Logo area */}
-      <div className="h-14 flex items-center px-5 shrink-0 border-b border-zinc-800">
+      <div className="h-14 flex items-center px-5 shrink-0 border-b border-[#2a2a30]">
         <Link href="/" className="flex items-center gap-2" onClick={onNavigate}>
-          <div className="w-8 h-8 rounded-lg bg-teal-500 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center">
             <Boxes className="w-4 h-4 text-zinc-950" />
           </div>
           <span className="font-bold text-lg text-white tracking-tight">INVENTRACK</span>
@@ -118,7 +118,7 @@ function SidebarNav({
                     onClick={onNavigate}
                     className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
                       active
-                        ? "bg-zinc-800/80 text-zinc-100"
+                        ? "bg-indigo-500/10 text-indigo-400"
                         : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
                     }`}
                   >
@@ -133,14 +133,14 @@ function SidebarNav({
       </nav>
 
       {/* Settings + Sign out (bottom) */}
-      <div className="shrink-0 border-t border-zinc-800 p-3 space-y-0.5">
+      <div className="shrink-0 border-t border-[#2a2a30] p-3 space-y-0.5">
         {showSettings && (
           <Link
             href="/dashboard/settings"
             onClick={onNavigate}
             className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
               pathname === "/dashboard/settings"
-                ? "bg-zinc-800/80 text-zinc-100"
+                ? "bg-indigo-500/10 text-indigo-400"
                 : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
             }`}
           >
@@ -274,7 +274,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <SheetTrigger className="lg:hidden p-2 rounded-lg hover:bg-muted transition-colors">
                 <Menu className="w-5 h-5" />
               </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-60 bg-zinc-950 border-zinc-800">
+              <SheetContent side="left" className="p-0 w-60 bg-[#0c0c0f] border-[#2a2a30]">
                 <SidebarNav
                   visibleGroups={visibleGroups}
                   showSettings={showSettings}

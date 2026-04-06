@@ -40,12 +40,12 @@ export default function SignupPage() {
     } finally { setLoading(false); }
   };
 
-  const inputClass = "w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-colors";
+  const inputClass = "w-full bg-zinc-900 border border-[#2a2a30] rounded-lg px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-colors";
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex flex-col">
+    <div className="min-h-screen bg-[#0c0c0f] flex flex-col">
       {/* Top bar */}
-      <div className="border-b border-zinc-800/50">
+      <div className="border-b border-[#2a2a30]/50">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center">
           <Link href="/" className="flex items-center gap-2 text-zinc-500 hover:text-zinc-300 transition-colors text-xs font-medium">
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -59,7 +59,7 @@ export default function SignupPage() {
         <div className="w-full max-w-sm">
           {/* Logo */}
           <div className="flex items-center gap-2.5 mb-10">
-            <div className="w-7 h-7 rounded bg-teal-500 flex items-center justify-center">
+            <div className="w-7 h-7 rounded bg-indigo-500 flex items-center justify-center">
               <Boxes className="w-3.5 h-3.5 text-zinc-950" />
             </div>
             <span className="text-sm font-semibold text-zinc-100 tracking-wide">INVENTRACK</span>
@@ -89,8 +89,8 @@ export default function SignupPage() {
                     onClick={() => setRole(r.value)}
                     className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                       role === r.value
-                        ? "bg-teal-500 text-zinc-950"
-                        : "bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700"
+                        ? "bg-indigo-500 text-zinc-950"
+                        : "bg-zinc-900 text-zinc-400 border border-[#2a2a30] hover:border-zinc-700"
                     }`}
                   >
                     {r.label}
@@ -140,13 +140,13 @@ export default function SignupPage() {
                 id="terms"
                 checked={agreedToTerms}
                 onChange={(e) => setAgreedToTerms(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded border-zinc-700 bg-zinc-900 accent-teal-500 cursor-pointer"
+                className="mt-0.5 w-4 h-4 rounded border-zinc-700 bg-zinc-900 accent-indigo-500 cursor-pointer"
               />
               <label htmlFor="terms" className="text-xs text-zinc-500 cursor-pointer leading-relaxed">
                 I agree to the{" "}
-                <a href="/terms" target="_blank" className="text-teal-500 hover:text-teal-400">Terms of Service</a>
+                <a href="/terms" target="_blank" className="text-indigo-500 hover:text-indigo-400">Terms of Service</a>
                 {" "}and{" "}
-                <a href="/privacy" target="_blank" className="text-teal-500 hover:text-teal-400">Privacy Policy</a>
+                <a href="/privacy" target="_blank" className="text-indigo-500 hover:text-indigo-400">Privacy Policy</a>
               </label>
             </div>
 

@@ -45,12 +45,12 @@ export default function LoginPage() {
     } catch { setError("Could not send reset email."); }
   };
 
-  const inputClass = "w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-colors";
+  const inputClass = "w-full bg-zinc-900 border border-[#2a2a30] rounded-lg px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-colors";
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex flex-col">
+    <div className="min-h-screen bg-[#0c0c0f] flex flex-col">
       {/* Top bar */}
-      <div className="border-b border-zinc-800/50">
+      <div className="border-b border-[#2a2a30]/50">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center">
           <Link href="/" className="flex items-center gap-2 text-zinc-500 hover:text-zinc-300 transition-colors text-xs font-medium">
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -64,7 +64,7 @@ export default function LoginPage() {
         <div className="w-full max-w-sm">
           {/* Logo */}
           <div className="flex items-center gap-2.5 mb-10">
-            <div className="w-7 h-7 rounded bg-teal-500 flex items-center justify-center">
+            <div className="w-7 h-7 rounded bg-indigo-500 flex items-center justify-center">
               <Boxes className="w-3.5 h-3.5 text-zinc-950" />
             </div>
             <span className="text-sm font-semibold text-zinc-100 tracking-wide">INVENTRACK</span>
@@ -115,7 +115,7 @@ export default function LoginPage() {
             </div>
 
             <div className="flex justify-end">
-              <button type="button" onClick={handleReset} className="text-xs text-teal-500 hover:text-teal-400 transition-colors">
+              <button type="button" onClick={handleReset} className="text-xs text-indigo-500 hover:text-indigo-400 transition-colors">
                 Forgot password?
               </button>
             </div>
