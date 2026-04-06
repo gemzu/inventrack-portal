@@ -93,7 +93,7 @@ function SidebarNav({
     <div className="flex flex-col h-full bg-zinc-950">
       {/* Logo area */}
       <div className="h-14 flex items-center px-5 shrink-0 border-b border-zinc-800">
-        <Link href="/dashboard" className="flex items-center gap-2" onClick={onNavigate}>
+        <Link href="/" className="flex items-center gap-2" onClick={onNavigate}>
           <div className="w-8 h-8 rounded-lg bg-teal-500 flex items-center justify-center">
             <Boxes className="w-4 h-4 text-zinc-950" />
           </div>
