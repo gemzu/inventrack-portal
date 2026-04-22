@@ -5,11 +5,10 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { ShoppingCart, ChevronDown, Search, Eye, Check, X } from "lucide-react";
 import { statusColor, formatDateTime } from "@/lib/utils";
+import { normalizeOrderStatus, orderStatusLabel, ORDER_STATUS_FLOW, ORDER_STATUS } from "@/lib/orderStatus";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 interface OrderItem {
   modelId: string;
@@ -40,14 +39,14 @@ function mapOrder(row: Record<string, unknown>): Order {
     buyerCompany: row.buyer_company as string | undefined,
     items,
     totalQty: (row.total_qty as number) || items.length,
-    status: (row.status as string) || "pending",
+    status: normalizeOrderStatus(row.status as string),
     orderedBy: (row.ordered_by as string) || "",
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 
-const ORDER_STATUSES = ["pending", "pending_approval", "confirmed", "processing", "shipped", "delivered", "completed", "cancelled"];
+const ORDER_STATUSES = [...ORDER_STATUS_FLOW];
 
 export default function OrdersPage() {
   const { orgId } = useAuth();
@@ -83,17 +82,18 @@ export default function OrdersPage() {
         (o) => o.buyerName?.toLowerCase().includes(s) || o.buyerEmail?.toLowerCase().includes(s) || o.buyerCompany?.toLowerCase().includes(s)
       );
     }
-    if (statusFilter !== "all") result = result.filter((o) => o.status === statusFilter);
+    if (statusFilter !== "all") result = result.filter((o) => normalizeOrderStatus(o.status) === statusFilter);
     setFiltered(result);
   }, [search, statusFilter, orders]);
 
   const updateOrderStatus = async (order: Order, newStatus: string) => {
     try {
-      const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", order.id);
+      const normalizedNext = normalizeOrderStatus(newStatus);
+      const { error } = await supabase.from("orders").update({ status: normalizedNext }).eq("id", order.id);
       if (error) throw error;
-      setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: newStatus } : o)));
-      if (selectedOrder?.id === order.id) setSelectedOrder({ ...order, status: newStatus });
-      toast(`Order ${newStatus === "confirmed" ? "approved" : newStatus === "cancelled" ? "rejected" : "updated to " + newStatus}`, "success");
+      setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: normalizedNext } : o)));
+      if (selectedOrder?.id === order.id) setSelectedOrder({ ...order, status: normalizedNext });
+      toast(`Order ${normalizedNext === ORDER_STATUS.CONFIRMED ? "approved" : normalizedNext === ORDER_STATUS.CANCELLED ? "rejected" : "updated to " + orderStatusLabel(normalizedNext)}`, "success");
     } catch {
       toast("Failed to update order status", "error");
     }
@@ -132,7 +132,7 @@ export default function OrdersPage() {
           >
             <option value="all">All Status</option>
             {ORDER_STATUSES.map((s) => (
-              <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
+              <option key={s} value={s}>{orderStatusLabel(s)}</option>
             ))}
           </select>
           <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />
@@ -163,7 +163,7 @@ export default function OrdersPage() {
                   <td className="px-4 py-3 font-medium">{order.totalQty}</td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusColor(order.status)}`}>
-                      {order.status.replace(/_/g, " ")}
+                      {orderStatusLabel(order.status)}
                     </span>
                   </td>
                   <td className="px-4 py-3 hidden sm:table-cell text-xs text-muted-foreground">
@@ -174,12 +174,12 @@ export default function OrdersPage() {
                       <button onClick={() => setSelectedOrder(order)} className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition">
                         <Eye className="w-4 h-4" />
                       </button>
-                      {(order.status === "pending" || order.status === "pending_approval") && (
+                      {normalizeOrderStatus(order.status) === ORDER_STATUS.PENDING_APPROVAL && (
                         <>
-                          <button onClick={() => updateOrderStatus(order, "confirmed")} className="p-1.5 rounded-lg hover:bg-success/10 text-success transition">
+                          <button onClick={() => updateOrderStatus(order, ORDER_STATUS.CONFIRMED)} className="p-1.5 rounded-lg hover:bg-success/10 text-success transition">
                             <Check className="w-4 h-4" />
                           </button>
-                          <button onClick={() => updateOrderStatus(order, "cancelled")} className="p-1.5 rounded-lg hover:bg-danger/10 text-danger transition">
+                          <button onClick={() => updateOrderStatus(order, ORDER_STATUS.CANCELLED)} className="p-1.5 rounded-lg hover:bg-danger/10 text-danger transition">
                             <X className="w-4 h-4" />
                           </button>
                         </>
@@ -212,7 +212,7 @@ export default function OrdersPage() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Status:</span>
                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusColor(selectedOrder.status)}`}>
-                  {selectedOrder.status.replace(/_/g, " ")}
+                  {orderStatusLabel(selectedOrder.status)}
                 </span>
               </div>
               <div className="flex justify-between"><span className="text-muted-foreground">Total Qty:</span> <strong>{selectedOrder.totalQty}</strong></div>
@@ -228,16 +228,16 @@ export default function OrdersPage() {
                 </div>
               ))}
 
-              {(selectedOrder.status === "pending" || selectedOrder.status === "pending_approval") && (
+              {normalizeOrderStatus(selectedOrder.status) === ORDER_STATUS.PENDING_APPROVAL && (
                 <div className="flex gap-2 mt-4">
                   <button
-                    onClick={() => updateOrderStatus(selectedOrder, "confirmed")}
+                    onClick={() => updateOrderStatus(selectedOrder, ORDER_STATUS.CONFIRMED)}
                     className="flex-1 py-2 rounded-xl bg-success text-white text-sm font-medium hover:opacity-90 transition"
                   >
                     Approve
                   </button>
                   <button
-                    onClick={() => updateOrderStatus(selectedOrder, "cancelled")}
+                    onClick={() => updateOrderStatus(selectedOrder, ORDER_STATUS.CANCELLED)}
                     className="flex-1 py-2 rounded-xl bg-danger text-white text-sm font-medium hover:opacity-90 transition"
                   >
                     Reject
@@ -245,9 +245,9 @@ export default function OrdersPage() {
                 </div>
               )}
 
-              {selectedOrder.status === "confirmed" && (
+              {normalizeOrderStatus(selectedOrder.status) === ORDER_STATUS.CONFIRMED && (
                 <button
-                  onClick={() => updateOrderStatus(selectedOrder, "processing")}
+                  onClick={() => updateOrderStatus(selectedOrder, ORDER_STATUS.PROCESSING)}
                   className="w-full py-2 rounded-xl bg-primary text-white text-sm font-medium hover:opacity-90 transition mt-2"
                 >
                   Mark Processing

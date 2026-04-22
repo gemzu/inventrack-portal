@@ -4,10 +4,9 @@ import AdminGuard from "@/components/AdminGuard";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { Settings, Save, Building2, Phone, MapPin, Package, Clock, ShoppingCart, Bell, AlertTriangle, Upload } from "lucide-react";
+import { Save, Building2, Package, ShoppingCart, Bell, AlertTriangle, Upload } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (

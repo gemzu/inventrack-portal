@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="6" fill="#6366f1"/>
+  <!-- Boxes icon (matching lucide-react Boxes) -->
+  <g stroke="#0c0c0f" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- Bottom-left box -->
+    <path d="M7 18.5l5 2.5 5-2.5"/>
+    <path d="M12 21v5"/>
+    <path d="M7 16l5 2.5L17 16l-5-2.5L7 16z"/>
+    <!-- Bottom-right box -->
+    <path d="M15 18.5l5 2.5 5-2.5"/>
+    <path d="M20 21v5"/>
+    <path d="M15 16l5 2.5L25 16l-5-2.5L15 16z"/>
+    <!-- Top box -->
+    <path d="M11 10.5l5 2.5 5-2.5"/>
+    <path d="M16 13v5"/>
+    <path d="M11 8l5 2.5L21 8l-5-2.5L11 8z"/>
+  </g>
+</svg>

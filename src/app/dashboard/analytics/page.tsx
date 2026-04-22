@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import {
   TrendingUp, Users as UsersIcon, Package, ShoppingCart,
-  Building2, Activity, Loader2,
+  Building2, Activity,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import {

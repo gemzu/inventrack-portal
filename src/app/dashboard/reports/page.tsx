@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -8,6 +8,7 @@ import {
   AlertTriangle, TrendingUp, Loader2, CheckCircle,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { normalizeOrderStatus, ORDER_STATUS } from "@/lib/orderStatus";
 import { SkeletonCard } from "@/components/Skeleton";
 
 function downloadCsv(filename: string, header: string, rows: string[][]) {
@@ -37,19 +38,17 @@ export default function ReportsPage() {
     ordersPending: 0,
     ordersFulfilled: 0,
     ordersRejected: 0,
+    pendingApprovals: 0,
+    fulfillmentRate: 0,
     lowStockItems: [] as { modelId: string; quantity: number; brand: string }[],
   });
   const [generating, setGenerating] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadSnapshot = useCallback(async () => {
     if (!orgId) {
       setLoading(false);
       return;
     }
-    loadSnapshot();
-  }, [orgId]);
-
-  async function loadSnapshot() {
     try {
       // Inventory breakdown
       const { data: invData } = await supabase
@@ -71,9 +70,15 @@ export default function ReportsPage() {
         .eq("org_id", orgId)
         .gte("created_at", monthStart.toISOString());
       const orders = ordData || [];
-      const pending = orders.filter((o) => o.status === "pending").length;
-      const fulfilled = orders.filter((o) => o.status === "fulfilled").length;
-      const rejected = orders.filter((o) => o.status === "rejected").length;
+      const pending = orders.filter((o) => normalizeOrderStatus(o.status) === ORDER_STATUS.PENDING_APPROVAL).length;
+      const fulfilled = orders.filter((o) => normalizeOrderStatus(o.status) === ORDER_STATUS.DELIVERED).length;
+      const rejected = orders.filter((o) => normalizeOrderStatus(o.status) === ORDER_STATUS.CANCELLED).length;
+      const fulfillmentRate = orders.length > 0 ? Math.round((fulfilled / orders.length) * 100) : 0;
+      const { count: pendingApprovals } = await supabase
+        .from("approvals")
+        .select("*", { count: "exact", head: true })
+        .eq("org_id", orgId)
+        .eq("status", "pending");
 
       // Low stock items
       const lowStock = items
@@ -93,6 +98,8 @@ export default function ReportsPage() {
         ordersPending: pending,
         ordersFulfilled: fulfilled,
         ordersRejected: rejected,
+        pendingApprovals: pendingApprovals || 0,
+        fulfillmentRate,
         lowStockItems: lowStock,
       });
     } catch (err) {
@@ -100,7 +107,11 @@ export default function ReportsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [orgId]);
+
+  useEffect(() => {
+    loadSnapshot();
+  }, [loadSnapshot]);
 
   async function generateReport(type: string) {
     if (!orgId) return;
@@ -121,7 +132,7 @@ export default function ReportsPage() {
         const header = "ID,Buyer Name,Buyer Email,Status,Item Count,Created At";
         const rows = items.map((o) => [
           o.id || "", o.buyer_name || o.buyer_email || "", o.buyer_email || "",
-          o.status || "", String(Array.isArray(o.items) ? o.items.length : (o.item_count || 0)),
+          normalizeOrderStatus(o.status) || "", String(Array.isArray(o.items) ? o.items.length : (o.item_count || 0)),
           o.created_at || "",
         ]);
         downloadCsv("orders_report.csv", header, rows);
@@ -142,6 +153,22 @@ export default function ReportsPage() {
         const header = "Model ID,Brand,Quantity";
         const rows = snapshot.lowStockItems.map((i) => [i.modelId, i.brand, String(i.quantity)]);
         downloadCsv("low_stock_report.csv", header, rows);
+      } else if (type === "ops_digest") {
+        const header = "Metric,Value";
+        const rows = [
+          ["Total Inventory Items", String(snapshot.totalItems)],
+          ["Available Items", String(snapshot.available)],
+          ["Reserved Items", String(snapshot.reserved)],
+          ["Sold Items", String(snapshot.sold)],
+          ["Orders This Month", String(snapshot.ordersThisMonth)],
+          ["Orders Pending Approval", String(snapshot.ordersPending)],
+          ["Orders Delivered", String(snapshot.ordersFulfilled)],
+          ["Orders Cancelled", String(snapshot.ordersRejected)],
+          ["Pending Approvals Queue", String(snapshot.pendingApprovals)],
+          ["Fulfillment Rate", `${snapshot.fulfillmentRate}%`],
+          ["Low Stock Items", String(snapshot.lowStockItems.length)],
+        ];
+        downloadCsv("operations_digest.csv", header, rows);
       }
     } catch (err) {
       console.error("Report generation error:", err);
@@ -207,6 +234,14 @@ export default function ReportsPage() {
       bg: "bg-accent/10",
     },
     {
+      title: "Ops Digest",
+      desc: "One-file KPI digest for owners and managers",
+      icon: TrendingUp,
+      type: "ops_digest",
+      color: "text-purple-500",
+      bg: "bg-purple-500/10",
+    },
+    {
       title: "Activity Report",
       desc: "Recent scan logs and barcode activity (up to 1000)",
       icon: Activity,
@@ -267,6 +302,12 @@ export default function ReportsPage() {
             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-500">
               {snapshot.ordersRejected} rejected
             </span>
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-500">
+              {snapshot.fulfillmentRate}% fulfillment
+            </span>
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-500">
+              {snapshot.pendingApprovals} approvals queued
+            </span>
           </div>
         </div>
       </CardContent></Card>
@@ -322,7 +363,7 @@ export default function ReportsPage() {
           <FileBarChart className="w-4 h-4 text-primary" />
           <h3 className="font-semibold">Quick Reports</h3>
         </div>
-        <div className="grid sm:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-4 gap-4">
           {reportCards.map((report) => (
             <Card key={report.type}><CardContent className="p-5">
               <div className={`w-10 h-10 rounded-xl ${report.bg} flex items-center justify-center mb-4`}>

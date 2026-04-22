@@ -1,7 +1,7 @@
 "use client";
 import AdminGuard from "@/components/AdminGuard";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { Ban, Plus, Trash2, Search, X } from "lucide-react";
@@ -9,8 +9,6 @@ import { formatDate } from "@/lib/utils";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 interface BlacklistItem {
   id: string;
@@ -42,16 +40,16 @@ export default function BlacklistPage() {
   const [form, setForm] = useState({ barcode: "", label: "", reason: "" });
   const { toast } = useToast();
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!orgId) return;
     const { data } = await supabase.from("blacklist").select("*").eq("org_id", orgId);
     const mapped = (data || []).map(mapBlacklistItem);
     setItems(mapped);
     setFiltered(mapped);
     setLoading(false);
-  };
+  }, [orgId]);
 
-  useEffect(() => { load(); }, [orgId]);
+  useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
     if (!search) { setFiltered(items); return; }

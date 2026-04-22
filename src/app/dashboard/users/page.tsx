@@ -4,12 +4,11 @@ import AdminGuard from "@/components/AdminGuard";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { Users as UsersIcon, Search, ChevronDown, Shield, UserCheck, UserX } from "lucide-react";
+import { Users as UsersIcon, Search, ChevronDown, UserCheck, UserX } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 
 interface UserDoc {
   id: string;

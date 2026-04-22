@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Boxes } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 

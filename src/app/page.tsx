@@ -2,12 +2,11 @@
 
 import Link from "next/link";
 import {
-  ScanLine, LayoutGrid, ShoppingBag, ArrowRight, ArrowUpRight,
+  ScanLine, ShoppingBag, ArrowRight, ArrowUpRight,
   Boxes, Barcode, Building2, Clock, ClipboardCheck,
-  BarChart3, MessageCircle, Upload, ShieldCheck, Check,
+  BarChart3, MessageCircle, Upload, ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import FadeIn from "@/components/FadeIn";
 

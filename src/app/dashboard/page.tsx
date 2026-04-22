@@ -8,6 +8,7 @@ import {
   Upload, UserPlus, ArrowRight, MapPin, Clock,
 } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
+import { normalizeOrderStatus } from "@/lib/orderStatus";
 import { SkeletonCard, SkeletonChart } from "@/components/Skeleton";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,16 +20,17 @@ import {
 const COLORS = ["#16a34a", "#d97706", "#2563eb", "#dc2626"];
 
 const STATUS_STYLES: Record<string, string> = {
-  pending:   "bg-amber-500/10 text-amber-500",
-  approved:  "bg-blue-500/10 text-blue-500",
-  fulfilled: "bg-green-500/10 text-green-500",
-  rejected:  "bg-red-500/10 text-red-500",
+  pending_approval: "bg-amber-500/10 text-amber-500",
+  confirmed: "bg-blue-500/10 text-blue-500",
+  processing: "bg-blue-500/10 text-blue-500",
+  shipped: "bg-purple-500/10 text-purple-500",
+  delivered: "bg-green-500/10 text-green-500",
   cancelled: "bg-gray-500/10 text-gray-400",
 };
 
 export default function DashboardPage() {
-  const { orgId, orgData, facilities } = useAuth();
-  const [stats, setStats] = useState({ items: 0, lowStock: 0, orders: 0, users: 0 });
+  const { orgId, facilities } = useAuth();
+  const [stats, setStats] = useState({ items: 0, lowStock: 0, orders: 0, users: 0, pendingApprovals: 0, fulfillmentRate: 0 });
   const [statusData, setStatusData] = useState<{ name: string; value: number }[]>([]);
   const [recentLogs, setRecentLogs] = useState<{ id: string; barcode: string; action: string; scannedBy: string; createdAt: unknown }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +53,7 @@ export default function DashboardPage() {
         if (data && data.length > 0 && dismissed !== data[0].id) {
           setAnnouncement(data[0]);
         }
-      } catch (_) {}
+      } catch {}
     };
     loadAnnouncement();
   }, []);
@@ -75,6 +77,15 @@ export default function DashboardPage() {
         const lowStock = items.filter((d) => (d.quantity || 0) <= 2 && d.status === "available").length;
 
         const { count: ordCount } = await supabase.from("orders").select("*", { count: "exact", head: true }).eq("org_id", orgId);
+        const { data: ordMetrics } = await supabase.from("orders").select("status").eq("org_id", orgId);
+        const normalizedOrderStatuses = (ordMetrics || []).map((o) => normalizeOrderStatus(o.status));
+        const deliveredOrders = normalizedOrderStatuses.filter((s) => s === "delivered").length;
+        const fulfillmentRate = normalizedOrderStatuses.length > 0 ? Math.round((deliveredOrders / normalizedOrderStatuses.length) * 100) : 0;
+        const { count: pendingApprovals } = await supabase
+          .from("approvals")
+          .select("*", { count: "exact", head: true })
+          .eq("org_id", orgId)
+          .eq("status", "pending");
         const { data: usrData } = await supabase.from("users").select("*").eq("org_id", orgId);
         const usrDocs = usrData || [];
 
@@ -90,6 +101,8 @@ export default function DashboardPage() {
           lowStock,
           orders: ordCount || 0,
           users: usrDocs.length,
+          pendingApprovals: pendingApprovals || 0,
+          fulfillmentRate,
         });
 
         setStatusData([
@@ -112,7 +125,7 @@ export default function DashboardPage() {
               id: d.id,
               buyerName: d.buyer_name || d.buyer_email || "Unknown",
               itemCount: Array.isArray(d.items) ? d.items.length : (d.item_count || 0),
-              status: d.status || "pending",
+              status: normalizeOrderStatus(d.status) || "pending_approval",
               createdAt: d.created_at,
             }))
           );
@@ -164,6 +177,8 @@ export default function DashboardPage() {
     { label: "Low Stock", value: stats.lowStock, icon: AlertTriangle, color: "text-warning", bg: "bg-warning/10" },
     { label: "Orders", value: stats.orders, icon: ShoppingCart, color: "text-accent", bg: "bg-accent/10" },
     { label: "Users", value: stats.users, icon: UsersIcon, color: "text-success", bg: "bg-success/10" },
+    { label: "Pending Approvals", value: stats.pendingApprovals, icon: Clock, color: "text-amber-500", bg: "bg-amber-500/10" },
+    { label: "Fulfillment Rate", value: `${stats.fulfillmentRate}%`, icon: TrendingUp, color: "text-blue-500", bg: "bg-blue-500/10" },
   ];
 
   if (loading) {
@@ -254,7 +269,7 @@ export default function DashboardPage() {
       )}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {kpis.map((kpi) => (
           <Card key={kpi.label}><CardContent className="p-5">
             <div className="flex items-center justify-between mb-3">
@@ -423,7 +438,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className={`text-xs px-2.5 py-1 rounded-full font-semibold capitalize ${STATUS_STYLES[order.status] || "bg-gray-500/10 text-gray-400"}`}>
-                    {order.status}
+                    {order.status.replace(/_/g, " ")}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     {formatDateTime(order.createdAt as string)}

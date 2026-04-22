@@ -44,30 +44,8 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  // Fetch all messages for this user in their org
-  const fetchMessages = useCallback(async () => {
-    if (!userId || !orgId) return;
-    try {
-      const { data, error } = await supabase
-        .from("messages")
-        .select("*")
-        .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
-        .eq("org_id", orgId)
-        .order("created_at", { ascending: false });
-
-      if (!error && data) {
-        setMessages(data);
-        buildConversations(data);
-      }
-    } catch (err) {
-      console.error("Error fetching messages:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, orgId]);
-
   // Build conversation list grouped by other user
-  function buildConversations(msgs: Message[]) {
+  const buildConversations = useCallback((msgs: Message[]) => {
     const convMap = new Map<string, Conversation>();
 
     for (const msg of msgs) {
@@ -97,7 +75,29 @@ export default function ChatPage() {
       (a, b) => new Date(b.lastTime).getTime() - new Date(a.lastTime).getTime()
     );
     setConversations(sorted);
-  }
+  }, [userId]);
+
+  // Fetch all messages for this user in their org
+  const fetchMessages = useCallback(async () => {
+    if (!userId || !orgId) return;
+    try {
+      const { data, error } = await supabase
+        .from("messages")
+        .select("*")
+        .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+        .eq("org_id", orgId)
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        setMessages(data);
+        buildConversations(data);
+      }
+    } catch (err) {
+      console.error("Error fetching messages:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, orgId, buildConversations]);
 
   useEffect(() => {
     fetchMessages();
@@ -131,7 +131,7 @@ export default function ChatPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [orgId, userId, scrollToBottom]);
+  }, [orgId, userId, scrollToBottom, buildConversations]);
 
   useEffect(() => {
     scrollToBottom();

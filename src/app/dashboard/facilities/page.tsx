@@ -1,15 +1,13 @@
 "use client";
 import AdminGuard from "@/components/AdminGuard";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { Building2, Plus, Pencil, Trash2, MapPin, Users, X } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 interface Facility {
   id: string;
@@ -28,7 +26,7 @@ export default function FacilitiesPage() {
   const [form, setForm] = useState({ name: "", state: "", address: "" });
   const { toast } = useToast();
 
-  const loadFacilities = async () => {
+  const loadFacilities = useCallback(async () => {
     if (!orgId) return;
     const { data: facData } = await supabase.from("facilities").select("*").eq("org_id", orgId);
     const { data: usrData } = await supabase.from("users").select("facility_id").eq("org_id", orgId);
@@ -47,9 +45,9 @@ export default function FacilitiesPage() {
       }))
     );
     setLoading(false);
-  };
+  }, [orgId]);
 
-  useEffect(() => { loadFacilities(); }, [orgId]);
+  useEffect(() => { loadFacilities(); }, [loadFacilities]);
 
   const handleSave = async () => {
     if (!orgId || !form.name) return;

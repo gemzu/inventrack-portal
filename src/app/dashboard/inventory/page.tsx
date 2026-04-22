@@ -3,13 +3,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { Search, Filter, Download, Package, ChevronDown, Upload, Loader2, X, FileSpreadsheet, Save } from "lucide-react";
-import { statusColor, formatDate } from "@/lib/utils";
+import { Search, Download, Package, ChevronDown, Upload, Loader2, X, FileSpreadsheet, Save } from "lucide-react";
+import { statusColor } from "@/lib/utils";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 interface Item {
   id: string;
@@ -155,8 +153,6 @@ export default function InventoryPage() {
     if (facilityFilter !== "all") result = result.filter((i) => i.facilityId === facilityFilter);
     setFiltered(result);
   }, [search, statusFilter, facilityFilter, items]);
-
-  const totalInventoryValue = filtered.reduce((sum, i) => sum + (i.quantity * (i.sellingPrice || 0)), 0);
 
   const exportCsv = () => {
     const header = "Model ID,Barcode,Name,Brand,Status,Quantity,Cost,Price,Facility\n";

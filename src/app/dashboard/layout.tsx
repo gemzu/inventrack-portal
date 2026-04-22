@@ -10,6 +10,7 @@ import {
   Ban, Activity, Settings, LogOut, Menu,
   Sun, Moon, Boxes, Bell, Loader2, ClipboardCheck,
   TrendingUp, FileBarChart, MessageCircle, FileText,
+  Sparkles, ShoppingBag,
 } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -56,24 +57,26 @@ const navGroups: NavGroup[] = [
     label: "TOOLS",
     items: [
       { href: "/dashboard/facilities", label: "Facilities", icon: Building2 },
+      { href: "/dashboard/storefronts", label: "Storefronts", icon: ShoppingBag },
       { href: "/dashboard/blacklist", label: "Blacklist", icon: Ban },
+      { href: "/dashboard/enrichment", label: "AI Enrichment", icon: Sparkles },
       { href: "/dashboard/activity", label: "Activity", icon: Activity },
       { href: "/dashboard/invoices", label: "Invoices", icon: FileText },
     ],
   },
 ];
 
-const settingsItem: NavItem = { href: "/dashboard/settings", label: "Settings", icon: Settings };
-
 // Admin-only pages filtering
 const adminOnlyPages = [
   "/dashboard/users",
   "/dashboard/facilities",
   "/dashboard/blacklist",
+  "/dashboard/enrichment",
   "/dashboard/activity",
   "/dashboard/settings",
   "/dashboard/approvals",
   "/dashboard/team",
+  "/dashboard/storefronts",
 ];
 
 function SidebarNav({
@@ -161,7 +164,7 @@ function SidebarNav({
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, userName, userRole, userActive, userPermissions, orgId, orgData, loading, logout } = useAuth();
+  const { user, userName, userRole, userActive, userPermissions, loading, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const pathname = usePathname();

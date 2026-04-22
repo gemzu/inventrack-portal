@@ -46,11 +46,13 @@ export default function ApprovalsPage() {
 }
 
 function ApprovalsContent() {
-  const { orgId } = useAuth();
+  const { orgId, orgData } = useAuth();
   const { toast } = useToast();
   const [approvals, setApprovals] = useState<ApprovalDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [autoRunning, setAutoRunning] = useState(false);
+  const autoApproveThreshold = orgData?.lowStockThreshold || 2;
 
   useEffect(() => {
     if (!orgId) return;
@@ -121,6 +123,27 @@ function ApprovalsContent() {
     }
   };
 
+  const runAutoApprove = async () => {
+    if (!orgId) return;
+    setAutoRunning(true);
+    try {
+      const eligible = approvals.filter((a) => (a.quantity || 0) > 0 && (a.quantity || 0) <= autoApproveThreshold);
+      if (eligible.length === 0) {
+        toast("No approvals matched automation rules", "info");
+        return;
+      }
+      for (const item of eligible) {
+        await handleApprove(item);
+      }
+      toast(`Auto-approved ${eligible.length} item${eligible.length === 1 ? "" : "s"}`, "success");
+    } catch (err) {
+      console.error("Auto-approve error:", err);
+      toast("Failed to run automation", "error");
+    } finally {
+      setAutoRunning(false);
+    }
+  };
+
   const handleReject = async (item: ApprovalDoc) => {
     setActionId(item.id);
     try {
@@ -163,6 +186,21 @@ function ApprovalsContent() {
   return (
     <div className="animate-page-enter space-y-4">
       <h1 className="text-2xl font-bold">Approvals</h1>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-500 font-semibold">
+          Pending: {approvals.length}
+        </span>
+        <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-semibold">
+          Auto-eligible: {approvals.filter((a) => (a.quantity || 0) > 0 && (a.quantity || 0) <= autoApproveThreshold).length}
+        </span>
+        <button
+          onClick={runAutoApprove}
+          disabled={autoRunning || approvals.length === 0}
+          className="ml-auto text-xs px-3 py-1.5 rounded-lg border font-semibold hover:border-primary transition disabled:opacity-50"
+        >
+          {autoRunning ? "Running..." : `Auto-approve <= ${autoApproveThreshold} qty`}
+        </button>
+      </div>
 
       {approvals.length === 0 ? (
         <EmptyState

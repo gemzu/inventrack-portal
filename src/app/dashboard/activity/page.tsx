@@ -1,14 +1,13 @@
 "use client";
 import AdminGuard from "@/components/AdminGuard";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { Activity, Search, ChevronDown } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
 import EmptyState from "@/components/EmptyState";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 
 interface ScanLog {
   id: string;
@@ -35,13 +34,12 @@ function mapLog(row: Record<string, unknown>): ScanLog {
 export default function ActivityPage() {
   const { orgId } = useAuth();
   const [logs, setLogs] = useState<ScanLog[]>([]);
-  const [filtered, setFiltered] = useState<ScanLog[]>([]);
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState("all");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!orgId) { setLoading(false); return; }
+    if (!orgId) return;
     const load = async () => {
       const { data } = await supabase
         .from("scan_logs")
@@ -51,20 +49,19 @@ export default function ActivityPage() {
         .limit(200);
       const mapped = (data || []).map(mapLog);
       setLogs(mapped);
-      setFiltered(mapped);
       setLoading(false);
     };
     load();
   }, [orgId]);
 
-  useEffect(() => {
+  const filtered = useMemo(() => {
     let result = logs;
     if (search) {
       const s = search.toLowerCase();
       result = result.filter((l) => l.barcode?.toLowerCase().includes(s) || l.scannedBy?.toLowerCase().includes(s));
     }
     if (actionFilter !== "all") result = result.filter((l) => l.action === actionFilter);
-    setFiltered(result);
+    return result;
   }, [search, actionFilter, logs]);
 
   const actions = [...new Set(logs.map((l) => l.action).filter(Boolean))];
