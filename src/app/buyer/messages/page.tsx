@@ -3,95 +3,69 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
-  getConversations,
-  getMessages,
-  getMyStorefronts,
-  markConversationRead,
-  sendMessage,
+  getConversations, getMessages, getOrgUsers,
+  markConversationRead, sendMessage,
 } from "@/lib/dataService";
 import { supabase } from "@/lib/supabase";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/Toast";
-import { Send, MessageSquare, Store } from "lucide-react";
+import { Send, MessageSquare, User as UserIcon } from "lucide-react";
 
-interface Message {
-  id: string;
-  senderId: string;
-  receiverId: string;
-  text: string;
-  read?: boolean;
-  createdAt?: string;
-}
-
+interface OrgUser { id: string; name?: string; email?: string; role?: string; }
+interface Message { id: string; senderId: string; receiverId: string; text: string; read?: boolean; createdAt?: string; }
 interface Conversation {
   peerId: string;
-  last: {
-    text?: string;
-    createdAt?: string;
-    senderId?: string;
-    read?: boolean;
-  };
-  storefrontName?: string;
+  last: { text?: string; createdAt?: string; senderId?: string; read?: boolean; };
 }
 
 function formatTime(d?: string) {
   if (!d) return "";
   const dt = new Date(d);
   const now = new Date();
-  const sameDay = dt.getFullYear() === now.getFullYear() && dt.getMonth() === now.getMonth() && dt.getDate() === now.getDate();
-  return sameDay ? dt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : dt.toLocaleDateString([], { month: "short", day: "numeric" });
+  const sameDay = dt.toDateString() === now.toDateString();
+  return sameDay
+    ? dt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+    : dt.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
 export default function BuyerMessagesPage() {
   const { user, orgId } = useAuth();
   const { toast } = useToast();
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [peerNameMap, setPeerNameMap] = useState<Record<string, string>>({});
-  const [peerId, setPeerId] = useState<string>("");
+  const [users, setUsers] = useState<Record<string, OrgUser>>({});
+  const [peerId, setPeerId] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState("");
   const [loadingConvos, setLoadingConvos] = useState(true);
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (!orgId) return;
+    getOrgUsers(orgId).then((rows) => {
+      const map: Record<string, OrgUser> = {};
+      for (const u of rows as unknown as OrgUser[]) map[u.id] = u;
+      setUsers(map);
+    }).catch(() => undefined);
+  }, [orgId]);
+
   const refreshConvos = useMemo(() => async () => {
     if (!user) return;
     try {
-      const storefronts = await getMyStorefronts(user.id);
       const rows = await getConversations(user.id);
-      const convos = (rows as unknown as Conversation[]).map(c => {
-        const sf = storefronts?.find((s: unknown) => (s as unknown as any)?.storefront?.orgId);
-        return { ...c, storefrontName: String((sf as unknown as any)?.storefront?.name || "") };
-      });
-      setConversations(convos);
-
-      const nameMap: Record<string, string> = {};
-      for (const sf of storefronts as unknown as any[]) {
-        if (sf.storefront?.orgId) {
-          const { data: org } = await supabase.from("organizations").select("owner_id").eq("id", sf.storefront.orgId).single();
-          const ownerId = org?.owner_id;
-          if (ownerId) {
-            const { data: ownerUser } = await supabase.from("users").select("name, email").eq("id", ownerId).single();
-            nameMap[ownerId] = ownerUser?.name || ownerUser?.email || "Storefront Owner";
-          }
-        }
-      }
-      setPeerNameMap(nameMap);
+      setConversations(rows as unknown as Conversation[]);
     } catch (e) {
-      console.error("Failed to load conversations", e);
+      toast((e as Error).message || "Failed to load conversations", "error");
     }
   }, [user, toast]);
 
-  useEffect(() => {
-    refreshConvos().finally(() => setLoadingConvos(false));
-  }, [refreshConvos]);
+  useEffect(() => { refreshConvos().finally(() => setLoadingConvos(false)); }, [refreshConvos]);
 
   useEffect(() => {
     if (!user || !peerId) return;
     getMessages(user.id, peerId)
       .then((rows) => setMessages(rows as unknown as Message[]))
-      .catch((e) => toast((e as Error).message || "Failed to load messages", "error"));
+      .catch((e) => toast((e as Error).message || "Failed", "error"));
     markConversationRead(user.id, peerId).catch(() => undefined);
   }, [user, peerId, toast]);
 
@@ -105,7 +79,12 @@ export default function BuyerMessagesPage() {
         const receiverId = String(row.receiver_id || "");
         if (senderId !== user.id && receiverId !== user.id) return;
         if (peerId && ((senderId === user.id && receiverId === peerId) || (senderId === peerId && receiverId === user.id))) {
-          setMessages((prev) => [...prev, { id: String(row.id), senderId, receiverId, text: String(row.text || ""), createdAt: String(row.created_at || ""), read: Boolean(row.read) }]);
+          setMessages((prev) => [...prev, {
+            id: String(row.id), senderId, receiverId,
+            text: String(row.text || ""),
+            createdAt: String(row.created_at || ""),
+            read: Boolean(row.read),
+          }]);
         }
         refreshConvos();
       })
@@ -114,11 +93,18 @@ export default function BuyerMessagesPage() {
   }, [user, orgId, peerId, refreshConvos]);
 
   useEffect(() => {
-    if (!scrollRef.current) return;
-    scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
   }, [messages]);
 
-  const handleSend = async () => {
+  const peerName = (id: string) => {
+    const u = users[id];
+    if (!u) return id.slice(0, 8);
+    return u.name || u.email || id.slice(0, 8);
+  };
+
+  const onSend = async () => {
     if (!user || !orgId || !peerId || !text.trim()) return;
     const body = text.trim();
     setSending(true);
@@ -136,59 +122,73 @@ export default function BuyerMessagesPage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #F2D3E6 0%, #fce4ec 50%, #f8dce8 100%)' }}>
-      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(227,152,202,0.3) 0%, rgba(255,255,255,0) 100%)' }}>
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.8) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(227,152,202,0.4) 0%, transparent 40%)' }} />
-        
-        <div className="relative max-w-7xl mx-auto px-4 py-8">
-          <h1 className="text-3xl font-bold" style={{ color: '#1f1a1d' }}>Messages</h1>
-          <p className="opacity-70 mt-1">Chat with storefront owners</p>
+    <div className="h-screen bg-background flex flex-col animate-page-enter overflow-hidden">
+      {/* Header */}
+      <div className="border-b border-border bg-card shrink-0">
+        <div className="max-w-7xl mx-auto px-4 py-5 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+            <MessageSquare className="w-4.5 h-4.5 text-primary" />
+          </div>
+          <div>
+            <h1 className="font-bold text-foreground">Messages</h1>
+            <p className="text-xs text-muted-foreground">Chat with admins about your orders</p>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6 grid md:grid-cols-[320px_1fr] gap-4 min-h-0 h-[calc(100vh-200px)]">
-        <div className="bg-white rounded-2xl overflow-hidden flex flex-col min-h-0" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-          <div className="p-4 border-b" style={{ borderColor: '#f0e0e8' }}>
-            <h2 className="font-semibold" style={{ color: '#1f1a1d' }}>Conversations</h2>
+      {/* Body */}
+      <div className="flex-1 overflow-hidden max-w-7xl w-full mx-auto px-4 py-4 grid md:grid-cols-[280px_1fr] gap-4">
+        {/* Sidebar: conversation list */}
+        <div className="card-luxury overflow-hidden flex flex-col min-h-0">
+          <div className="px-4 py-3 border-b border-border shrink-0">
+            <p className="text-sm font-semibold text-foreground">Conversations</p>
           </div>
-          <div className="overflow-y-auto flex-1 p-2">
+          <div className="overflow-y-auto flex-1">
             {loadingConvos ? (
               <div className="p-3 space-y-2">
-                <div className="h-12 bg-gray-100 rounded-xl" />
-                <div className="h-12 bg-gray-100 rounded-xl" />
-                <div className="h-12 bg-gray-100 rounded-xl" />
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="h-14 rounded-xl bg-secondary animate-pulse" />
+                ))}
               </div>
             ) : conversations.length === 0 ? (
-              <div className="p-6 text-center text-gray-400">
-                <MessageSquare className="w-12 h-12 mx-auto mb-2 opacity-20" />
-                <p className="text-sm">No messages yet.</p>
-                <p className="text-xs mt-1">Connect to a storefront to start chatting</p>
+              <div className="p-6 text-center">
+                <MessageSquare className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">No conversations yet</p>
               </div>
             ) : (
               conversations.map((c) => {
                 const active = peerId === c.peerId;
                 const unread = c.last && !c.last.read && c.last.senderId !== user?.id;
-                const name = peerNameMap[c.peerId] || c.storefrontName || "Storefront Owner";
                 return (
                   <button
                     key={c.peerId}
                     onClick={() => setPeerId(c.peerId)}
-                    className={`w-full text-left p-3 rounded-xl transition-all ${active ? 'bg-[#fce4ec]' : 'hover:bg-gray-50'}`}
+                    className={`w-full text-left px-3 py-3 border-b border-border/50 last:border-0 transition-all duration-150 ${
+                      active ? "bg-primary/10" : "hover:bg-secondary"
+                    }`}
                   >
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #fce4ec 0%, #F2D3E6 100%)' }}>
-                        <Store className="w-5 h-5" style={{ color: '#E398CA' }} />
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+                        active ? "bg-primary" : "bg-secondary"
+                      }`}>
+                        <UserIcon className={`w-4 h-4 ${active ? "text-primary-foreground" : "text-muted-foreground"}`} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="font-medium truncate" style={{ color: '#1f1a1d' }}>{name}</div>
-                          <div className="text-xs text-gray-400 flex-shrink-0">{formatTime(c.last?.createdAt)}</div>
+                        <div className="flex items-center justify-between gap-1">
+                          <span className={`text-sm font-medium truncate ${active ? "text-primary" : "text-foreground"}`}>
+                            {peerName(c.peerId)}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground shrink-0">
+                            {formatTime(c.last?.createdAt)}
+                          </span>
                         </div>
-                        <div className={`text-sm truncate ${unread ? 'font-medium text-gray-700' : 'text-gray-500'}`}>
-                          {c.last?.text || "No messages yet"}
+                        <div className={`text-xs truncate mt-0.5 ${unread ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                          {c.last?.text || ""}
                         </div>
                       </div>
-                      {unread && <span className="w-2 h-2 rounded-full mt-2 flex-shrink-0" style={{ background: '#E398CA' }} />}
+                      {unread && (
+                        <span className="w-2 h-2 rounded-full bg-primary shrink-0 pulse-dot" />
+                      )}
                     </div>
                   </button>
                 );
@@ -197,55 +197,82 @@ export default function BuyerMessagesPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl overflow-hidden flex flex-col min-h-0" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+        {/* Thread */}
+        <div className="card-luxury overflow-hidden flex flex-col min-h-0">
           {!peerId ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ background: 'linear-gradient(135deg, #fce4ec 0%, #F2D3E6 100%)' }}>
-                <MessageSquare className="w-7 h-7" style={{ color: '#E398CA' }} />
+              <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mb-4">
+                <MessageSquare className="w-7 h-7 text-muted-foreground/40" />
               </div>
-              <h3 className="font-semibold mb-1" style={{ color: '#1f1a1d' }}>Select a conversation</h3>
-              <p className="text-sm text-gray-500">Pick a conversation on the left to view messages.</p>
+              <h3 className="font-semibold text-foreground mb-1">Select a conversation</h3>
+              <p className="text-sm text-muted-foreground">
+                Pick a conversation on the left to read and reply.
+              </p>
             </div>
           ) : (
             <>
-              <div className="p-4 border-b flex items-center gap-3" style={{ borderColor: '#f0e0e8' }}>
-                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #fce4ec 0%, #F2D3E6 100%)' }}>
-                  <Store className="w-5 h-5" style={{ color: '#E398CA' }} />
+              {/* Thread header */}
+              <div className="px-4 py-3 border-b border-border flex items-center gap-3 shrink-0">
+                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+                  <UserIcon className="w-4 h-4 text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-semibold truncate" style={{ color: '#1f1a1d' }}>{peerNameMap[peerId] || "Storefront Owner"}</div>
+                  <div className="font-semibold text-foreground text-sm truncate">{peerName(peerId)}</div>
+                  {users[peerId]?.role && (
+                    <div className="text-[10px] text-muted-foreground capitalize">{users[peerId].role}</div>
+                  )}
                 </div>
               </div>
+
+              {/* Messages */}
               <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0">
                 {messages.length === 0 ? (
-                  <div className="text-center text-sm text-gray-400 py-8">Start the conversation.</div>
+                  <div className="text-center text-sm text-muted-foreground py-8">
+                    Start the conversation below.
+                  </div>
                 ) : (
                   messages.map((m) => {
                     const mine = m.senderId === user?.id;
                     return (
                       <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                        <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${mine ? 'text-white rounded-br-sm' : 'bg-gray-100 rounded-bl-sm'}`}
-                          style={mine ? { background: '#E398CA' } : {}}>
-                          <div className="whitespace-pre-wrap break-words">{m.text}</div>
-                          <div className={`text-[10px] mt-1 ${mine ? 'text-white/70' : 'text-gray-400'}`}>{formatTime(m.createdAt)}</div>
+                        <div className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 text-sm ${
+                          mine
+                            ? "bg-primary text-primary-foreground rounded-br-sm"
+                            : "bg-secondary text-foreground rounded-bl-sm"
+                        }`}>
+                          <div className="whitespace-pre-wrap break-words leading-relaxed">{m.text}</div>
+                          <div className={`text-[10px] mt-1 ${mine ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
+                            {formatTime(m.createdAt)}
+                          </div>
                         </div>
                       </div>
                     );
                   })
                 )}
               </div>
-              <div className="p-3 border-t flex gap-2" style={{ borderColor: '#f0e0e8' }}>
+
+              {/* Composer */}
+              <div className="p-3 border-t border-border flex gap-2 shrink-0">
                 <Input
                   value={text}
                   onChange={(e) => setText(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                  placeholder="Type a message..."
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      onSend();
+                    }
+                  }}
+                  placeholder="Type a message… (Enter to send)"
                   disabled={sending}
-                  className="h-11"
+                  className="flex-1"
                 />
-                <Button onClick={handleSend} disabled={sending || !text.trim()} style={{ background: '#E398CA' }}>
+                <button
+                  onClick={onSend}
+                  disabled={sending || !text.trim()}
+                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary text-primary-foreground hover:opacity-90 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
                   <Send className="w-4 h-4" />
-                </Button>
+                </button>
               </div>
             </>
           )}

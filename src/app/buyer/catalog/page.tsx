@@ -5,8 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { getInventoryPaginated, getMyStorefronts } from "@/lib/dataService";
-import { Button } from "@/components/ui/button";
-import { Package, ShoppingCart, Search, Tag, X, Sparkles } from "lucide-react";
+import { Package, ShoppingCart, Search, Tag, X, Sparkles, Store, Plus } from "lucide-react";
 import { useToast } from "@/components/Toast";
 
 interface Item {
@@ -21,19 +20,41 @@ interface Item {
   costPrice?: number;
 }
 
+interface Storefront {
+  id?: string;
+  name?: string;
+  orgId?: string;
+}
+
 export default function BuyerCatalogPage() {
   const { user } = useAuth();
-  const { addToCart, items: cartItems } = useCart();
+  const { addToCart, count: cartCount } = useCart();
   const { toast } = useToast();
-  
+
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<Item[]>([]);
-  const [storefronts, setStorefronts] = useState<Array<{storefront?: {id?: string, name?: string, orgId?: string}}>>([]);
+  const [storefronts, setStorefronts] = useState<Storefront[]>([]);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
   const [allCategories, setAllCategories] = useState<string[]>([]);
-  const [currentStorefront, setCurrentStorefront] = useState<{id?: string, name?: string, orgId?: string} | null>(null);
+  const [currentStorefront, setCurrentStorefront] = useState<Storefront | null>(null);
+
+  const loadItems = async (sf: Storefront) => {
+    if (!sf?.orgId) return;
+    setLoading(true);
+    try {
+      const res = await getInventoryPaginated(sf.orgId, { status: "available" }, 0, 500);
+      const loaded = (res.items || []) as unknown as Item[];
+      setItems(loaded);
+      const cats = [...new Set(loaded.map((i) => i.category).filter(Boolean))] as string[];
+      setAllCategories(cats);
+    } catch (e) {
+      toast((e as Error).message || "Failed to load inventory", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -41,34 +62,30 @@ export default function BuyerCatalogPage() {
       setLoading(true);
       try {
         const my = await getMyStorefronts(user.id);
-        setStorefronts(my as typeof storefronts);
-        
-        if (my && my.length > 0) {
-          const sf = (my[0] as {storefront?: {id?: string, name?: string, orgId?: string}})?.storefront;
-          setCurrentStorefront(sf || null);
-          
-          if (sf?.orgId) {
-            const res = await getInventoryPaginated(sf.orgId, { status: "available" }, 0, 500);
-            const loadedItems = (res.items || []) as unknown as Item[];
-            setItems(loadedItems);
-            const cats = [...new Set(loadedItems.map((i) => i.category).filter(Boolean))] as string[];
-            setAllCategories(cats);
-          }
+        const sfs = (my as Array<{ storefront?: Storefront }>).map((s) => s.storefront).filter(Boolean) as Storefront[];
+        setStorefronts(sfs);
+        if (sfs.length > 0) {
+          setCurrentStorefront(sfs[0]);
+          await loadItems(sfs[0]);
+        } else {
+          setLoading(false);
         }
       } catch (e) {
         toast((e as Error).message || "Failed to load", "error");
-      } finally {
         setLoading(false);
       }
     })();
-  }, [user, toast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const filtered = useMemo(() => {
     let result = items;
     if (search) {
       const s = search.toLowerCase();
       result = result.filter((it) =>
-        [it.displayName, it.modelId, it.brand, it.barcode].some((v) => String(v || "").toLowerCase().includes(s))
+        [it.displayName, it.modelId, it.brand, it.barcode].some((v) =>
+          String(v || "").toLowerCase().includes(s)
+        )
       );
     }
     if (categoryFilter) result = result.filter((it) => it.category === categoryFilter);
@@ -78,8 +95,17 @@ export default function BuyerCatalogPage() {
   const handleAddToCart = async (item: Item) => {
     setAdding(item.id);
     try {
-      await addToCart({ id: item.id, modelId: item.modelId || "", barcode: item.barcode || "", displayName: item.displayName || "", storefrontId: currentStorefront?.id ?? null }, 1);
-      toast(`Added ${item.displayName || item.modelId}`, "success");
+      await addToCart(
+        {
+          id: item.id,
+          modelId: item.modelId || "",
+          barcode: item.barcode || "",
+          displayName: item.displayName || "",
+          storefrontId: currentStorefront?.id ?? null,
+        },
+        1
+      );
+      toast(`Added "${item.displayName || item.modelId}" to cart`, "success");
     } catch (e) {
       toast((e as Error).message || "Failed", "error");
     } finally {
@@ -88,113 +114,97 @@ export default function BuyerCatalogPage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #F2D3E6 0%, #fce4ec 50%, #f8dce8 100%)' }}>
-      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(227,152,202,0.3) 0%, rgba(255,255,255,0) 100%)' }}>
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.8) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(227,152,202,0.4) 0%, transparent 40%)' }} />
-        
-        <div className="relative max-w-7xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-background animate-page-enter">
+      {/* Hero */}
+      <div className="relative overflow-hidden border-b border-border bg-card">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-primary/5" />
+        <div className="relative max-w-7xl mx-auto px-4 pt-8 pb-6">
+          {/* Storefront switcher */}
           {storefronts.length > 0 && (
-            <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-              {storefronts.map((sf, idx) => {
-                const s = sf.storefront;
-                const isActive = s?.id === currentStorefront?.id;
+            <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-1 no-scrollbar">
+              {storefronts.map((sf) => {
+                const isActive = sf.id === currentStorefront?.id;
                 return (
                   <button
-                    key={s?.id || idx}
+                    key={sf.id}
                     onClick={async () => {
-                      setCurrentStorefront(s || null);
-                      if (s?.orgId) {
-                        const res = await getInventoryPaginated(s.orgId, { status: "available" }, 0, 500);
-                        setItems((res.items || []) as unknown as Item[]);
-                        const cats = [...new Set((res.items || []).map((i) => (i as unknown as Item).category).filter(Boolean))];
-                        setAllCategories(cats as string[]);
-                      }
+                      setCurrentStorefront(sf);
+                      setCategoryFilter(null);
+                      await loadItems(sf);
                     }}
-                    className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${isActive ? 'text-white' : 'text-gray-600'}`}
-                    style={isActive ? { background: '#E398CA', boxShadow: '0 4px 15px rgba(227,152,202,0.5)' } : { background: 'rgba(255,255,255,0.6)' }}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200 border ${
+                      isActive
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                        : "bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
+                    }`}
                   >
-                    {s?.name || `Storefront ${idx + 1}`}
+                    <Store className="w-3.5 h-3.5" />
+                    {sf.name || "Storefront"}
                   </button>
                 );
               })}
-              <Link href="/buyer/catalog/connect" className="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap flex items-center gap-1 text-gray-400" style={{ background: 'rgba(255,255,255,0.6)' }}>
-                <Sparkles className="w-3 h-3" /> Add
+              <Link
+                href="/buyer/catalog/connect"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap border border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-all duration-200"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Add storefront
               </Link>
             </div>
           )}
 
-          <div className="flex items-center justify-between mb-4">
+          {/* Title row */}
+          <div className="flex items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold" style={{ color: '#1f1a1d' }}>Catalog</h1>
-              <p className="opacity-70 mt-1">{filtered.length} items available</p>
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">Catalog</h1>
+              <p className="text-muted-foreground mt-1 text-sm">
+                {currentStorefront?.name
+                  ? `Browsing ${currentStorefront.name}`
+                  : "Connect a storefront to browse products"}
+                {!loading && items.length > 0 && ` · ${filtered.length} item${filtered.length !== 1 ? "s" : ""}`}
+              </p>
             </div>
-            <Link href="/buyer/cart">
-              <button className="relative p-3 rounded-full bg-white shadow-md hover:shadow-lg transition-all" style={{ boxShadow: '0 4px 15px rgba(227,152,202,0.3)' }}>
-                <ShoppingCart className="w-5 h-5" style={{ color: '#E398CA' }} />
-                {cartItems.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {cartItems.length}
-                  </span>
-                )}
-              </button>
-            </Link>
-          </div>
-
-          <div className="relative max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-12 pl-12 pr-10 rounded-2xl border-0 bg-white/80 backdrop-blur-sm focus:ring-2 focus:ring-[#E398CA]/50 transition-all"
-              style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}
-            />
-            {search && (
-              <button onClick={() => setSearch("")} className="absolute right-4 top-1/2 -translate-y-1/2">
-                <X className="w-4 h-4 text-gray-400" />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 pb-20">
-        {storefronts.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-white/50 flex items-center justify-center">
-              <Package className="w-12 h-12 opacity-40" style={{ color: '#E398CA' }} />
-            </div>
-            <h2 className="text-2xl font-bold mb-2" style={{ color: '#1f1a1d' }}>No storefront connected</h2>
-            <p className="opacity-60 mb-6">Connect to a storefront to browse their inventory.</p>
-            <Link href="/buyer/catalog/connect">
-              <Button style={{ background: '#E398CA', boxShadow: '0 4px 15px rgba(227,152,202,0.5)' }}>Connect Storefront</Button>
-            </Link>
-          </div>
-        ) : loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="aspect-square bg-white/50 rounded-2xl" />
-                <div className="h-4 bg-white/50 mt-3 rounded w-3/4" />
-                <div className="h-3 bg-white/30 mt-2 rounded w-1/2" />
+            <Link href="/buyer/cart" className="relative group">
+              <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center border border-border hover:border-primary/50 transition-all duration-200 group-hover:scale-105">
+                <ShoppingCart className="w-5 h-5 text-foreground" />
               </div>
-            ))}
+              {cartCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center">
+                  {cartCount > 9 ? "9+" : cartCount}
+                </span>
+              )}
+            </Link>
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-20">
-            <Package className="w-16 h-16 mx-auto opacity-30" style={{ color: '#E398CA' }} />
-            <h2 className="text-xl font-semibold mt-4">No items found</h2>
-            <p className="opacity-60">Try adjusting your search.</p>
-          </div>
-        ) : (
-          <>
+
+          {/* Search + category row */}
+          <div className="mt-5 flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search products, brands, barcodes…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full h-10 pl-10 pr-10 text-sm bg-background border border-border rounded-xl focus:border-primary transition-all placeholder:text-muted-foreground text-foreground"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
             {allCategories.length > 1 && (
-              <div className="flex items-center gap-2 mb-6 overflow-x-auto">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
                 <button
                   onClick={() => setCategoryFilter(null)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${!categoryFilter ? 'text-white' : 'text-gray-600'}`}
-                  style={!categoryFilter ? { background: '#E398CA' } : { background: 'rgba(255,255,255,0.6)' }}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap border transition-all duration-200 ${
+                    !categoryFilter
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                  }`}
                 >
                   All
                 </button>
@@ -202,65 +212,160 @@ export default function BuyerCatalogPage() {
                   <button
                     key={cat}
                     onClick={() => setCategoryFilter(categoryFilter === cat ? null : cat)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${categoryFilter === cat ? 'text-white' : 'text-gray-600'}`}
-                    style={categoryFilter === cat ? { background: '#E398CA' } : { background: 'rgba(255,255,255,0.6)' }}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap border transition-all duration-200 ${
+                      categoryFilter === cat
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                    }`}
                   >
+                    <Tag className="w-3 h-3" />
                     {cat}
                   </button>
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {filtered.map((item, index) => (
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* No storefront */}
+        {storefronts.length === 0 && !loading ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="w-20 h-20 rounded-2xl bg-secondary flex items-center justify-center mb-6">
+              <Store className="w-9 h-9 text-muted-foreground" />
+            </div>
+            <h2 className="text-2xl font-bold text-foreground mb-2">No storefront connected</h2>
+            <p className="text-muted-foreground mb-6 max-w-sm">
+              Connect to a storefront using an invite code to start browsing their inventory.
+            </p>
+            <Link
+              href="/buyer/catalog/connect"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity shadow-sm"
+            >
+              <Sparkles className="w-4 h-4" />
+              Connect a storefront
+            </Link>
+          </div>
+        ) : loading ? (
+          /* Skeleton grid */
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 stagger-children">
+            {[...Array(10)].map((_, i) => (
+              <div key={i} className="card-luxury overflow-hidden">
+                <div className="aspect-[4/3] bg-secondary animate-pulse" />
+                <div className="p-4 space-y-2">
+                  <div className="h-4 bg-secondary rounded animate-pulse w-3/4" />
+                  <div className="h-3 bg-secondary rounded animate-pulse w-1/2" />
+                  <div className="h-9 bg-secondary rounded-xl animate-pulse mt-3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="w-20 h-20 rounded-2xl bg-secondary flex items-center justify-center mb-6">
+              <Package className="w-9 h-9 text-muted-foreground" />
+            </div>
+            <h2 className="text-xl font-bold text-foreground mb-2">No items found</h2>
+            <p className="text-muted-foreground">
+              {search ? `No results for "${search}"` : "No available items in this storefront."}
+            </p>
+            {(search || categoryFilter) && (
+              <button
+                onClick={() => { setSearch(""); setCategoryFilter(null); }}
+                className="mt-4 text-sm text-primary hover:underline"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 stagger-children">
+            {filtered.map((item) => {
+              const isAdding = adding === item.id;
+              return (
                 <div
                   key={item.id}
-                  className="group bg-white rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300"
-                  style={{ boxShadow: '0 2px 15px rgba(0,0,0,0.05)' }}
+                  className="card-luxury overflow-hidden hover-lift group"
                 >
-                  <div className="aspect-square relative bg-gradient-to-br from-gray-50 to-gray-100">
+                  {/* Product image / placeholder */}
+                  <div className="aspect-[4/3] relative bg-secondary overflow-hidden">
                     {item.imageUrl ? (
-                      <img src={item.imageUrl} alt={item.displayName} className="w-full h-full object-cover" />
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={item.imageUrl}
+                        alt={item.displayName}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <Package className="w-12 h-12 opacity-20" style={{ color: '#E398CA' }} />
+                        <Package className="w-10 h-10 text-muted-foreground/30" />
                       </div>
                     )}
-                    {item.quantity !== undefined && item.quantity > 0 && (
-                      <div className="absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-bold text-white" style={{ background: '#22c55e' }}>
-                        {item.quantity}
+
+                    {/* Stock badge */}
+                    {item.quantity != null && item.quantity > 0 && (
+                      <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-success/90 text-white backdrop-blur-sm">
+                        {item.quantity} in stock
                       </div>
                     )}
+
+                    {/* Category chip */}
                     {item.category && (
-                      <div className="absolute bottom-3 left-3 px-2 py-1 rounded-full text-xs font-medium bg-white/90 text-gray-600">
-                        <Tag className="w-3 h-3 inline mr-1" />{item.category}
+                      <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium bg-card/90 text-muted-foreground backdrop-blur-sm border border-border">
+                        <Tag className="w-2.5 h-2.5" />
+                        {item.category}
                       </div>
                     )}
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-semibold text-gray-800 truncate text-sm">{item.displayName || item.modelId || "Item"}</h3>
-                    <div className="flex items-center justify-between text-xs text-gray-400 mt-1">
-                      <span className="font-mono">{item.barcode?.slice(0, 8) || "—"}</span>
-                      <span>{item.brand || "—"}</span>
+
+                    {/* Quick-add overlay on hover */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-foreground/5 backdrop-blur-[1px]">
+                      <button
+                        onClick={() => handleAddToCart(item)}
+                        disabled={isAdding}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold shadow-lg hover:opacity-90 transition-opacity"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        {isAdding ? "Adding…" : "Quick Add"}
+                      </button>
                     </div>
-                    {item.costPrice !== undefined && (
-                      <div className="mt-2 pt-2 border-t border-gray-100">
-                        <span className="text-lg font-bold" style={{ color: '#E398CA' }}>${item.costPrice.toFixed(2)}</span>
-                      </div>
-                    )}
-                    <button 
+                  </div>
+
+                  {/* Info */}
+                  <div className="p-4">
+                    <h3 className="font-semibold text-foreground text-sm truncate leading-tight">
+                      {item.displayName || item.modelId || "Item"}
+                    </h3>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-xs text-muted-foreground truncate">
+                        {item.brand || item.barcode?.slice(0, 10) || "—"}
+                      </span>
+                      {item.costPrice != null && (
+                        <span className="text-xs font-bold text-primary">
+                          ${item.costPrice.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Add to cart */}
+                    <button
                       onClick={() => handleAddToCart(item)}
-                      disabled={adding === item.id}
-                      className="w-full mt-3 py-2 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2"
-                      style={adding === item.id ? { background: '#fcd9e6', color: '#E398CA' } : { background: '#E398CA', color: 'white' }}
+                      disabled={isAdding}
+                      className={`w-full mt-3 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                        isAdding
+                          ? "bg-secondary text-muted-foreground cursor-not-allowed"
+                          : "bg-primary text-primary-foreground hover:opacity-90 active:scale-95"
+                      }`}
                     >
-                      {adding === item.id ? "Adding..." : <><ShoppingCart className="w-4 h-4" /> Add to Cart</>}
+                      <ShoppingCart className="w-4 h-4" />
+                      {isAdding ? "Adding…" : "Add to cart"}
                     </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          </>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>

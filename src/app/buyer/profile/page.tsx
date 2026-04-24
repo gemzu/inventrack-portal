@@ -3,23 +3,17 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { getMyStorefronts } from "@/lib/dataService";
 import { supabase } from "@/lib/supabase";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/Toast";
 import {
-  User as UserIcon,
-  Mail,
-  Store,
-  Shield,
-  LogOut,
-  CheckCircle2,
-  QrCode,
+  User as UserIcon, Mail, Store, Shield, LogOut,
+  CheckCircle2, QrCode, Moon, Sun,
 } from "lucide-react";
+import { useTheme } from "@/context/ThemeContext";
 
 interface Storefront {
   storefrontId?: string;
@@ -29,6 +23,7 @@ interface Storefront {
 export default function BuyerProfilePage() {
   const { user, userName, logout } = useAuth();
   const { toast } = useToast();
+  const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const [storefronts, setStorefronts] = useState<Storefront[]>([]);
   const [factorId, setFactorId] = useState("");
@@ -44,25 +39,17 @@ export default function BuyerProfilePage() {
       .then((rows) => setStorefronts(rows as Storefront[]))
       .catch(() => setStorefronts([]))
       .finally(() => setLoadingStorefronts(false));
-    // Check MFA status
     supabase.auth.mfa.listFactors().then(({ data }) => {
       setMfaEnrolled(Boolean(data?.totp && data.totp.length > 0));
     });
   }, [user]);
 
   const initials = (userName || user?.email || "?")
-    .split(" ")
-    .map((s) => s[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+    .split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase();
 
   const handleEnroll = async () => {
     try {
-      const { data, error } = await supabase.auth.mfa.enroll({
-        factorType: "totp",
-        friendlyName: "Buyer Device",
-      });
+      const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "Buyer Device" });
       if (error) throw error;
       setFactorId(data.id);
       setQr(data.totp.qr_code);
@@ -87,12 +74,9 @@ export default function BuyerProfilePage() {
     try {
       const { error } = await supabase.auth.mfa.verify({ factorId, challengeId, code });
       if (error) throw error;
-      toast("MFA verified and enabled", "success");
+      toast("2FA enabled successfully", "success");
       setMfaEnrolled(true);
-      setFactorId("");
-      setQr("");
-      setCode("");
-      setChallengeId("");
+      setFactorId(""); setQr(""); setCode(""); setChallengeId("");
     } catch (e) {
       toast((e as Error).message || "Verification failed", "error");
     }
@@ -104,160 +88,199 @@ export default function BuyerProfilePage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #F2D3E6 0%, #fce4ec 50%, #f8dce8 100%)' }}>
+    <div className="min-h-screen bg-background animate-page-enter">
       {/* Hero */}
-      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(227,152,202,0.3) 0%, rgba(255,255,255,0) 100%)' }}>
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.8) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(227,152,202,0.4) 0%, transparent 40%)' }} />
-        
-        <div className="relative max-w-4xl mx-auto px-4 py-12">
+      <div className="border-b border-border bg-card">
+        <div className="max-w-3xl mx-auto px-4 py-8">
           <div className="flex items-center gap-5">
-            <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold text-white flex-shrink-0" style={{ background: 'linear-gradient(135deg, #fce4ec 0%, #F2D3E6 100%)' }}>
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-xl font-bold text-primary shrink-0">
               {initials}
             </div>
             <div className="min-w-0">
-              <h1 className="text-3xl font-bold tracking-tight truncate" style={{ color: '#1f1a1d' }}>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground truncate">
                 {userName || user?.email || "Buyer"}
               </h1>
-              <p className="text-sm text-gray-500 mt-1 flex items-center gap-2">
-                <Mail className="w-4 h-4" style={{ color: '#E398CA' }} />
+              <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                <Mail className="w-3.5 h-3.5" />
                 <span className="truncate">{user?.email}</span>
-              </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8 space-y-5">
+      <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
         {/* Account */}
-        <div className="bg-white rounded-2xl p-6" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-          <div className="flex items-center gap-2 mb-4">
-            <UserIcon className="w-5 h-5" style={{ color: '#E398CA' }} />
-            <h2 className="text-lg font-semibold" style={{ color: '#1f1a1d' }}>Account</h2>
+        <div className="card-luxury p-6 scale-in">
+          <div className="flex items-center gap-2 mb-5">
+            <UserIcon className="w-4 h-4 text-primary" />
+            <h2 className="font-semibold text-foreground text-sm">Account</h2>
           </div>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Name</span>
-              <span>{userName || "—"}</span>
+          <div className="space-y-4 text-sm">
+            <div className="flex justify-between items-center py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Name</span>
+              <span className="text-foreground font-medium">{userName || "—"}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Email</span>
-              <span className="truncate max-w-[60%]">{user?.email}</span>
+            <div className="flex justify-between items-center py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Email</span>
+              <span className="text-foreground truncate max-w-[60%]">{user?.email}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Role</span>
-              <Badge variant="outline" style={{ background: '#E398CA', color: '#E398CA' }}>Buyer</Badge>
+            <div className="flex justify-between items-center py-2">
+              <span className="text-muted-foreground">Role</span>
+              <Badge variant="outline" className="text-primary border-primary/30 bg-primary/5">
+                Buyer
+              </Badge>
             </div>
           </div>
         </div>
 
+        {/* Appearance */}
+        <div className="card-luxury p-6 scale-in" style={{ animationDelay: "60ms" }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {theme === "dark" ? <Sun className="w-4 h-4 text-primary" /> : <Moon className="w-4 h-4 text-primary" />}
+              <div>
+                <h2 className="font-semibold text-foreground text-sm">Appearance</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Currently using {theme === "dark" ? "dark" : "light"} mode
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={toggleTheme}
+              className="px-4 py-2 rounded-xl border border-border text-foreground text-sm font-medium hover:border-primary hover:text-primary hover:bg-primary/5 transition-all"
+            >
+              Switch to {theme === "dark" ? "light" : "dark"}
+            </button>
+          </div>
+        </div>
+
         {/* Storefronts */}
-        <div className="bg-white rounded-2xl p-6" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-          <div className="flex items-center gap-2 mb-4">
-            <Store className="w-5 h-5" style={{ color: '#E398CA' }} />
-            <h2 className="text-lg font-semibold" style={{ color: '#1f1a1d' }}>Connected storefronts</h2>
+        <div className="card-luxury p-6 scale-in" style={{ animationDelay: "120ms" }}>
+          <div className="flex items-center gap-2 mb-5">
+            <Store className="w-4 h-4 text-primary" />
+            <h2 className="font-semibold text-foreground text-sm">Connected storefronts</h2>
           </div>
           {loadingStorefronts ? (
-            <div className="text-sm text-gray-500">Loading…</div>
+            <div className="space-y-2">
+              <div className="h-12 bg-secondary rounded-xl animate-pulse" />
+              <div className="h-12 bg-secondary rounded-xl animate-pulse opacity-60" />
+            </div>
           ) : storefronts.length === 0 ? (
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-muted-foreground">
               You haven&apos;t connected to any storefront yet.{" "}
-              <Link href="/buyer/catalog/connect" className="text-[#E398CA] hover:underline">
-                Connect one
-              </Link>
-              .
+              <a href="/buyer/catalog/connect" className="text-primary hover:underline font-medium">
+                Connect one →
+              </a>
             </div>
           ) : (
             <div className="space-y-2">
               {storefronts.map((s, i) => (
                 <div
                   key={s.storefrontId || i}
-                  className="flex items-center justify-between p-3 rounded-lg bg-gray-50"
+                  className="flex items-center justify-between px-4 py-3 rounded-xl bg-secondary/50"
                 >
-                  <div>
-                    <div className="font-medium" style={{ color: '#1f1a1d' }}>{s.storefronts?.name || "Storefront"}</div>
-                    {s.storefronts?.code ? (
-                      <div className="text-xs text-gray-400 font-mono">
+                  <div className="min-w-0">
+                    <div className="font-medium text-foreground text-sm truncate">
+                      {s.storefronts?.name || "Storefront"}
+                    </div>
+                    {s.storefronts?.code && (
+                      <div className="text-xs text-muted-foreground font-mono mt-0.5">
                         {s.storefronts.code}
                       </div>
-                    ) : null}
+                    )}
                   </div>
-                  <CheckCircle2 className="w-5 h-5" style={{ color: '#22c55e' }} />
+                  <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* Security */}
-        <div className="bg-white rounded-2xl p-6" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-          <div className="flex items-center justify-between mb-4">
+        {/* Two-factor auth */}
+        <div className="card-luxury p-6 scale-in" style={{ animationDelay: "180ms" }}>
+          <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
-              <Shield className="w-5 h-5" style={{ color: '#E398CA' }} />
-              <h2 className="text-lg font-semibold" style={{ color: '#1f1a1d' }}>Two-factor authentication</h2>
+              <Shield className="w-4 h-4 text-primary" />
+              <h2 className="font-semibold text-foreground text-sm">Two-factor authentication</h2>
             </div>
             {mfaEnrolled ? (
-              <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
+              <span className="text-[10px] font-semibold text-success bg-success/10 border border-success/30 px-2.5 py-1 rounded-full">
                 Enabled
-              </Badge>
+              </span>
             ) : (
-              <Badge variant="outline">Not enabled</Badge>
+              <span className="text-[10px] font-semibold text-muted-foreground bg-secondary border border-border px-2.5 py-1 rounded-full">
+                Not enabled
+              </span>
             )}
           </div>
 
           {mfaEnrolled ? (
-            <p className="text-sm text-gray-500">
-              Your account is protected by an authenticator app.
+            <p className="text-sm text-muted-foreground">
+              Your account is protected by an authenticator app. 2FA is active.
             </p>
           ) : !qr ? (
-            <div className="flex gap-4 flex-wrap">
-              <p className="text-sm text-gray-500 flex-1 min-w-[200px]">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <p className="text-sm text-muted-foreground flex-1 min-w-[200px]">
                 Add an extra layer of security with a TOTP authenticator app
-                (Google Authenticator, 1Password, etc.).
+                (Google Authenticator, 1Password, Authy, etc.).
               </p>
-              <Button onClick={handleEnroll} style={{ background: '#E398CA' }}>
-                <QrCode className="w-4 h-4 mr-2" /> Enable 2FA
-              </Button>
+              <button
+                onClick={handleEnroll}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 active:scale-95 transition-all shrink-0"
+              >
+                <QrCode className="w-4 h-4" />
+                Enable 2FA
+              </button>
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="flex flex-col items-center gap-3 p-4 bg-gray-50 rounded-xl">
+              <div className="flex flex-col items-center gap-3 p-5 bg-secondary/50 rounded-xl">
                 <Image
-                  src={qr}
-                  alt="MFA QR Code"
-                  width={192}
-                  height={192}
-                  unoptimized
-                  className="rounded border border-gray-200"
+                  src={qr} alt="MFA QR Code" width={180} height={180}
+                  unoptimized className="rounded-xl border border-border"
                 />
-                <p className="text-xs text-gray-500 text-center">
+                <p className="text-xs text-muted-foreground text-center max-w-xs">
                   Scan this QR code in your authenticator app, then enter the 6-digit code below.
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={handleChallenge} disabled={!factorId} style={{ background: 'white', border: '1px solid #E398CA', color: '#E398CA' }}>
+                <button
+                  onClick={handleChallenge}
+                  disabled={!factorId}
+                  className="px-4 py-2 rounded-xl border border-border text-foreground text-sm font-medium hover:border-primary hover:text-primary hover:bg-primary/5 transition-all disabled:opacity-50"
+                >
                   Request code
-                </Button>
+                </button>
                 <Input
                   placeholder="6-digit code"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
                   maxLength={6}
-                  className="h-11"
+                  className="flex-1 font-mono text-center tracking-widest"
                 />
-                <Button onClick={handleVerify} disabled={!challengeId || code.length !== 6} style={{ background: '#E398CA' }}>
+                <button
+                  onClick={handleVerify}
+                  disabled={!challengeId || code.length !== 6}
+                  className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
+                >
                   Verify
-                </Button>
+                </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* Logout */}
-        <div className="flex justify-end">
-          <Button variant="outline" onClick={handleLogout} style={{ background: 'white', border: '1px solid #E398CA', color: '#E398CA' }}>
-            <LogOut className="w-4 h-4 mr-2" style={{ color: '#E398CA' }} /> Sign out
-          </Button>
+        {/* Sign out */}
+        <div className="flex justify-end scale-in" style={{ animationDelay: "240ms" }}>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-border text-muted-foreground text-sm font-medium hover:border-destructive hover:text-destructive hover:bg-destructive/5 transition-all"
+          >
+            <LogOut className="w-4 h-4" />
+            Sign out
+          </button>
         </div>
       </div>
     </div>

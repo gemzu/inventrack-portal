@@ -5,9 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { getFavorites, toggleFavorite } from "@/lib/dataService";
 import { useCart } from "@/context/CartContext";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Heart, Package, ShoppingCart, Trash2 } from "lucide-react";
+import { Heart, Package, ShoppingCart, Trash2, ShoppingBag } from "lucide-react";
 import { useToast } from "@/components/Toast";
 
 interface FavItem {
@@ -20,20 +18,20 @@ interface FavItem {
 }
 
 export default function BuyerFavoritesPage() {
-  const { user } = useAuth();
+  const { user, orgId } = useAuth();
   const { toast } = useToast();
   const { addToCart } = useCart();
   const [items, setItems] = useState<FavItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !orgId) return;
     setLoading(true);
-    getFavorites("", user.id)
+    getFavorites(orgId, user.id)
       .then((rows) => setItems(rows as unknown as FavItem[]))
       .catch((e) => toast((e as Error).message || "Failed to load favorites", "error"))
       .finally(() => setLoading(false));
-  }, [user, toast]);
+  }, [user, orgId, toast]);
 
   const onRemove = async (id: string) => {
     if (!user) return;
@@ -54,94 +52,91 @@ export default function BuyerFavoritesPage() {
       displayName: it.displayName,
       storefrontId: it.storefrontId ?? null,
     });
-    toast("Added to cart", "success");
+    toast(`Added "${it.displayName || it.modelId}" to cart`, "success");
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #F2D3E6 0%, #fce4ec 50%, #f8dce8 100%)' }}>
+    <div className="min-h-screen bg-background animate-page-enter">
       {/* Hero */}
-      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(227,152,202,0.3) 0%, rgba(255,255,255,0) 100%)' }}>
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.8) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(227,152,202,0.4) 0%, transparent 40%)' }} />
-        
-        <div className="relative max-w-7xl mx-auto px-4 py-12">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #fce4ec 0%, #F2D3E6 100%)' }}>
-              <Heart className="w-5 h-5" style={{ color: '#E398CA' }} />
+      <div className="border-b border-border bg-card">
+        <div className="max-w-5xl mx-auto px-4 py-8">
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Heart className="w-5 h-5 text-primary fill-primary/30" />
             </div>
-            <h1 className="text-4xl font-bold tracking-tight" style={{ color: '#1f1a1d' }}>Favorites</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Favorites</h1>
           </div>
-          <p className="mt-2 text-lg" style={{ color: '#666' }}>{items.length} saved item{items.length !== 1 ? "s" : ""}</p>
+          <p className="text-muted-foreground text-sm ml-[52px]">
+            {loading ? "Loading…" : `${items.length} saved item${items.length !== 1 ? "s" : ""}`}
+          </p>
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-5xl mx-auto px-4 py-6">
         {loading ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
             {[...Array(6)].map((_, i) => (
-              <Skeleton key={i} className="h-36 rounded-2xl" />
+              <div key={i} className="card-luxury p-5 h-36 animate-pulse bg-secondary/50" />
             ))}
           </div>
         ) : items.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-white/50 flex items-center justify-center" style={{ boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-              <Heart className="w-12 h-12 opacity-40" style={{ color: '#E398CA' }} />
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="w-20 h-20 rounded-2xl bg-secondary flex items-center justify-center mb-6">
+              <Heart className="w-9 h-9 text-muted-foreground/40" />
             </div>
-            <h2 className="text-2xl font-bold mb-2" style={{ color: '#1f1a1d' }}>No favorites yet</h2>
-            <p className="text-gray-500 mb-6 max-w-md mx-auto">
-              Browse the catalog and tap the heart to save items for later.
+            <h2 className="text-xl font-bold text-foreground mb-2">No favorites yet</h2>
+            <p className="text-muted-foreground mb-6 max-w-sm">
+              Browse the catalog and save items you love to find them here.
             </p>
-            <Link href="/buyer/catalog">
-              <Button size="lg" style={{ background: '#E398CA', boxShadow: '0 4px 15px rgba(227,152,202,0.5)' }}>
-                Browse catalog
-              </Button>
+            <Link
+              href="/buyer/catalog"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              Browse catalog
             </Link>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
             {items.map((it) => (
               <div
                 key={it.id}
-                className="group bg-white rounded-2xl p-5 hover:shadow-xl transition-all duration-300"
-                style={{ boxShadow: '0 2px 15px rgba(0,0,0,0.05)' }}
+                className="card-luxury p-5 hover:border-primary/40 transition-all duration-300 group"
               >
                 <div className="flex items-start gap-3 mb-4">
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #fce4ec 0%, #F2D3E6 100%)' }}>
-                    <Package className="w-5 h-5" style={{ color: '#E398CA' }} />
+                  <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <Package className="w-5 h-5 text-primary" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="font-semibold truncate" style={{ color: '#1f1a1d' }}>
+                    <div className="font-semibold text-foreground text-sm truncate">
                       {it.displayName || it.modelId || "Item"}
                     </div>
-                    {it.brand ? (
-                      <div className="text-xs text-gray-500 truncate mt-1">
-                        {it.brand}
-                      </div>
-                    ) : null}
-                    {it.barcode ? (
-                      <div className="text-xs text-gray-400 font-mono truncate mt-0.5">
+                    {it.brand && (
+                      <div className="text-xs text-muted-foreground truncate mt-0.5">{it.brand}</div>
+                    )}
+                    {it.barcode && (
+                      <div className="text-xs text-muted-foreground font-mono truncate mt-0.5">
                         {it.barcode}
                       </div>
-                    ) : null}
+                    )}
                   </div>
                 </div>
+
                 <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    className="flex-1"
+                  <button
                     onClick={() => onAddToCart(it)}
-                    style={{ background: '#E398CA' }}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 active:scale-95 transition-all"
                   >
-                    <ShoppingCart className="w-4 h-4 mr-1.5" /> Add
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
+                    <ShoppingCart className="w-3.5 h-3.5" />
+                    Add to cart
+                  </button>
+                  <button
                     onClick={() => onRemove(it.id)}
-                    className="text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                    className="w-9 h-9 flex items-center justify-center rounded-xl border border-border text-muted-foreground hover:text-destructive hover:border-destructive/50 hover:bg-destructive/5 transition-all"
                   >
-                    <Trash2 className="w-4 h-4" /> Remove
-                  </Button>
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             ))}
