@@ -66,7 +66,7 @@ export default function InvoicesPage() {
         .eq("org_id", orgId)
         .order("created_at", { ascending: false });
 
-      if (!error && data) setInvoices(data as Invoice[]);
+      if (!error && data) setInvoices(data as unknown as Invoice[]);
     } catch (err) {
       console.error("Error fetching invoices:", err);
     } finally {
@@ -83,7 +83,7 @@ export default function InvoicesPage() {
         .eq("org_id", orgId)
         .order("created_at", { ascending: false });
 
-      if (!error && data) setOrders(data as Order[]);
+      if (!error && data) setOrders(data as unknown as Order[]);
     } catch (err) {
       console.error("Error fetching orders:", err);
     }

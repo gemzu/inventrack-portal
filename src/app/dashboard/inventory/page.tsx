@@ -1,13 +1,15 @@
 "use client";
-
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import AdminGuard from "@/components/AdminGuard";
+import PageShell from "@/components/page-shell";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { Search, Download, Package, ChevronDown, Upload, Loader2, X, FileSpreadsheet, Save } from "lucide-react";
+import { Search, Download, Package, Boxes, ChevronDown, Upload, Loader2, X, FileSpreadsheet, Save } from "lucide-react";
 import { statusColor } from "@/lib/utils";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 interface Item {
   id: string;
@@ -19,6 +21,7 @@ interface Item {
   quantity: number;
   status: string;
   facilityId?: string;
+  boxId?: string;
   costPrice?: number;
   sellingPrice?: number;
   createdAt: unknown;
@@ -42,6 +45,7 @@ function mapItem(row: Record<string, unknown>): Item {
     quantity: row.quantity as number,
     status: row.status as string,
     facilityId: row.facility_id as string | undefined,
+    boxId: row.box_id as string | undefined,
     costPrice: row.cost_price as number | undefined,
     sellingPrice: row.selling_price as number | undefined,
     createdAt: row.created_at,
@@ -52,7 +56,9 @@ function mapItem(row: Record<string, unknown>): Item {
 export default function InventoryPage() {
   const { orgId, facilities } = useAuth();
   const { toast } = useToast();
+  const [view, setView] = useState<"items" | "boxes">("items");
   const [items, setItems] = useState<Item[]>([]);
+  const [boxes, setBoxes] = useState<Array<Record<string, unknown>>>([]);
   const [filtered, setFiltered] = useState<Item[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -128,10 +134,14 @@ export default function InventoryPage() {
   useEffect(() => {
     if (!orgId) { setLoading(false); return; }
     const load = async () => {
-      const { data } = await supabase.from("inventory").select("*").eq("org_id", orgId);
+      const [{ data }, { data: bData }] = await Promise.all([
+        supabase.from("inventory").select("*").eq("org_id", orgId),
+        supabase.from("boxes").select("*").eq("org_id", orgId),
+      ]);
       const mapped = (data || []).map(mapItem);
       setItems(mapped);
       setFiltered(mapped);
+      setBoxes((bData as Array<Record<string, unknown>>) || []);
       setLoading(false);
     };
     load();
@@ -154,11 +164,21 @@ export default function InventoryPage() {
     setFiltered(result);
   }, [search, statusFilter, facilityFilter, items]);
 
+  const boxCounts = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const it of items) {
+      const key = it.boxId || "loose";
+      m[key] = (m[key] || 0) + 1;
+    }
+    return m;
+  }, [items]);
+
   const exportCsv = () => {
     const header = "Model ID,Barcode,Name,Brand,Status,Quantity,Cost,Price,Facility\n";
     const rows = filtered.map((i) => {
-      const fac = facilities.find((f) => f.id === i.facilityId)?.name || "";
-      return `"${i.modelId}","${i.barcode}","${i.displayName || ""}","${i.brand || ""}","${i.status}",${i.quantity},${i.costPrice || ""},${i.sellingPrice || ""},"${fac}"`;
+      const fac = (facilities || []).find((f) => f.id === i.facilityId)?.name || "";
+      const boxCode = boxes.find((b) => b.id === i.boxId)?.code || "";
+      return `"${i.modelId}","${i.barcode}","${i.displayName || ""}","${i.brand || ""}","${i.status}",${i.quantity},${i.costPrice || ""},${i.sellingPrice || ""},"${fac}","${boxCode}"`;
     }).join("\n");
     const blob = new Blob([header + rows], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -213,11 +233,11 @@ export default function InventoryPage() {
   }
 
   return (
-    <div className="animate-page-enter space-y-6">
+    <AdminGuard><PageShell title="Inventory" subtitle={`${filtered.length} items`}>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Inventory</h1>
-          <p className="text-sm text-muted-foreground">{filtered.length} items</p>
+        <div className="inline-flex rounded-xl border p-1 bg-muted/40">
+          <button onClick={() => setView("items")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${view === "items" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground"}`}>Items</button>
+          <button onClick={() => setView("boxes")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${view === "boxes" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground"}`}>Boxes</button>
         </div>
         <div className="flex gap-2">
           <button onClick={() => setShowImport(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-dark transition shadow-lg shadow-primary/25">
@@ -253,7 +273,7 @@ export default function InventoryPage() {
           </select>
           <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />
         </div>
-        {facilities.length > 0 && (
+        {(facilities || []).length > 0 && (
           <div className="relative">
             <select
               value={facilityFilter}
@@ -261,7 +281,7 @@ export default function InventoryPage() {
               className="appearance-none px-4 py-2.5 pr-10 rounded-xl border text-sm outline-none cursor-pointer bg-input border-border text-foreground"
             >
               <option value="all">All Facilities</option>
-              {facilities.map((f) => (
+              {(facilities || []).map((f) => (
                 <option key={f.id} value={f.id}>{f.name}</option>
               ))}
             </select>
@@ -270,7 +290,7 @@ export default function InventoryPage() {
         )}
       </div>
 
-      {/* Table */}
+      {view === "items" ? (
       <Card className="overflow-hidden"><CardContent className="p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -281,7 +301,7 @@ export default function InventoryPage() {
                 <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden md:table-cell text-muted-foreground">Name</th>
                 <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Status</th>
                 <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Qty</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden lg:table-cell text-muted-foreground">Facility</th>
+                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden lg:table-cell text-muted-foreground">Facility / Box</th>
                 <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Actions</th>
               </tr>
             </thead>
@@ -299,7 +319,10 @@ export default function InventoryPage() {
                   </td>
                   <td className="px-4 py-3 font-medium">{item.quantity}</td>
                   <td className="px-4 py-3 hidden lg:table-cell text-xs text-muted-foreground">
-                    {facilities.find((f) => f.id === item.facilityId)?.name || "-"}
+                    <div>{(facilities || []).find((f) => f.id === item.facilityId)?.name || "-"}</div>
+                    <div className={`inline-flex mt-1 px-2 py-0.5 rounded-full text-[10px] ${item.boxId ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
+                      {item.boxId ? `Box ${String(boxes.find((b) => b.id === item.boxId)?.code || "")}` : "Loose"}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <button
@@ -322,6 +345,34 @@ export default function InventoryPage() {
           </table>
         </div>
       </CardContent></Card>
+      ) : (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Card className="border-dashed border-primary/40 bg-primary/5">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-2 font-semibold text-primary"><Boxes className="w-4 h-4" /> Loose Inventory</div>
+              <p className="text-2xl font-bold mt-2">{boxCounts.loose || 0}</p>
+              <p className="text-xs text-muted-foreground mt-1">Items not assigned to a box</p>
+            </CardContent>
+          </Card>
+          {boxes.map((b) => (
+            <Card key={String(b.id)}>
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <div className="font-semibold">{String(b.code || "Box")}</div>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-primary/15 text-primary">{String(b.category || "general")}</span>
+                </div>
+                <p className="text-2xl font-bold mt-2">{boxCounts[String(b.id)] || 0}</p>
+                <p className="text-xs text-muted-foreground mt-1">{String(b.label || "No label")}</p>
+              </CardContent>
+            </Card>
+          ))}
+          {boxes.length === 0 && (
+            <div className="col-span-full">
+              <EmptyState icon={Boxes} title="No boxes yet" description="Create boxes from the Boxes section, then assign inventory into them." />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Import CSV Modal */}
       {showImport && (
@@ -343,9 +394,9 @@ export default function InventoryPage() {
                   <p><strong className="text-primary">{importResult.updated}</strong> items updated</p>
                   {importResult.errors > 0 && <p><strong className="text-danger">{importResult.errors}</strong> errors</p>}
                 </div>
-                <button onClick={() => { setShowImport(false); setImportData([]); setImportResult(null); }} className="mt-6 px-6 py-2.5 rounded-xl bg-primary text-white font-medium hover:bg-primary-dark transition">
+                <Button onClick={() => { setShowImport(false); setImportData([]); setImportResult(null); }} className="mt-6 px-6 py-2.5">
                   Done
-                </button>
+                </Button>
               </div>
             ) : importData.length > 0 ? (
               <>
@@ -486,6 +537,6 @@ export default function InventoryPage() {
           </div>
         </>
       )}
-    </div>
+    </PageShell></AdminGuard>
   );
 }

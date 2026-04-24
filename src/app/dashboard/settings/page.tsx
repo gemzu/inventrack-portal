@@ -1,76 +1,133 @@
 "use client";
 import AdminGuard from "@/components/AdminGuard";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useTransition } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { Save, Building2, Package, ShoppingCart, Bell, AlertTriangle, Upload } from "lucide-react";
-import { useToast } from "@/components/Toast";
-import { Card, CardContent } from "@/components/ui/card";
+import { useTheme } from "@/context/ThemeContext";
+import { Check, Loader2 } from "lucide-react";
+import PageShell from "@/components/page-shell";
+
+interface SettingsSectionProps {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}
+
+function SettingsSection({ title, description, children }: SettingsSectionProps) {
+  return (
+    <div className="card-luxury p-6">
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold">{title}</h2>
+        <p className="text-sm text-muted-foreground mt-1">{description}</p>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function SettingRow({ 
+  label, 
+  description, 
+  children 
+}: { 
+  label: string; 
+  description?: string; 
+  children: React.ReactNode 
+}) {
+  return (
+    <div className="flex items-center justify-between py-4 border-b border-border/50 last:border-0">
+      <div className="flex-1 min-w-0 pr-4">
+        <p className="font-medium">{label}</p>
+        {description && <p className="text-sm text-muted-foreground mt-0.5">{description}</p>}
+      </div>
+      <div className="shrink-0">{children}</div>
+    </div>
+  );
+}
+
+function AutoSaveInput({ 
+  value, 
+  onChange, 
+  label, 
+  placeholder 
+}: { 
+  value: string; 
+  onChange: (value: string) => void;
+  label: string;
+  placeholder?: string;
+}) {
+  const [localValue, setLocalValue] = useState(value);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const handleBlur = async () => {
+    if (localValue === value) return;
+    setIsSaving(true);
+    onChange(localValue);
+    await new Promise(r => setTimeout(r, 500));
+    setIsSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        value={localValue}
+        onChange={(e) => setLocalValue(e.target.value)}
+        onBlur={handleBlur}
+        placeholder={placeholder}
+        className="w-full px-4 py-3 rounded-lg border border-border bg-background text-sm transition-all focus:border-foreground focus:ring-0"
+      />
+      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+        {isSaving ? (
+          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+        ) : saved ? (
+          <Check className="w-4 h-4 text-green-500" />
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
       type="button"
       onClick={() => onChange(!value)}
-      className={`relative inline-flex items-center shrink-0 rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary/30 w-10 h-6 ${value ? "bg-primary" : "bg-border"}`}
+      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+        value ? "bg-foreground" : "bg-border"
+      }`}
     >
       <span
-        className={`inline-block rounded-full bg-white shadow transition-transform duration-200 ease-in-out w-[18px] h-[18px] ${value ? "translate-x-[19px]" : "translate-x-[3px]"}`}
+        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform duration-200 ease-in-out ${
+          value ? "translate-x-5" : "translate-x-0"
+        }`}
       />
     </button>
   );
 }
 
-function ToggleRow({
-  icon: Icon,
-  label,
-  description,
-  value,
-  onChange,
-}: {
-  icon: React.ElementType;
-  label: string;
-  description: string;
-  value: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <div className="flex items-center gap-4 py-3">
-      <div className="shrink-0 text-muted-foreground">
-        <Icon className="w-4 h-4" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium">{label}</p>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </div>
-      <Toggle value={value} onChange={onChange} />
-    </div>
-  );
-}
-
 export default function SettingsPage() {
   const { orgId, orgData } = useAuth();
-  const { toast } = useToast();
+  const { theme, toggleTheme, accent, setAccent } = useTheme();
+  const [isPending, startTransition] = useTransition();
 
-  // Organization Info
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
-
-  // Inventory Settings
   const [threshold, setThreshold] = useState(2);
   const [reservationHours, setReservationHours] = useState(24);
-
-  // Order Settings
   const [orderApproval, setOrderApproval] = useState(true);
-
-  // Notifications
   const [notifyLowStock, setNotifyLowStock] = useState(true);
   const [notifyNewOrders, setNotifyNewOrders] = useState(true);
   const [notifySubmissions, setNotifySubmissions] = useState(true);
-
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (orgData) {
@@ -86,181 +143,164 @@ export default function SettingsPage() {
     }
   }, [orgData]);
 
-  const handleSave = async () => {
+  const saveSettings = useCallback(async (updates: Record<string, unknown>) => {
     if (!orgId) return;
-    setSaving(true);
-    try {
-      const { error } = await supabase.from("organizations").update({
-        name,
-        address,
-        phone,
-        low_stock_threshold: threshold,
-        reservation_hours: reservationHours,
-        order_approval_required: orderApproval,
-        notify_low_stock: notifyLowStock,
-        notify_new_orders: notifyNewOrders,
-        notify_submissions: notifySubmissions,
-      }).eq("id", orgId);
-      if (error) throw error;
-      toast("Settings saved successfully", "success");
-    } catch {
-      toast("Failed to save settings", "error");
-    } finally {
-      setSaving(false);
-    }
-  };
+    await supabase.from("organizations").update(updates).eq("id", orgId);
+  }, [orgId]);
 
-  const inputClass = "w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground";
+  const debouncedSave = useCallback(
+    (() => {
+      let timeout: NodeJS.Timeout;
+      return (key: string, value: unknown) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          startTransition(() => saveSettings({ [key]: value }));
+        }, 800);
+      };
+    })(),
+    [saveSettings]
+  );
 
-  return (<AdminGuard>
-    <div className="animate-page-enter space-y-6 max-w-2xl">
-      <div>
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-sm text-muted-foreground">Manage your organization settings</p>
-      </div>
-
-      {/* Section 1: Organization Info */}
-      <Card><CardContent className="p-6 space-y-5">
-        <div className="flex items-center gap-2 mb-1">
-          <Building2 className="w-4 h-4" />
-          <h2 className="text-sm font-semibold">Organization Info</h2>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1.5">Organization Name</label>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className={inputClass}
-            placeholder="My Organization"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1.5">Business Address</label>
-          <input
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            className={inputClass}
-            placeholder="123 Main St, City, State"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1.5">Business Phone</label>
-          <input
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className={inputClass}
-            placeholder="+1 (555) 123-4567"
-          />
-        </div>
-      </CardContent></Card>
-
-      {/* Section 2: Inventory Settings */}
-      <Card><CardContent className="p-6 space-y-5">
-        <div className="flex items-center gap-2 mb-1">
-          <Package className="w-4 h-4" />
-          <h2 className="text-sm font-semibold">Inventory Settings</h2>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1.5">Low Stock Threshold</label>
-          <input
-            type="number"
-            value={threshold}
-            onChange={(e) => setThreshold(parseInt(e.target.value) || 0)}
-            min={0}
-            className={inputClass}
-          />
-          <p className="text-xs mt-1 text-muted-foreground">
-            Items at or below this quantity will trigger low stock alerts.
-          </p>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1.5">Default Reservation Time</label>
-          <select
-            value={reservationHours}
-            onChange={(e) => setReservationHours(parseInt(e.target.value))}
-            className={inputClass}
+  return (
+    <AdminGuard>
+      <PageShell title="Settings" subtitle="Manage your preferences">
+        <div className="max-w-2xl mx-auto space-y-6 stagger-children">
+          <SettingsSection 
+            title="Organization" 
+            description="Basic information about your business"
           >
-            <option value={12}>12 hours</option>
-            <option value={24}>24 hours</option>
-            <option value={48}>48 hours</option>
-            <option value={72}>72 hours</option>
-          </select>
-          <p className="text-xs mt-1 text-muted-foreground">
-            How long reserved items are held before being released.
-          </p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Name</label>
+                <AutoSaveInput
+                  value={name}
+                  onChange={(v) => { setName(v); debouncedSave("name", v); }}
+                  label="Organization Name"
+                  placeholder="Your Company"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Address</label>
+                <AutoSaveInput
+                  value={address}
+                  onChange={(v) => { setAddress(v); debouncedSave("address", v); }}
+                  label="Business Address"
+                  placeholder="123 Main St"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Phone</label>
+                <AutoSaveInput
+                  value={phone}
+                  onChange={(v) => { setPhone(v); debouncedSave("phone", v); }}
+                  label="Phone Number"
+                  placeholder="+1 (555) 000-0000"
+                />
+              </div>
+            </div>
+          </SettingsSection>
+
+          <SettingsSection 
+            title="Inventory" 
+            description="Manage inventory behavior"
+          >
+            <SettingRow label="Low Stock Threshold" description="Alert when items reach this quantity">
+              <input
+                type="number"
+                value={threshold}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value) || 0;
+                  setThreshold(val);
+                  debouncedSave("low_stock_threshold", val);
+                }}
+                min={0}
+                className="w-20 px-3 py-2 rounded-lg border border-border bg-background text-sm text-center"
+              />
+            </SettingRow>
+            <SettingRow label="Reservation Time" description="How long items are held for buyers">
+              <select
+                value={reservationHours}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setReservationHours(val);
+                  debouncedSave("reservation_hours", val);
+                }}
+                className="px-3 py-2 rounded-lg border border-border bg-background text-sm"
+              >
+                <option value={12}>12 hours</option>
+                <option value={24}>24 hours</option>
+                <option value={48}>48 hours</option>
+                <option value={72}>72 hours</option>
+              </select>
+            </SettingRow>
+          </SettingsSection>
+
+          <SettingsSection 
+            title="Orders" 
+            description="Configure order processing"
+          >
+            <SettingRow 
+              label="Require Approval" 
+              description={orderApproval ? "Orders need admin approval" : "Orders auto-confirm"}
+            >
+              <Toggle 
+                value={orderApproval} 
+                onChange={(v) => { setOrderApproval(v); debouncedSave("order_approval_required", v); }} 
+              />
+            </SettingRow>
+          </SettingsSection>
+
+          <SettingsSection 
+            title="Notifications" 
+            description="Choose what alerts you receive"
+          >
+            <SettingRow label="Low Stock Alerts">
+              <Toggle 
+                value={notifyLowStock} 
+                onChange={(v) => { setNotifyLowStock(v); debouncedSave("notify_low_stock", v); }} 
+              />
+            </SettingRow>
+            <SettingRow label="New Order Alerts">
+              <Toggle 
+                value={notifyNewOrders} 
+                onChange={(v) => { setNotifyNewOrders(v); debouncedSave("notify_new_orders", v); }} 
+              />
+            </SettingRow>
+            <SettingRow label="Worker Submissions">
+              <Toggle 
+                value={notifySubmissions} 
+                onChange={(v) => { setNotifySubmissions(v); debouncedSave("notify_submissions", v); }} 
+              />
+            </SettingRow>
+          </SettingsSection>
+
+          <SettingsSection 
+            title="Appearance" 
+            description="Customize the interface"
+          >
+            <SettingRow label="Dark Mode" description="Switch between light and dark themes">
+              <button
+                onClick={toggleTheme}
+                className="px-5 py-2.5 rounded-xl border border-border bg-secondary text-sm font-medium hover:bg-muted transition-all min-w-[80px]"
+              >
+                {theme === "dark" ? "🌙 On" : "☀️ Off"}
+              </button>
+            </SettingRow>
+            <SettingRow label="Pink Theme (#E398CA)" description="Use soft pink accent color">
+              <button
+                onClick={() => setAccent(accent === "pink" ? "neutral" : "pink")}
+                className={`px-5 py-2.5 rounded-xl border text-sm font-medium transition-all min-w-[80px] ${
+                  accent === "pink" 
+                    ? "bg-[#E398CA] border-[#E398CA] text-[#3d2a35]" 
+                    : "border-border bg-secondary hover:bg-muted"
+                }`}
+              >
+                {accent === "pink" ? "✨ On" : "Off"}
+              </button>
+            </SettingRow>
+          </SettingsSection>
         </div>
-      </CardContent></Card>
-
-      {/* Section 3: Order Settings */}
-      <Card><CardContent className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <ShoppingCart className="w-4 h-4" />
-          <h2 className="text-sm font-semibold">Order Settings</h2>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium">Order Approval Required</p>
-            <p className="text-xs mt-0.5 text-muted-foreground">
-              {orderApproval
-                ? "Buyer orders require admin approval before processing"
-                : "Buyer orders are confirmed instantly"}
-            </p>
-          </div>
-          <Toggle value={orderApproval} onChange={setOrderApproval} />
-        </div>
-      </CardContent></Card>
-
-      {/* Section 4: Notifications */}
-      <Card><CardContent className="p-6">
-        <div className="flex items-center gap-2 mb-2">
-          <Bell className="w-4 h-4" />
-          <h2 className="text-sm font-semibold">Notifications</h2>
-        </div>
-
-        <ToggleRow
-          icon={AlertTriangle}
-          label="Low Stock Alerts"
-          description="Get notified when items drop below threshold"
-          value={notifyLowStock}
-          onChange={setNotifyLowStock}
-        />
-
-        <div className="border-t" />
-
-        <ToggleRow
-          icon={ShoppingCart}
-          label="New Order Alerts"
-          description="Get notified when buyers place orders"
-          value={notifyNewOrders}
-          onChange={setNotifyNewOrders}
-        />
-
-        <div className="border-t" />
-
-        <ToggleRow
-          icon={Upload}
-          label="Worker Submissions"
-          description="Get notified when workers submit items"
-          value={notifySubmissions}
-          onChange={setNotifySubmissions}
-        />
-      </CardContent></Card>
-
-      {/* Save button */}
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-white font-medium hover:bg-primary-dark transition shadow-lg shadow-primary/25 disabled:opacity-60"
-      >
-        <Save className="w-4 h-4" />
-        {saving ? "Saving..." : "Save Changes"}
-      </button>
-    </div>
-  </AdminGuard>);
+      </PageShell>
+    </AdminGuard>
+  );
 }

@@ -1,283 +1,276 @@
 "use client";
+
 import AdminGuard from "@/components/AdminGuard";
-import { useCallback, useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { 
-  ShoppingBag, Plus, Pencil, Trash2, 
-  Tag, MapPin, Globe, Copy, Share2, X,
-  ExternalLink
-} from "lucide-react";
+import {
+  createStorefront, deleteStorefront, getStorefronts, updateStorefront,
+  getFacilities, getBoxes, getInventoryPaginated,
+} from "@/lib/dataService";
+import { ShoppingBag, Plus, Pencil, Trash2, Tag, MapPin, Globe, Copy, X, Ban, Package } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import PageShell from "@/components/page-shell";
 
 interface Storefront {
   id: string;
   name: string;
   description: string;
   inviteCode: string;
-  filterType: "all" | "category" | "facility";
-  filterConfig: any;
-  createdAt: string;
+  filterType: "all" | "combined";
+  filterValue: Record<string, unknown>;
 }
+
+interface FormState {
+  name: string;
+  description: string;
+  selectedFacilityIds: string[];
+  selectedCategories: string[];
+  includedBoxIds: string[];
+  excludedBoxIds: string[];
+  excludedItemIds: string[];
+}
+
+const EMPTY_FORM: FormState = {
+  name: "",
+  description: "",
+  selectedFacilityIds: [],
+  selectedCategories: [],
+  includedBoxIds: [],
+  excludedBoxIds: [],
+  excludedItemIds: [],
+};
 
 export default function StorefrontsPage() {
   const { orgId } = useAuth();
+  const { toast } = useToast();
   const [storefronts, setStorefronts] = useState<Storefront[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Storefront | null>(null);
-  
-  const [form, setForm] = useState({
-    name: "",
-    description: "",
-    filterType: "all" as const
-  });
-  
-  const { toast } = useToast();
+  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [facilities, setFacilities] = useState<Array<Record<string, unknown>>>([]);
+  const [boxes, setBoxes] = useState<Array<Record<string, unknown>>>([]);
+  const [inventory, setInventory] = useState<Array<Record<string, unknown>>>([]);
 
-  const loadStorefronts = useCallback(async () => {
+  const load = useCallback(async () => {
     if (!orgId) return;
-    const { data, error } = await supabase
-      .from("storefronts")
-      .select("*")
-      .eq("org_id", orgId)
-      .order("created_at", { ascending: false });
-      
-    if (error) {
-      toast("Failed to load storefronts", "error");
-    } else {
-      setStorefronts((data || []).map(d => ({
-        id: d.id,
-        name: d.name,
-        description: d.description || "",
-        inviteCode: d.invite_code,
-        filterType: d.filter_type || "all",
-        filterConfig: d.filter_config || {},
-        createdAt: d.created_at
+    setLoading(true);
+    try {
+      const [sfs, facs, bxs, inv] = await Promise.all([
+        getStorefronts(orgId),
+        getFacilities(orgId),
+        getBoxes(orgId),
+        getInventoryPaginated(orgId, {}, 0, 300),
+      ]);
+      setStorefronts((sfs as Array<Record<string, unknown>>).map((d) => ({
+        id: String(d.id),
+        name: String(d.name || ""),
+        description: String(d.description || ""),
+        inviteCode: String(d.inviteCode || ""),
+        filterType: (String(d.filterType || "all") === "combined" ? "combined" : "all"),
+        filterValue: (d.filterValue as Record<string, unknown>) || {},
       })));
+      setFacilities((facs as unknown as Array<Record<string, unknown>>) || []);
+      setBoxes((bxs as unknown as Array<Record<string, unknown>>) || []);
+      setInventory((inv.items as unknown as Array<Record<string, unknown>>) || []);
+    } catch (e) {
+      toast((e as Error).message || "Failed to load storefront data", "error");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [orgId, toast]);
 
-  useEffect(() => { loadStorefronts(); }, [loadStorefronts]);
+  useEffect(() => { load(); }, [load]);
 
-  const handleSave = async () => {
-    if (!orgId || !form.name) return;
+  const categories = useMemo(
+    () => [...new Set(inventory.map((i) => String(i.category || "")).filter(Boolean))],
+    [inventory]
+  );
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm(EMPTY_FORM);
+    setShowForm(true);
+  };
+
+  const openEdit = (sf: Storefront) => {
+    const fv = sf.filterValue || {};
+    setEditing(sf);
+    setForm({
+      name: sf.name,
+      description: sf.description,
+      selectedFacilityIds: Array.isArray(fv.facilityIds) ? (fv.facilityIds as string[]) : [],
+      selectedCategories: Array.isArray(fv.categories) ? (fv.categories as string[]) : [],
+      includedBoxIds: Array.isArray(fv.boxIds) ? (fv.boxIds as string[]) : [],
+      excludedBoxIds: Array.isArray(fv.excludedBoxIds) ? (fv.excludedBoxIds as string[]) : [],
+      excludedItemIds: Array.isArray(fv.excludedItemIds) ? (fv.excludedItemIds as string[]) : [],
+    });
+    setShowForm(true);
+  };
+
+  const toggleList = (field: keyof FormState, value: string) => {
+    setForm((prev) => {
+      const arr = prev[field] as string[];
+      return { ...prev, [field]: arr.includes(value) ? arr.filter((x) => x !== value) : [...arr, value] };
+    });
+  };
+
+  const save = async () => {
+    if (!orgId || !form.name.trim()) return;
+    const filterValue: Record<string, unknown> = {};
+    if (form.selectedFacilityIds.length) filterValue.facilityIds = form.selectedFacilityIds;
+    if (form.selectedCategories.length) filterValue.categories = form.selectedCategories;
+    if (form.includedBoxIds.length) filterValue.boxIds = form.includedBoxIds;
+    if (form.excludedBoxIds.length) filterValue.excludedBoxIds = form.excludedBoxIds;
+    if (form.excludedItemIds.length) filterValue.excludedItemIds = form.excludedItemIds;
+    
+    const hasFilters = Object.keys(filterValue).length > 0;
+    const filterType: "all" | "combined" = hasFilters ? "combined" : "all";
+
     try {
       if (editing) {
-        const { error } = await supabase.from("storefronts").update({
-          name: form.name,
-          description: form.description,
-          filter_type: form.filterType
-        }).eq("id", editing.id);
-        if (error) throw error;
+        await updateStorefront(editing.id, { name: form.name.trim(), description: form.description.trim(), filterType, filterValue });
         toast("Storefront updated", "success");
       } else {
-        const { error } = await supabase.from("storefronts").insert({
-          name: form.name,
-          description: form.description,
-          filter_type: form.filterType,
-          org_id: orgId
-        });
-        if (error) throw error;
+        await createStorefront(orgId, { name: form.name.trim(), description: form.description.trim(), filterType, filterValue });
         toast("Storefront created", "success");
       }
       setShowForm(false);
-      setEditing(null);
-      setForm({ name: "", description: "", filterType: "all" });
-      await loadStorefronts();
+      await load();
     } catch (e) {
-      toast("Failed to save storefront", "error");
+      toast((e as Error).message || "Failed to save storefront", "error");
     }
   };
 
-  const handleDelete = async (sf: Storefront) => {
-    if (!confirm(`Are you sure you want to delete "${sf.name}"? buyers will lose access.`)) return;
+  const remove = async (sf: Storefront) => {
+    if (!confirm(`Delete "${sf.name}" storefront?`)) return;
     try {
-      const { error } = await supabase.from("storefronts").delete().eq("id", sf.id);
-      if (error) throw error;
-      setStorefronts(prev => prev.filter(s => s.id !== sf.id));
+      await deleteStorefront(sf.id);
+      setStorefronts((prev) => prev.filter((s) => s.id !== sf.id));
       toast("Storefront deleted", "success");
-    } catch {
-      toast("Failed to delete storefront", "error");
+    } catch (e) {
+      toast((e as Error).message || "Failed to delete storefront", "error");
     }
   };
 
-  const copyCode = (code: string) => {
-    navigator.clipboard.writeText(code);
-    toast("Invite code copied!", "success");
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
 
   return (
     <AdminGuard>
-      <div className="animate-page-enter space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Storefronts</h1>
-            <p className="text-sm text-muted-foreground">Manage curated views for your buyers</p>
-          </div>
-          <button
-            onClick={() => { setShowForm(true); setEditing(null); setForm({ name: "", description: "", filterType: "all" }); }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-600 transition shadow-lg shadow-indigo-500/25"
-          >
-            <Plus className="w-4 h-4" /> Create Storefront
-          </button>
-        </div>
-
+      <PageShell
+        title="Storefronts"
+        subtitle="App-style filtering: facilities + categories + include/exclude lists."
+        actions={<Button onClick={openCreate}><Plus className="w-4 h-4" /> Create Storefront</Button>}
+      >
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {storefronts.map((sf) => (
-            <Card key={sf.id} className="relative overflow-hidden group border-zinc-200 dark:border-zinc-800">
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
-                    <ShoppingBag className="w-5 h-5 text-indigo-500" />
+            <Card key={sf.id} className="relative overflow-hidden group border-border">
+              <CardContent className="p-5 space-y-4">
+                <div className="flex items-start justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <ShoppingBag className="w-5 h-5 text-primary" />
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button 
-                      onClick={() => { setEditing(sf); setForm({ name: sf.name, description: sf.description, filterType: sf.filterType }); setShowForm(true); }}
-                      className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
-                    >
-                      <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
-                    </button>
-                    <button onClick={() => handleDelete(sf)} className="p-1.5 rounded-lg hover:bg-red-500/10 text-red-500 transition">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <Button variant="ghost" size="icon-sm" onClick={() => openEdit(sf)}><Pencil className="w-3.5 h-3.5 text-muted-foreground" /></Button>
+                    <Button variant="ghost" size="icon-sm" className="text-red-500 hover:bg-red-500/10" onClick={() => remove(sf)}><Trash2 className="w-3.5 h-3.5" /></Button>
                   </div>
                 </div>
-
-                <h3 className="font-bold text-lg mb-1">{sf.name}</h3>
-                <p className="text-xs text-muted-foreground line-clamp-2 min-h-[2rem] mb-4">
-                  {sf.description || "No description provided."}
-                </p>
-
-                <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-zinc-800 mb-4 font-mono text-xs">
-                  <span className="text-zinc-500">ID:</span>
+                <div>
+                  <h3 className="font-bold text-lg">{sf.name}</h3>
+                  <p className="text-xs text-muted-foreground line-clamp-2 min-h-[2rem]">{sf.description || "No description provided."}</p>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded-lg bg-muted/40 border border-border font-mono text-xs">
+                  <span className="text-muted-foreground">Code:</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-indigo-500">{sf.inviteCode}</span>
-                    <button onClick={() => copyCode(sf.inviteCode)} className="p-1 hover:text-indigo-400">
-                      <Copy className="w-3 h-3" />
-                    </button>
+                    <span className="font-bold text-primary">{sf.inviteCode}</span>
+                    <Button variant="ghost" size="icon-sm" onClick={() => navigator.clipboard.writeText(sf.inviteCode)} className="h-6 w-6"><Copy className="w-3 h-3" /></Button>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-400">
-                    {sf.filterType === "all" ? <Globe className="w-3 h-3" /> : sf.filterType === "category" ? <Tag className="w-3 h-3" /> : <MapPin className="w-3 h-3" />}
-                    {sf.filterType}
+                <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-wider">
+                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted text-foreground">
+                    {sf.filterType === "all" ? <Globe className="w-3 h-3" /> : <MapPin className="w-3 h-3" />} {sf.filterType}
                   </div>
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-500">
-                    Active
-                  </div>
+                  {(sf.filterValue?.excludedItemIds as unknown[] | undefined)?.length ? (
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-destructive/10 text-destructive"><Ban className="w-3 h-3" /> item bans</div>
+                  ) : null}
                 </div>
               </CardContent>
             </Card>
           ))}
           {storefronts.length === 0 && (
             <div className="col-span-full">
-              <EmptyState 
-                icon={ShoppingBag} 
-                title="No Storefronts" 
-                description="Storefronts allow you to share specific parts of your inventory with different buyers using unique codes." 
-              />
+              <EmptyState icon={ShoppingBag} title="No Storefronts" description="Create a storefront and set filters exactly like the app." />
             </div>
           )}
         </div>
 
-        {/* Modal Overlay */}
         {showForm && (
           <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowForm(false)}>
-            <Card className="w-full max-w-sm" onClick={e => e.stopPropagation()}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-6">
+            <Card className="w-full max-w-4xl max-h-[88vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center justify-between">
                   <h3 className="text-lg font-bold">{editing ? "Edit Storefront" : "Create Storefront"}</h3>
-                  <button onClick={() => setShowForm(false)} className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition">
-                    <X className="w-5 h-5" />
-                  </button>
+                  <Button variant="ghost" size="icon-sm" onClick={() => setShowForm(false)}><X className="w-5 h-5" /></Button>
                 </div>
-
-                <div className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5 ml-1">Storefront Name</label>
-                    <input
-                      value={form.name}
-                      onChange={e => setForm({ ...form, name: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
-                      placeholder="e.g. Premium Hub"
-                    />
+                    <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Name</label>
+                    <Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Premium Hub" />
                   </div>
-
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5 ml-1">Description</label>
-                    <textarea
-                      value={form.description}
-                      onChange={e => setForm({ ...form, description: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 outline-none focus:ring-2 focus:ring-indigo-500/20 transition min-h-[100px]"
-                      placeholder="Who is this for?"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5 ml-1">Inventory Access</label>
-                    <div className="grid grid-cols-1 gap-2">
-                       <button 
-                         onClick={() => setForm({...form, filterType: 'all'})}
-                         className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm transition-all ${form.filterType === 'all' ? 'border-indigo-500 bg-indigo-500/10 text-indigo-500' : 'border-zinc-200 dark:border-zinc-800 bg-transparent hover:bg-zinc-50 dark:hover:bg-white/5'}`}
-                       >
-                         <Globe className="w-4 h-4" />
-                         <div className="text-left">
-                           <div className="font-bold">Full Catalog</div>
-                           <div className="text-[10px] opacity-70">Show all available inventory</div>
-                         </div>
-                       </button>
-
-                       <button 
-                         onClick={() => setForm({...form, filterType: 'category'})}
-                         className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm transition-all ${form.filterType === 'category' ? 'border-indigo-500 bg-indigo-500/10 text-indigo-500' : 'border-zinc-200 dark:border-zinc-800 bg-transparent hover:bg-zinc-50 dark:hover:bg-white/5'}`}
-                       >
-                         <Tag className="w-4 h-4" />
-                         <div className="text-left">
-                           <div className="font-bold">By Category</div>
-                           <div className="text-[10px] opacity-70">Filter items by specific categories</div>
-                         </div>
-                       </button>
-
-                       <button 
-                         onClick={() => setForm({...form, filterType: 'facility'})}
-                         className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm transition-all ${form.filterType === 'facility' ? 'border-indigo-500 bg-indigo-500/10 text-indigo-500' : 'border-zinc-200 dark:border-zinc-800 bg-transparent hover:bg-zinc-50 dark:hover:bg-white/5'}`}
-                       >
-                         <MapPin className="w-4 h-4" />
-                         <div className="text-left">
-                           <div className="font-bold">By Facility</div>
-                           <div className="text-[10px] opacity-70">Only show items from specific warehouses</div>
-                         </div>
-                       </button>
-                    </div>
-                  </div>
-
-                  <div className="pt-2">
-                    <button 
-                      onClick={handleSave}
-                      className="w-full py-3 rounded-xl bg-indigo-500 text-white font-bold hover:bg-indigo-600 transition shadow-lg shadow-indigo-500/25"
-                    >
-                      {editing ? "Save Changes" : "Create Storefront"}
-                    </button>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Description</label>
+                    <Input value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} placeholder="Who is this for?" />
                   </div>
                 </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <MultiPill title="Facilities" icon={<MapPin className="w-3 h-3" />} values={facilities.map((f) => ({ id: String(f.id), label: String(f.name || "") }))} selected={form.selectedFacilityIds} onToggle={(id) => toggleList("selectedFacilityIds", id)} />
+                  <MultiPill title="Categories" icon={<Tag className="w-3 h-3" />} values={categories.map((c) => ({ id: c, label: c }))} selected={form.selectedCategories} onToggle={(id) => toggleList("selectedCategories", id)} />
+                </div>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <MultiList title="Include Boxes" icon={<Package className="w-3 h-3" />} items={boxes.map((b) => ({ id: String(b.id), label: String(b.code || "") }))} selected={form.includedBoxIds} onToggle={(id) => toggleList("includedBoxIds", id)} tone="primary" />
+                  <MultiList title="Exclude Boxes" icon={<Ban className="w-3 h-3" />} items={boxes.map((b) => ({ id: String(b.id), label: String(b.code || "") }))} selected={form.excludedBoxIds} onToggle={(id) => toggleList("excludedBoxIds", id)} tone="danger" />
+                  <MultiList title="Exclude Items" icon={<Ban className="w-3 h-3" />} items={inventory.slice(0, 150).map((i) => ({ id: String(i.id), label: String(i.modelId || i.barcode || "Item") }))} selected={form.excludedItemIds} onToggle={(id) => toggleList("excludedItemIds", id)} tone="danger" />
+                </div>
+                <Button className="w-full h-11" onClick={save}>{editing ? "Save Changes" : "Create Storefront"}</Button>
               </CardContent>
             </Card>
           </div>
         )}
-      </div>
+      </PageShell>
     </AdminGuard>
+  );
+}
+
+function MultiPill({ title, icon, values, selected, onToggle }: { title: string; icon: React.ReactNode; values: Array<{ id: string; label: string }>; selected: string[]; onToggle: (id: string) => void }) {
+  return (
+    <div className="space-y-2">
+      <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">{title}</label>
+      <div className="flex flex-wrap gap-2">
+        {values.map((v) => (
+          <Button key={v.id} size="sm" variant={selected.includes(v.id) ? "default" : "outline"} onClick={() => onToggle(v.id)}>
+            {icon} {v.label}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MultiList({ title, icon, items, selected, onToggle, tone }: { title: string; icon: React.ReactNode; items: Array<{ id: string; label: string }>; selected: string[]; onToggle: (id: string) => void; tone: "primary" | "danger" }) {
+  return (
+    <div className="space-y-2">
+      <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">{title}</label>
+      <div className="max-h-44 overflow-auto rounded-lg border p-2 space-y-1">
+        {items.map((it) => (
+          <button key={it.id} type="button" onClick={() => onToggle(it.id)} className={`w-full text-left px-2 py-1.5 rounded text-xs ${selected.includes(it.id) ? (tone === "danger" ? "bg-red-500/15 text-red-500" : "bg-primary/15 text-primary") : "hover:bg-muted"}`}>
+            {icon} <span className="ml-1">{it.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
