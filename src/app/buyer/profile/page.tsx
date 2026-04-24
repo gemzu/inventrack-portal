@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { getMyStorefronts } from "@/lib/dataService";
 import { supabase } from "@/lib/supabase";
@@ -103,21 +104,22 @@ export default function BuyerProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #F2D3E6 0%, #fce4ec 50%, #f8dce8 100%)' }}>
       {/* Hero */}
-      <div className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
+      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(227,152,202,0.3) 0%, rgba(255,255,255,0) 100%)' }}>
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.8) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(227,152,202,0.4) 0%, transparent 40%)' }} />
+        
         <div className="relative max-w-4xl mx-auto px-4 py-12">
           <div className="flex items-center gap-5">
-            <div className="w-20 h-20 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-2xl font-bold text-primary flex-shrink-0">
+            <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold text-white flex-shrink-0" style={{ background: 'linear-gradient(135deg, #fce4ec 0%, #F2D3E6 100%)' }}>
               {initials}
             </div>
             <div className="min-w-0">
-              <h1 className="text-3xl font-bold tracking-tight truncate">
+              <h1 className="text-3xl font-bold tracking-tight truncate" style={{ color: '#1f1a1d' }}>
                 {userName || user?.email || "Buyer"}
               </h1>
-              <p className="text-muted-foreground mt-1 flex items-center gap-2">
-                <Mail className="w-4 h-4" />
+              <p className="text-sm text-gray-500 mt-1 flex items-center gap-2">
+                <Mail className="w-4 h-4" style={{ color: '#E398CA' }} />
                 <span className="truncate">{user?.email}</span>
               </p>
             </div>
@@ -128,41 +130,41 @@ export default function BuyerProfilePage() {
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-5">
         {/* Account */}
-        <div className="bg-card border border-border rounded-2xl p-6">
+        <div className="bg-white rounded-2xl p-6" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
           <div className="flex items-center gap-2 mb-4">
-            <UserIcon className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold">Account</h2>
+            <UserIcon className="w-5 h-5" style={{ color: '#E398CA' }} />
+            <h2 className="text-lg font-semibold" style={{ color: '#1f1a1d' }}>Account</h2>
           </div>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Name</span>
+              <span className="text-gray-500">Name</span>
               <span>{userName || "—"}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Email</span>
+              <span className="text-gray-500">Email</span>
               <span className="truncate max-w-[60%]">{user?.email}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Role</span>
-              <Badge variant="outline">Buyer</Badge>
+              <span className="text-gray-500">Role</span>
+              <Badge variant="outline" style={{ background: '#E398CA', color: '#E398CA' }}>Buyer</Badge>
             </div>
           </div>
         </div>
 
         {/* Storefronts */}
-        <div className="bg-card border border-border rounded-2xl p-6">
+        <div className="bg-white rounded-2xl p-6" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
           <div className="flex items-center gap-2 mb-4">
-            <Store className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold">Connected storefronts</h2>
+            <Store className="w-5 h-5" style={{ color: '#E398CA' }} />
+            <h2 className="text-lg font-semibold" style={{ color: '#1f1a1d' }}>Connected storefronts</h2>
           </div>
           {loadingStorefronts ? (
-            <div className="text-sm text-muted-foreground">Loading…</div>
+            <div className="text-sm text-gray-500">Loading…</div>
           ) : storefronts.length === 0 ? (
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-gray-500">
               You haven&apos;t connected to any storefront yet.{" "}
-              <a href="/buyer/catalog/connect" className="text-primary hover:underline">
+              <Link href="/buyer/catalog/connect" className="text-[#E398CA] hover:underline">
                 Connect one
-              </a>
+              </Link>
               .
             </div>
           ) : (
@@ -170,17 +172,17 @@ export default function BuyerProfilePage() {
               {storefronts.map((s, i) => (
                 <div
                   key={s.storefrontId || i}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/40"
+                  className="flex items-center justify-between p-3 rounded-lg bg-gray-50"
                 >
                   <div>
-                    <div className="font-medium">{s.storefronts?.name || "Storefront"}</div>
+                    <div className="font-medium" style={{ color: '#1f1a1d' }}>{s.storefronts?.name || "Storefront"}</div>
                     {s.storefronts?.code ? (
-                      <div className="text-xs text-muted-foreground font-mono">
+                      <div className="text-xs text-gray-400 font-mono">
                         {s.storefronts.code}
                       </div>
                     ) : null}
                   </div>
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                  <CheckCircle2 className="w-5 h-5" style={{ color: '#22c55e' }} />
                 </div>
               ))}
             </div>
@@ -188,11 +190,11 @@ export default function BuyerProfilePage() {
         </div>
 
         {/* Security */}
-        <div className="bg-card border border-border rounded-2xl p-6">
+        <div className="bg-white rounded-2xl p-6" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-primary" />
-              <h2 className="text-lg font-semibold">Two-factor authentication</h2>
+              <Shield className="w-5 h-5" style={{ color: '#E398CA' }} />
+              <h2 className="text-lg font-semibold" style={{ color: '#1f1a1d' }}>Two-factor authentication</h2>
             </div>
             {mfaEnrolled ? (
               <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
@@ -204,37 +206,36 @@ export default function BuyerProfilePage() {
           </div>
 
           {mfaEnrolled ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-gray-500">
               Your account is protected by an authenticator app.
             </p>
           ) : !qr ? (
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <p className="text-sm text-muted-foreground flex-1 min-w-[200px]">
+            <div className="flex gap-4 flex-wrap">
+              <p className="text-sm text-gray-500 flex-1 min-w-[200px]">
                 Add an extra layer of security with a TOTP authenticator app
                 (Google Authenticator, 1Password, etc.).
               </p>
-              <Button onClick={handleEnroll}>
-                <QrCode className="w-4 h-4 mr-2" />
-                Enable 2FA
+              <Button onClick={handleEnroll} style={{ background: '#E398CA' }}>
+                <QrCode className="w-4 h-4 mr-2" /> Enable 2FA
               </Button>
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="flex flex-col items-center gap-3 p-4 bg-muted/40 rounded-xl">
+              <div className="flex flex-col items-center gap-3 p-4 bg-gray-50 rounded-xl">
                 <Image
                   src={qr}
                   alt="MFA QR Code"
                   width={192}
                   height={192}
                   unoptimized
-                  className="rounded border border-border"
+                  className="rounded border border-gray-200"
                 />
-                <p className="text-xs text-muted-foreground text-center">
+                <p className="text-xs text-gray-500 text-center">
                   Scan this QR code in your authenticator app, then enter the 6-digit code below.
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={handleChallenge} disabled={!factorId}>
+                <Button variant="outline" onClick={handleChallenge} disabled={!factorId} style={{ background: 'white', border: '1px solid #E398CA', color: '#E398CA' }}>
                   Request code
                 </Button>
                 <Input
@@ -242,9 +243,9 @@ export default function BuyerProfilePage() {
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
                   maxLength={6}
-                  className="flex-1"
+                  className="h-11"
                 />
-                <Button onClick={handleVerify} disabled={!challengeId || code.length !== 6}>
+                <Button onClick={handleVerify} disabled={!challengeId || code.length !== 6} style={{ background: '#E398CA' }}>
                   Verify
                 </Button>
               </div>
@@ -254,9 +255,8 @@ export default function BuyerProfilePage() {
 
         {/* Logout */}
         <div className="flex justify-end">
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="w-4 h-4 mr-2" />
-            Sign out
+          <Button variant="outline" onClick={handleLogout} style={{ background: 'white', border: '1px solid #E398CA', color: '#E398CA' }}>
+            <LogOut className="w-4 h-4 mr-2" style={{ color: '#E398CA' }} /> Sign out
           </Button>
         </div>
       </div>

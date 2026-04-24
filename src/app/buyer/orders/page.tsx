@@ -79,20 +79,14 @@ export default function BuyerOrdersPage() {
   }, [orders]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #F2D3E6 0%, #fce4ec 50%, #f8dce8 100%)' }}>
       {/* Hero Header */}
-      <div className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
+      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(227,152,202,0.3) 0%, rgba(255,255,255,0) 100%)' }}>
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.8) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(227,152,202,0.4) 0%, transparent 40%)' }} />
         
         <div className="relative max-w-7xl mx-auto px-4 py-12">
-          <h1 className="text-4xl font-bold tracking-tight">
-            <span className="bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
-              My Orders
-            </span>
-          </h1>
-          <p className="text-muted-foreground mt-2 text-lg">
-            {orders.length} order{orders.length !== 1 ? "s" : ""}
-          </p>
+          <h1 className="text-4xl font-bold tracking-tight" style={{ color: '#1f1a1d' }}>My Orders</h1>
+          <p className="mt-2 text-lg" style={{ color: '#666' }}>{orders.length} order{orders.length !== 1 ? "s" : ""}</p>
         </div>
       </div>
 
@@ -101,20 +95,19 @@ export default function BuyerOrdersPage() {
         {loading ? (
           <div className="grid gap-4 mt-6">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-24 animate-pulse bg-muted/30 rounded-2xl" />
+              <div key={i} className="h-24 animate-pulse bg-white/50 rounded-2xl" />
             ))}
           </div>
         ) : orders.length === 0 ? (
           <div className="text-center py-20">
-            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
-              <ClipboardList className="w-12 h-12 text-muted-foreground/30" />
+            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-white/50 flex items-center justify-center" style={{ boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+              <ClipboardList className="w-12 h-12 opacity-40" style={{ color: '#E398CA' }} />
             </div>
-            <h2 className="text-2xl font-bold mb-2">No orders yet</h2>
-            <p className="text-muted-foreground mb-6">Submit your first order from the cart.</p>
+            <h2 className="text-2xl font-bold mb-2" style={{ color: '#1f1a1d' }}>No orders yet</h2>
+            <p className="text-gray-500 mb-6">Submit your first order from the cart.</p>
             <Link href="/buyer/catalog">
-              <Button size="lg">
-                <ShoppingBag className="w-5 h-5 mr-2" />
-                Browse Catalog
+              <Button size="lg" style={{ background: '#E398CA', boxShadow: '0 4px 15px rgba(227,152,202,0.5)' }}>
+                <ShoppingBag className="w-5 h-5 mr-2" /> Browse Catalog
               </Button>
             </Link>
           </div>
@@ -134,32 +127,33 @@ export default function BuyerOrdersPage() {
                   className="group block"
                 >
                   <div 
-                    className="relative bg-card border border-border rounded-2xl p-6 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10"
-                    style={{ animationDelay: `${index * 100}ms` }}
+                    className="relative bg-white border border-gray-200 rounded-2xl p-6 hover:border-[#E398CA]/50 transition-all duration-300 hover:shadow-xl"
+                    style={{ 
+                      animationDelay: `${index * 100}ms`,
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
+                    }}
                   >
                     {/* Status Badge */}
                     <div className="absolute top-4 right-4">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${config.color}`}>
-                        <StatusIcon className="w-3.5 h-3.5" />
-                        {config.label}
-                      </span>
+                        <StatusIcon className="w-3.5 h-3.5" />{config.label}</span>
                     </div>
 
                     {/* Order Info */}
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <div className="flex items-center gap-3 mb-3">
-                          <span className="text-2xl font-bold font-mono">
+                          <span className="text-2xl font-bold font-mono" style={{ color: '#1f1a1d' }}>
                             #{String(order.id || "").slice(0, 8).toUpperCase()}
                           </span>
                           {totalQty > 0 && (
-                            <span className="px-2 py-1 bg-muted rounded-lg text-xs font-medium">
+                            <span className="px-2 py-1 bg-gray-100 rounded-lg text-xs font-medium">
                               {totalQty} item{totalQty !== 1 ? "s" : ""}
                             </span>
                           )}
                         </div>
                         
-                        <div className="text-sm text-muted-foreground">
+                        <div className="text-sm text-gray-500">
                           Created {createdDate.toLocaleDateString("en-US", { 
                             month: "short", 
                             day: "numeric", 
@@ -171,9 +165,9 @@ export default function BuyerOrdersPage() {
 
                         {/* Items Preview */}
                         {order.items && Array.isArray(order.items) && order.items.length > 0 && (
-                          <div className="flex items-center gap-2 mt-4 text-sm">
-                            <Package className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">
+                          <div className="flex items-center gap-2 mt-4 text-sm text-gray-500">
+                            <Package className="w-4 h-4" style={{ color: '#E398CA' }} />
+                            <span className="text-gray-500">
                               {((order.items as unknown[]).slice(0, 3) as Array<{displayName?: string; modelId?: string}>).map((i) => i.displayName || i.modelId || "Item").join(", ")}
                               {((order.items as unknown[]).length > 3) ? ` +${(order.items as unknown[]).length - 3} more` : ''}
                             </span>
@@ -182,7 +176,7 @@ export default function BuyerOrdersPage() {
                       </div>
 
                       {/* Arrow */}
-                      <div className="hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-muted group-hover:bg-primary/10 group-hover:text-primary transition-all">
+                      <div className="hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 group-hover:bg-[#E398CA]/20 group-hover:text-[#E398CA] transition-all">
                         <ArrowRight className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" />
                       </div>
                     </div>

@@ -5,9 +5,8 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { getInventoryPaginated, getMyStorefronts } from "@/lib/dataService";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Package, ShoppingCart, Search, Tag, Box, X } from "lucide-react";
+import { Package, ShoppingCart, Search, Tag, X, Sparkles } from "lucide-react";
 import { useToast } from "@/components/Toast";
 
 interface Item {
@@ -29,12 +28,12 @@ export default function BuyerCatalogPage() {
   
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<Item[]>([]);
-  const [storefronts, setStorefronts] = useState<Record<string, unknown>[]>([]);
+  const [storefronts, setStorefronts] = useState<Array<{storefront?: {id?: string, name?: string, orgId?: string}}>>([]);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
-
   const [allCategories, setAllCategories] = useState<string[]>([]);
+  const [currentStorefront, setCurrentStorefront] = useState<{id?: string, name?: string, orgId?: string} | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -42,23 +41,22 @@ export default function BuyerCatalogPage() {
       setLoading(true);
       try {
         const my = await getMyStorefronts(user.id);
-        setStorefronts(my as Record<string, unknown>[]);
-        const first = (my?.[0] as Record<string, unknown> | undefined) || undefined;
-        const sf = (first?.storefront as Record<string, unknown> | undefined) || undefined;
-        const orgId = String(sf?.orgId || "");
-        if (!orgId) {
-          setItems([]);
-          return;
-        }
-        const res = await getInventoryPaginated(orgId, { status: "available" }, 0, 500);
-        const loadedItems = (res.items || []) as unknown as Item[];
-        setItems(loadedItems);
+        setStorefronts(my as typeof storefronts);
         
-        // Extract unique categories from items
-        const cats = [...new Set(loadedItems.map((i) => i.category).filter(Boolean))];
-        setAllCategories(cats as string[]);
+        if (my && my.length > 0) {
+          const sf = (my[0] as {storefront?: {id?: string, name?: string, orgId?: string}})?.storefront;
+          setCurrentStorefront(sf || null);
+          
+          if (sf?.orgId) {
+            const res = await getInventoryPaginated(sf.orgId, { status: "available" }, 0, 500);
+            const loadedItems = (res.items || []) as unknown as Item[];
+            setItems(loadedItems);
+            const cats = [...new Set(loadedItems.map((i) => i.category).filter(Boolean))] as string[];
+            setAllCategories(cats);
+          }
+        }
       } catch (e) {
-        toast((e as Error).message || "Failed to load catalog", "error");
+        toast((e as Error).message || "Failed to load", "error");
       } finally {
         setLoading(false);
       }
@@ -73,129 +71,130 @@ export default function BuyerCatalogPage() {
         [it.displayName, it.modelId, it.brand, it.barcode].some((v) => String(v || "").toLowerCase().includes(s))
       );
     }
-    if (categoryFilter) {
-      result = result.filter((it) => it.category === categoryFilter);
-    }
+    if (categoryFilter) result = result.filter((it) => it.category === categoryFilter);
     return result;
   }, [items, search, categoryFilter]);
 
   const handleAddToCart = async (item: Item) => {
     setAdding(item.id);
     try {
-      await addToCart({ 
-        id: item.id, 
-        modelId: item.modelId || "", 
-        barcode: item.barcode || "", 
-        displayName: item.displayName || "",
-        storefrontId: null 
-      }, 1);
+      await addToCart({ id: item.id, modelId: item.modelId || "", barcode: item.barcode || "", displayName: item.displayName || "", storefrontId: currentStorefront?.id ?? null }, 1);
       toast(`Added ${item.displayName || item.modelId}`, "success");
     } catch (e) {
-      toast((e as Error).message || "Failed to add", "error");
+      toast((e as Error).message || "Failed", "error");
     } finally {
       setAdding(null);
     }
   };
 
-  const storefront = (storefronts[0] as Record<string, unknown> | undefined)?.storefront as Record<string, unknown> | undefined;
-
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
-        <div className="absolute inset-0 opacity-30" style={{
-          backgroundImage: `radial-gradient(circle at 20% 50%, var(--primary) 0%, transparent 50%),
-                          radial-gradient(circle at 80% 20%, var(--primary) 0%, transparent 40%)`,
-        }} />
+    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #F2D3E6 0%, #fce4ec 50%, #f8dce8 100%)' }}>
+      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(227,152,202,0.3) 0%, rgba(255,255,255,0) 100%)' }}>
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.8) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(227,152,202,0.4) 0%, transparent 40%)' }} />
         
-        <div className="relative max-w-7xl mx-auto px-4 py-12">
-          <div className="flex items-center justify-between mb-6">
+        <div className="relative max-w-7xl mx-auto px-4 py-8">
+          {storefronts.length > 0 && (
+            <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+              {storefronts.map((sf, idx) => {
+                const s = sf.storefront;
+                const isActive = s?.id === currentStorefront?.id;
+                return (
+                  <button
+                    key={s?.id || idx}
+                    onClick={async () => {
+                      setCurrentStorefront(s || null);
+                      if (s?.orgId) {
+                        const res = await getInventoryPaginated(s.orgId, { status: "available" }, 0, 500);
+                        setItems((res.items || []) as unknown as Item[]);
+                        const cats = [...new Set((res.items || []).map((i) => (i as unknown as Item).category).filter(Boolean))];
+                        setAllCategories(cats as string[]);
+                      }
+                    }}
+                    className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${isActive ? 'text-white' : 'text-gray-600'}`}
+                    style={isActive ? { background: '#E398CA', boxShadow: '0 4px 15px rgba(227,152,202,0.5)' } : { background: 'rgba(255,255,255,0.6)' }}
+                  >
+                    {s?.name || `Storefront ${idx + 1}`}
+                  </button>
+                );
+              })}
+              <Link href="/buyer/catalog/connect" className="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap flex items-center gap-1 text-gray-400" style={{ background: 'rgba(255,255,255,0.6)' }}>
+                <Sparkles className="w-3 h-3" /> Add
+              </Link>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-4xl font-bold tracking-tight">
-                <span className="bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
-                  Catalog
-                </span>
-              </h1>
-              <p className="text-muted-foreground mt-2 text-lg">
-                {filtered.length} items available
-                {storefront && <span className="mx-2">·</span>}
-                {storefront && <span className="text-primary">{String(storefront.name || "Storefront")}</span>}
-              </p>
+              <h1 className="text-3xl font-bold" style={{ color: '#1f1a1d' }}>Catalog</h1>
+              <p className="opacity-70 mt-1">{filtered.length} items available</p>
             </div>
             <Link href="/buyer/cart">
-              <Button size="lg" className="relative">
-                <ShoppingCart className="w-5 h-5 mr-2" />
-                Cart
+              <button className="relative p-3 rounded-full bg-white shadow-md hover:shadow-lg transition-all" style={{ boxShadow: '0 4px 15px rgba(227,152,202,0.3)' }}>
+                <ShoppingCart className="w-5 h-5" style={{ color: '#E398CA' }} />
                 {cartItems.length > 0 && (
-                  <span className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground text-xs font-bold rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                     {cartItems.length}
                   </span>
                 )}
-              </Button>
+              </button>
             </Link>
           </div>
 
-          {/* Search Bar */}
-          <div className="relative max-w-xl">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <div className="relative max-w-md">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by name, model, brand, barcode..."
+              placeholder="Search products..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-14 pl-12 pr-4 rounded-2xl border border-border bg-card/80 backdrop-blur-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+              className="w-full h-12 pl-12 pr-10 rounded-2xl border-0 bg-white/80 backdrop-blur-sm focus:ring-2 focus:ring-[#E398CA]/50 transition-all"
+              style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}
             />
             {search && (
               <button onClick={() => setSearch("")} className="absolute right-4 top-1/2 -translate-y-1/2">
-                <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                <X className="w-4 h-4 text-gray-400" />
               </button>
             )}
           </div>
         </div>
       </div>
 
-      {/* Content */}
       <div className="max-w-7xl mx-auto px-4 pb-20">
         {storefronts.length === 0 ? (
           <div className="text-center py-20">
-            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
-              <Box className="w-10 h-10 text-muted-foreground" />
+            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-white/50 flex items-center justify-center">
+              <Package className="w-12 h-12 opacity-40" style={{ color: '#E398CA' }} />
             </div>
-            <h2 className="text-2xl font-bold mb-2">No storefront connected</h2>
-            <p className="text-muted-foreground mb-6">Connect to a storefront to view inventory.</p>
+            <h2 className="text-2xl font-bold mb-2" style={{ color: '#1f1a1d' }}>No storefront connected</h2>
+            <p className="opacity-60 mb-6">Connect to a storefront to browse their inventory.</p>
             <Link href="/buyer/catalog/connect">
-              <Button size="lg">Connect Storefront</Button>
+              <Button style={{ background: '#E398CA', boxShadow: '0 4px 15px rgba(227,152,202,0.5)' }}>Connect Storefront</Button>
             </Link>
           </div>
         ) : loading ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div className="aspect-square bg-muted rounded-2xl" />
-                <div className="h-4 bg-muted mt-3 rounded w-3/4" />
-                <div className="h-3 bg-muted mt-2 rounded w-1/2" />
+                <div className="aspect-square bg-white/50 rounded-2xl" />
+                <div className="h-4 bg-white/50 mt-3 rounded w-3/4" />
+                <div className="h-3 bg-white/30 mt-2 rounded w-1/2" />
               </div>
             ))}
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20">
-            <Package className="w-16 h-16 mx-auto text-muted-foreground/30" />
+            <Package className="w-16 h-16 mx-auto opacity-30" style={{ color: '#E398CA' }} />
             <h2 className="text-xl font-semibold mt-4">No items found</h2>
-            <p className="text-muted-foreground">Try adjusting your search.</p>
+            <p className="opacity-60">Try adjusting your search.</p>
           </div>
         ) : (
           <>
-            {/* Categories Filter */}
-            {allCategories.length > 0 && (
-              <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+            {allCategories.length > 1 && (
+              <div className="flex items-center gap-2 mb-6 overflow-x-auto">
                 <button
                   onClick={() => setCategoryFilter(null)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                    !categoryFilter 
-                      ? "bg-foreground text-background" 
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
-                  }`}
+                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${!categoryFilter ? 'text-white' : 'text-gray-600'}`}
+                  style={!categoryFilter ? { background: '#E398CA' } : { background: 'rgba(255,255,255,0.6)' }}
                 >
                   All
                 </button>
@@ -203,11 +202,8 @@ export default function BuyerCatalogPage() {
                   <button
                     key={cat}
                     onClick={() => setCategoryFilter(categoryFilter === cat ? null : cat)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                      categoryFilter === cat
-                        ? "bg-foreground text-background"
-                        : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    }`}
+                    className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${categoryFilter === cat ? 'text-white' : 'text-gray-600'}`}
+                    style={categoryFilter === cat ? { background: '#E398CA' } : { background: 'rgba(255,255,255,0.6)' }}
                   >
                     {cat}
                   </button>
@@ -215,73 +211,51 @@ export default function BuyerCatalogPage() {
               </div>
             )}
 
-            {/* Items Grid */}
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {filtered.map((item, index) => (
                 <div
                   key={item.id}
-                  className="group relative bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10"
-                  style={{ animationDelay: `${index * 50}ms` }}
+                  className="group bg-white rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300"
+                  style={{ boxShadow: '0 2px 15px rgba(0,0,0,0.05)' }}
                 >
-                  {/* Image */}
-                  <div className="aspect-square bg-muted/30 flex items-center justify-center relative overflow-hidden">
+                  <div className="aspect-square relative bg-gradient-to-br from-gray-50 to-gray-100">
                     {item.imageUrl ? (
                       <img src={item.imageUrl} alt={item.displayName} className="w-full h-full object-cover" />
                     ) : (
-                      <Package className="w-16 h-16 text-muted-foreground/30" />
-                    )}
-                    
-                    {/* Quantity Badge */}
-                    {item.quantity !== undefined && item.quantity > 0 && (
-                      <div className="absolute top-3 right-3 px-2 py-1 bg-success/90 text-white text-xs font-bold rounded-full">
-                        {item.quantity} in stock
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package className="w-12 h-12 opacity-20" style={{ color: '#E398CA' }} />
                       </div>
                     )}
-                    
-                    {/* Category Tag */}
+                    {item.quantity !== undefined && item.quantity > 0 && (
+                      <div className="absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-bold text-white" style={{ background: '#22c55e' }}>
+                        {item.quantity}
+                      </div>
+                    )}
                     {item.category && (
-                      <div className="absolute bottom-3 left-3 flex items-center gap-1 px-2 py-1 bg-background/80 backdrop-blur-sm rounded-full text-xs font-medium">
-                        <Tag className="w-3 h-3" />
-                        {item.category}
+                      <div className="absolute bottom-3 left-3 px-2 py-1 rounded-full text-xs font-medium bg-white/90 text-gray-600">
+                        <Tag className="w-3 h-3 inline mr-1" />{item.category}
                       </div>
                     )}
                   </div>
-
-                  {/* Content */}
-                  <div className="p-4 space-y-2">
-                    <h3 className="font-semibold text-foreground line-clamp-1">
-                      {item.displayName || item.modelId || "Unnamed Item"}
-                    </h3>
-                    
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span className="font-mono">{item.barcode}</span>
+                  <div className="p-4">
+                    <h3 className="font-semibold text-gray-800 truncate text-sm">{item.displayName || item.modelId || "Item"}</h3>
+                    <div className="flex items-center justify-between text-xs text-gray-400 mt-1">
+                      <span className="font-mono">{item.barcode?.slice(0, 8) || "—"}</span>
                       <span>{item.brand || "—"}</span>
                     </div>
-
-                    {/* Price */}
                     {item.costPrice !== undefined && (
-                      <div className="pt-2 border-t border-border">
-                        <span className="text-lg font-bold text-primary">
-                          ${item.costPrice.toFixed(2)}
-                        </span>
+                      <div className="mt-2 pt-2 border-t border-gray-100">
+                        <span className="text-lg font-bold" style={{ color: '#E398CA' }}>${item.costPrice.toFixed(2)}</span>
                       </div>
                     )}
-
-                    {/* Add Button */}
-                    <Button 
-                      className="w-full mt-3" 
+                    <button 
                       onClick={() => handleAddToCart(item)}
                       disabled={adding === item.id}
+                      className="w-full mt-3 py-2 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2"
+                      style={adding === item.id ? { background: '#fcd9e6', color: '#E398CA' } : { background: '#E398CA', color: 'white' }}
                     >
-                      {adding === item.id ? (
-                        <span className="animate-pulse">Adding...</span>
-                      ) : (
-                        <>
-                          <ShoppingCart className="w-4 h-4 mr-2" />
-                          Add to Cart
-                        </>
-                      )}
-                    </Button>
+                      {adding === item.id ? "Adding..." : <><ShoppingCart className="w-4 h-4" /> Add to Cart</>}
+                    </button>
                   </div>
                 </div>
               ))}

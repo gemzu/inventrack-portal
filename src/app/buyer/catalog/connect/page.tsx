@@ -9,172 +9,201 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { connectToStorefront, getStorefrontByCode, getMyStorefronts } from "@/lib/dataService";
 import { useToast } from "@/components/Toast";
-import { Store, Package, MapPin, ArrowRight, Check } from "lucide-react";
+import { Store, Package, MessageSquare, Check, ArrowRight, Sparkles } from "lucide-react";
+
+interface ConnectedStorefront {
+  storefront?: {
+    id: string;
+    name?: string;
+    orgId?: string;
+    inviteCode?: string;
+  };
+}
 
 export default function ConnectStorefrontPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   const [code, setCode] = useState("");
-  const [preview, setPreview] = useState<{id?: string; name?: string; description?: string; inviteCode?: string; filterType?: string} | null>(null);
+  const [preview, setPreview] = useState<{id?: string; name?: string; description?: string; inviteCode?: string; filterType?: string; ownerId?: string} | null>(null);
   const [loading, setLoading] = useState(false);
-  const [connectedStorefronts, setConnectedStorefronts] = useState<Array<{storefront?: {id?: string, name?: string}}>>([]);
+  const [connectedStorefronts, setConnectedStorefronts] = useState<ConnectedStorefront[]>([]);
+  const [activeTab, setActiveTab] = useState<"connected" | "connect">("connected");
 
-  // Load already connected storefronts
   useEffect(() => {
     if (!user) return;
     getMyStorefronts(user.id)
-      .then((sf) => setConnectedStorefronts(sf as Record<string, unknown>[]))
+      .then((sf) => setConnectedStorefronts(sf as ConnectedStorefront[]))
       .catch(() => {});
   }, [user]);
 
+  const handleLookup = async () => {
+    if (!code.trim()) return;
+    try {
+      setLoading(true);
+      const sf = await getStorefrontByCode(code.trim());
+      setPreview(sf as typeof preview);
+      if (!sf) toast("No storefront found for that code", "error");
+    } catch (e) {
+      toast((e as Error).message || "Failed to preview", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConnect = async () => {
+    if (!user || !preview?.id) return;
+    try {
+      setLoading(true);
+      await connectToStorefront(user.id, String(preview.id));
+      toast("Connected! Chat with the owner now", "success");
+      const updated = await getMyStorefronts(user.id);
+      setConnectedStorefronts(updated as ConnectedStorefront[]);
+      setActiveTab("connected");
+      router.push("/buyer/messages");
+    } catch (e) {
+      toast((e as Error).message || "Failed to connect", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero */}
-      <div className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
+    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #F2D3E6 0%, #fce4ec 50%, #f8dce8 100%)' }}>
+      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(227,152,202,0.3) 0%, rgba(255,255,255,0) 100%)' }}>
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.8) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(227,152,202,0.4) 0%, transparent 40%)' }} />
+        
         <div className="relative max-w-7xl mx-auto px-4 py-12">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Store className="w-5 h-5 text-primary" />
-            </div>
-            <h1 className="text-4xl font-bold tracking-tight">
-              <span className="bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
-                Storefronts
-              </span>
-            </h1>
-          </div>
-          <p className="text-muted-foreground text-lg">
-            Connect to storefronts to browse their inventory
-          </p>
+          <h1 className="text-4xl font-bold" style={{ color: '#1f1a1d' }}>Storefronts</h1>
+          <p className="mt-2 text-lg" style={{ color: '#666' }}>Connect to storefronts and chat with owners</p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Connected Storefronts as Tabs */}
-        {connectedStorefronts.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold mb-4">Your Connected Storefronts</h2>
-            <div className="flex flex-wrap gap-3">
-              {(connectedStorefronts).map((sf) => (
-                <Link
-                  key={(sf as {storefront?: {id?: string}}).storefront?.id}
-                  href="/buyer/catalog"
-                  className="flex items-center gap-2 px-4 py-3 rounded-xl border bg-card hover:border-primary/50 hover:shadow-md transition-all"
-                >
-                  <Check className="w-4 h-4 text-success" />
-                  <span className="font-medium">{(sf as {storefront?: {name?: string}}).storefront?.name}</span>
-                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setActiveTab("connected")}
+            className={`px-5 py-2.5 rounded-full font-medium transition-all ${activeTab === "connected" ? 'text-white' : 'text-gray-600'}`}
+            style={activeTab === "connected" ? { background: '#E398CA', boxShadow: '0 4px 15px rgba(227,152,202,0.5)' } : { background: 'white' }}
+          >
+            My Storefronts ({connectedStorefronts.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("connect")}
+            className={`px-5 py-2.5 rounded-full font-medium transition-all ${activeTab === "connect" ? 'text-white' : 'text-gray-600'}`}
+            style={activeTab === "connect" ? { background: '#E398CA', boxShadow: '0 4px 15px rgba(227,152,202,0.5)' } : { background: 'white' }}
+          >
+            <Sparkles className="w-4 h-4 inline mr-1" /> Connect New
+          </button>
+        </div>
+
+        {activeTab === "connected" ? (
+          <div className="space-y-4">
+            {connectedStorefronts.length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-3xl" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+                <Store className="w-16 h-16 mx-auto opacity-20" style={{ color: '#E398CA' }} />
+                <h3 className="text-xl font-semibold mt-4" style={{ color: '#1f1a1d' }}>No storefronts connected</h3>
+                <p className="mt-2 text-gray-500 mb-6">Connect to a storefront to browse their inventory</p>
+                <Button onClick={() => setActiveTab("connect")} style={{ background: '#E398CA', boxShadow: '0 4px 15px rgba(227,152,202,0.5)' }}>
+                  Connect Storefront
+                </Button>
+              </div>
+            ) : (
+              <>
+                {connectedStorefronts.map((sf) => {
+                  const s = sf.storefront;
+                  return (
+                    <div
+                      key={s?.id}
+                      className="bg-white rounded-2xl p-5 hover:shadow-xl transition-all"
+                      style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #fce4ec 0%, #F2D3E6 100%)' }}>
+                            <Store className="w-7 h-7" style={{ color: '#E398CA' }} />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-lg" style={{ color: '#1f1a1d' }}>{s?.name || "Storefront"}</h3>
+                            <p className="text-sm text-gray-500">Code: {s?.inviteCode || "—"}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Link href="/buyer/messages">
+                            <button className="px-4 py-2 rounded-xl font-medium bg-white border-2 hover:bg-gray-50 transition-all flex items-center gap-2" style={{ borderColor: '#E398CA', color: '#E398CA' }}>
+                              <MessageSquare className="w-4 h-4" /> Chat
+                            </button>
+                          </Link>
+                          <Link href="/buyer/catalog">
+                            <button className="px-4 py-2 rounded-xl font-medium text-white transition-all flex items-center gap-2" style={{ background: '#E398CA' }}>
+                              <Package className="w-4 h-4" /> Catalog
+                              <ArrowRight className="w-4 h-4" />
+                            </button>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                <Link href="/buyer/messages">
+                  <div className="bg-gradient-to-r from-[#E398CA] to-[#d88ab8] rounded-2xl p-5 text-white text-center hover:shadow-xl transition-all cursor-pointer">
+                    <MessageSquare className="w-6 h-6 inline mr-2" />
+                    <span className="font-semibold">Message storefront owners</span>
+                  </div>
                 </Link>
-              ))}
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="bg-white rounded-3xl p-6" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+            <label className="text-sm font-medium mb-2 block">Enter invite code</label>
+            <div className="flex gap-2">
+              <Input 
+                value={code} 
+                onChange={(e) => setCode(e.target.value.toUpperCase())} 
+                placeholder="STORE-XXXX" 
+                className="text-lg tracking-wider h-12"
+              />
+              <Button
+                onClick={handleLookup}
+                disabled={!code.trim() || loading}
+                style={{ background: '#E398CA' }}
+              >
+                Look Up
+              </Button>
             </div>
+
+            {preview ? (
+              <div className="mt-6 rounded-xl border-2 p-5" style={{ borderColor: '#E398CA' }}>
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #fce4ec 0%, #F2D3E6 100%)' }}>
+                    <Store className="w-7 h-7" style={{ color: '#E398CA' }} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-xl" style={{ color: '#1f1a1d' }}>{preview.name || "Storefront"}</div>
+                    <div className="text-sm text-gray-500">Code: {preview.inviteCode || code}</div>
+                  </div>
+                  <Button
+                    onClick={handleConnect}
+                    disabled={loading}
+                    style={{ background: '#22c55e' }}
+                  >
+                    <Check className="w-4 h-4 mr-1" /> Connect
+                  </Button>
+                </div>
+                {preview.description && (
+                  <p className="text-sm text-gray-600 mb-2">{preview.description}</p>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-gray-400">
+                <Store className="w-16 h-16 mx-auto mb-3 opacity-20" />
+                <p>Enter a storefront invite code to connect</p>
+              </div>
+            )}
           </div>
         )}
-
-        {/* Connect New */}
-        <div className="max-w-xl">
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Enter invite code</label>
-                <Input 
-                  value={code} 
-                  onChange={(e) => setCode(e.target.value.toUpperCase())} 
-                  placeholder="STORE-XXXX" 
-                  className="text-lg tracking-wider"
-                />
-              </div>
-              
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={async () => {
-                    try {
-                      setLoading(true);
-                      const sf = await getStorefrontByCode(code.trim());
-                      setPreview(sf as {id?: string; name?: string; description?: string; inviteCode?: string; filterType?: string} | null);
-                      if (!sf) toast("No storefront found for that code", "error");
-                    } catch (e) {
-                      toast((e as Error).message || "Failed to preview", "error");
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}
-                  disabled={!code.trim() || loading}
-                >
-                  Look Up
-                </Button>
-                <Button
-                  onClick={async () => {
-                    if (!user || !preview?.id) return;
-                    try {
-                      setLoading(true);
-                      await connectToStorefront(user.id, String(preview.id));
-                      toast("Connected! Browse their catalog now", "success");
-                      router.push("/buyer/catalog");
-                    } catch (e) {
-                      toast((e as Error).message || "Failed to connect", "error");
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}
-                  disabled={!preview || loading}
-                >
-                  Connect
-                </Button>
-              </div>
-
-              {preview ? (
-                <div className="rounded-xl border p-5 bg-card/50">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <Store className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-lg">{preview.name || "Storefront"}</div>
-                      <div className="text-sm text-muted-foreground">Code: {preview.inviteCode || code}</div>
-                    </div>
-                  </div>
-                  {preview.description && (
-                    <p className="text-sm text-muted-foreground mb-3">{preview.description}</p>
-                  )}
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Package className="w-4 h-4" />
-                      {String(preview.filterType || "all")} items
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Store className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p>Enter a storefront invite code to connect</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Messages section */}
-        <div className="mt-10">
-          <h2 className="text-lg font-semibold mb-4">Messages</h2>
-          <Link href="/buyer/messages">
-            <Card className="hover:border-primary/50 hover:shadow-md transition-all cursor-pointer">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <Store className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <div className="font-medium">Chat with storefront owners</div>
-                    <div className="text-sm text-muted-foreground">Message connected storefront owners</div>
-                  </div>
-                </div>
-                <ArrowRight className="w-5 h-5 text-muted-foreground" />
-              </CardContent>
-            </Card>
-          </Link>
-        </div>
       </div>
     </div>
   );

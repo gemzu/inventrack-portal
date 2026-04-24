@@ -52,20 +52,14 @@ export default function BuyerCartPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #F2D3E6 0%, #fce4ec 50%, #f8dce8 100%)' }}>
       {/* Hero Header */}
-      <div className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
+      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(227,152,202,0.3) 0%, rgba(255,255,255,0) 100%)' }}>
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.8) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(227,152,202,0.4) 0%, transparent 40%)' }} />
         
         <div className="relative max-w-7xl mx-auto px-4 py-12">
-          <h1 className="text-4xl font-bold tracking-tight">
-            <span className="bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
-              Cart
-            </span>
-          </h1>
-          <p className="text-muted-foreground mt-2 text-lg">
-            {count} item{count !== 1 ? "s" : ""} ready to order
-          </p>
+          <h1 className="text-4xl font-bold tracking-tight" style={{ color: '#1f1a1d' }}>Cart</h1>
+          <p className="mt-2 text-lg" style={{ color: '#666' }}>{count} item{count !== 1 ? "s" : ""} ready to order</p>
         </div>
       </div>
 
@@ -73,15 +67,14 @@ export default function BuyerCartPage() {
       <div className="max-w-7xl mx-auto px-4 pb-20">
         {items.length === 0 ? (
           <div className="text-center py-20">
-            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
-              <ShoppingCart className="w-12 h-12 text-muted-foreground/30" />
+            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-white/50 flex items-center justify-center" style={{ boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+              <ShoppingCart className="w-12 h-12 opacity-40" style={{ color: '#E398CA' }} />
             </div>
-            <h2 className="text-2xl font-bold mb-2">Your cart is empty</h2>
-            <p className="text-muted-foreground mb-6">Add items from the catalog to get started.</p>
+            <h2 className="text-2xl font-bold mb-2" style={{ color: '#1f1a1d' }}>Your cart is empty</h2>
+            <p className="text-gray-500 mb-6">Add items from the catalog to get started.</p>
             <Link href="/buyer/catalog">
-              <Button size="lg">
-                <ShoppingBag className="w-5 h-5 mr-2" />
-                Browse Catalog
+              <Button size="lg" style={{ background: '#E398CA', boxShadow: '0 4px 15px rgba(227,152,202,0.5)' }}>
+                <ShoppingBag className="w-5 h-5 mr-2" /> Browse Catalog
               </Button>
             </Link>
           </div>
@@ -92,38 +85,46 @@ export default function BuyerCartPage() {
               {items.map((item, index) => (
                 <div
                   key={item.id}
-                  className="group relative bg-card border border-border rounded-2xl p-4 hover:border-primary/50 transition-all duration-300"
-                  style={{ animationDelay: `${index * 50}ms` }}
+                  className="group bg-white rounded-2xl p-4 hover:shadow-xl transition-all duration-300"
+                  style={{ 
+                    boxShadow: '0 2px 15px rgba(0,0,0,0.05)',
+                    animationDelay: `${index * 50}ms`
+                  }}
                 >
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold truncate">{item.displayName || item.modelId || "Item"}</div>
-                      <div className="text-xs text-muted-foreground font-mono">{item.barcode || ""}</div>
+                      <div className="font-semibold truncate" style={{ color: '#1f1a1d' }}>
+                        {item.displayName || item.modelId || "Item"}
+                      </div>
+                      <div className="text-xs text-gray-400 font-mono">{item.barcode || ""}</div>
                     </div>
                     
                     <div className="flex items-center gap-3">
                       {/* Quantity Controls */}
-                      <div className="flex items-center gap-1 bg-muted rounded-xl p-1">
+                      <div className="flex items-center gap-1 bg-gray-50 rounded-xl px-3 py-1.5">
                         <button
                           onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
-                          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-background transition-colors"
+                          className="w-8 h-8 flex items-center justify-center rounded-full transition-colors"
+                          style={item.quantity === 1 ? { background: '#fcd9e6', color: '#E398CA' } : { background: 'white', color: '#E398CA' }}
                         >
                           <Minus className="w-4 h-4" />
                         </button>
-                        <span className="w-10 text-center font-semibold">{item.quantity}</span>
+                        <span className="w-10 text-center font-semibold" style={{ color: '#1f1a1d' }}>
+                          {item.quantity}
+                        </span>
                         <button
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-background transition-colors"
+                          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#fce4ec] transition-colors"
                         >
                           <Plus className="w-4 h-4" />
                         </button>
                       </div>
                       
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="icon-sm"
                         onClick={() => removeFromCart(item.id)}
-                        className="text-muted-foreground hover:text-destructive"
+                        className="text-gray-600 hover:text-gray-800 hover:bg-gray-50"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -135,17 +136,17 @@ export default function BuyerCartPage() {
 
             {/* Summary */}
             <div className="lg:col-span-1">
-              <div className="sticky top-6 bg-card border border-border rounded-2xl p-6 space-y-4">
-                <h2 className="text-xl font-bold">Order Summary</h2>
+              <div className="sticky top-6 bg-white border border-gray-200 rounded-2xl p-6 space-y-4" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+                <h2 className="text-xl font-bold" style={{ color: '#1f1a1d' }}>Order Summary</h2>
                 
-                <div className="space-y-2 border-b border-border pb-4">
+                <div className="space-y-2 border-b border-gray-200 pb-4">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Items</span>
-                    <span>{count}</span>
+                    <span className="text-gray-500">Items</span>
+                    <span className="font-medium" style={{ color: '#1f1a1d' }}>{count}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Total Quantity</span>
-                    <span className="font-semibold">{totalQty}</span>
+                    <span className="text-gray-500">Total Quantity</span>
+                    <span className="font-medium" style={{ color: '#1f1a1d' }}>{totalQty}</span>
                   </div>
                 </div>
 
@@ -154,6 +155,7 @@ export default function BuyerCartPage() {
                     className="w-full h-12 text-lg"
                     onClick={handleSubmit}
                     disabled={submitting}
+                    style={submitting ? { background: '#fcd9e6', color: '#E398CA' } : { background: '#E398CA', color: 'white' }}
                   >
                     {submitting ? (
                       <span className="animate-pulse">Submitting...</span>
@@ -167,14 +169,14 @@ export default function BuyerCartPage() {
                   
                   <Button
                     variant="outline"
-                    className="w-full"
+                    className="w-full text-gray-600 hover:text-gray-800 hover:bg-gray-50"
                     onClick={clearCart}
                   >
                     Clear Cart
                   </Button>
                 </div>
 
-                <Link href="/buyer/catalog" className="block text-center text-sm text-muted-foreground hover:text-foreground">
+                <Link href="/buyer/catalog" className="block text-center text-sm text-gray-500 hover:text-[#E398CA]">
                   Continue Shopping →
                 </Link>
               </div>
