@@ -150,18 +150,12 @@ function MobileNav({ pathname, cartCount }: { pathname: string; cartCount: numbe
 
 export default function BuyerLayout({ children }: { children: React.ReactNode }) {
   const { user, userRole, userActive, loading, logout } = useAuth();
-  const { theme, toggleTheme, setAccent } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const { count: cartCount } = useCart();
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Apply pink-accent theme for buyer portal via ThemeContext (avoids conflict with ThemeContext mount effect)
-  useEffect(() => {
-    setAccent("pink");
-    return () => setAccent("neutral");
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     if (!loading && !user) router.push("/login");
