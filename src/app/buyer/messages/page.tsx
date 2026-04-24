@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import {
   getConversations, getMessages,
@@ -34,6 +35,7 @@ function formatTime(d?: string) {
 export default function BuyerMessagesPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const searchParams = useSearchParams();
 
   // Conversations & messages
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -92,6 +94,19 @@ export default function BuyerMessagesPage() {
       }
     })();
   }, [user]);
+
+  // ── Auto-select peer from URL query params (?peer=ID&org=ORGID) ─
+  useEffect(() => {
+    const paramPeer = searchParams.get("peer");
+    const paramOrg  = searchParams.get("org");
+    if (paramPeer) {
+      setPeerId(paramPeer);
+      if (paramOrg) {
+        setPeerOrgId(paramOrg);
+        setPeerOrgMap((prev) => ({ ...prev, [paramPeer]: paramOrg }));
+      }
+    }
+  }, [searchParams]);
 
   // ── Load conversations ───────────────────────────────────────
   const refreshConvos = useMemo(() => async () => {

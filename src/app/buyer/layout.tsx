@@ -150,8 +150,14 @@ function MobileNav({ pathname, cartCount }: { pathname: string; cartCount: numbe
 
 export default function BuyerLayout({ children }: { children: React.ReactNode }) {
   const { user, userRole, userActive, loading, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, setAccent } = useTheme();
   const { count: cartCount } = useCart();
+
+  // Force neutral theme — clear any saved pink accent
+  useEffect(() => {
+    setAccent("neutral");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
