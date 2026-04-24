@@ -428,8 +428,8 @@ export async function getMyStorefronts(buyerId: string) {
 }
 
 export async function connectToStorefront(buyerId: string, storefrontId: string) {
-  // storefront_buyers.status CHECK constraint only allows 'active' | 'blocked'.
-  const { data, error } = await supabase
+  // Connect to storefront
+  const { data: connection, error } = await supabase
     .from("storefront_buyers")
     .upsert(
       { buyer_id: buyerId, storefront_id: storefrontId, status: "active", connected_at: new Date().toISOString() },
@@ -438,7 +438,36 @@ export async function connectToStorefront(buyerId: string, storefrontId: string)
     .select()
     .single();
   if (error) throw error;
-  return toCamel(data);
+  
+  // Get storefront owner org_id and create message thread with owner
+  const { data: sf } = await supabase
+    .from("storefronts")
+    .select("org_id, organizations(owner_id)")
+    .eq("id", storefrontId)
+    .single();
+  
+  if (sf?.org_id && sf?.organizations && sf.organizations[0]?.owner_id) {
+    // Check if conversation already exists
+    const { data: existing } = await supabase
+      .from("messages")
+      .select("id")
+      .eq("sender_id", buyerId)
+      .eq("receiver_id", sf.organizations[0].owner_id)
+      .eq("org_id", sf.org_id)
+      .limit(1);
+    
+    // Create welcome message if no conversation exists
+    if (!existing || existing.length === 0) {
+      await supabase.from("messages").insert({
+        org_id: sf.org_id,
+        sender_id: buyerId,
+        receiver_id: sf.organizations[0].owner_id,
+        text: "Hi! I just connected to your storefront. Looking forward to working with you!",
+      });
+    }
+  }
+  
+  return toCamel(connection);
 }
 
 export async function disconnectStorefront(buyerId: string, storefrontId: string) {
@@ -690,12 +719,18 @@ export async function updateTicket(id: string, patch: AnyRow) {
  */
 
 export async function getFavorites(_orgId: string, buyerId: string) {
+  // Fetch all inventory and filter in JS - avoids jsonb query issues
   const { data, error } = await supabase
     .from("inventory")
-    .select("*")
-    .contains("favorited_by", [buyerId]);
+    .select("*");
   if (error) throw error;
-  return mapAll(data);
+  // Filter items where favorited_by contains this buyerId
+  const favorites = (data || []).filter((item: AnyRow) => {
+    const fav = item.favorited_by;
+    if (!fav || !Array.isArray(fav)) return false;
+    return fav.includes(buyerId);
+  });
+  return mapAll(favorites);
 }
 
 export async function toggleFavorite(itemId: string, buyerId: string) {
