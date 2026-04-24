@@ -24,14 +24,22 @@ export default function BuyerCartPage() {
     if (!orgId || !user) return;
     try {
       setSubmitting(true);
+      // All cart items are expected to come from the same storefront for now.
+      // Pick the first non-null storefrontId as the order's storefront.
+      const storefrontId = items.find((i) => i.storefrontId)?.storefrontId ?? null;
       await createOrder(orgId, {
         buyerId: user.id,
         buyerName: userName || user.email || "Buyer",
         buyerEmail: user.email || "",
-        items: items.map((i) => ({ modelId: i.modelId, barcode: i.barcode, quantity: i.quantity })),
+        storefrontId,
+        items: items.map((i) => ({
+          modelId: i.modelId,
+          barcode: i.barcode,
+          displayName: i.displayName,
+          quantity: i.quantity,
+        })),
         totalQty,
         status: "pending_approval",
-        orderedBy: user.id,
       });
       clearCart();
       toast("Order submitted", "success");

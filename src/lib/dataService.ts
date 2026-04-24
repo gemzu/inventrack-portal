@@ -419,7 +419,7 @@ export async function getMyStorefronts(buyerId: string) {
     .from("storefront_buyers")
     .select("*, storefronts(*)")
     .eq("buyer_id", buyerId)
-    .eq("status", "connected");
+    .eq("status", "active");
   if (error) throw error;
   return (data || []).map((row: AnyRow) => ({
     ...toCamel(row),
@@ -428,11 +428,11 @@ export async function getMyStorefronts(buyerId: string) {
 }
 
 export async function connectToStorefront(buyerId: string, storefrontId: string) {
-  // Try 'joined' as status - which is typically valid
+  // storefront_buyers.status CHECK constraint only allows 'active' | 'blocked'.
   const { data, error } = await supabase
     .from("storefront_buyers")
     .upsert(
-      { buyer_id: buyerId, storefront_id: storefrontId, status: "joined", connected_at: new Date().toISOString() },
+      { buyer_id: buyerId, storefront_id: storefrontId, status: "active", connected_at: new Date().toISOString() },
       { onConflict: "storefront_id,buyer_id" }
     )
     .select()
