@@ -14,14 +14,14 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType>({
   theme: "light",
-  accent: "neutral",
+  accent: "pink",
   toggleTheme: () => {},
   setAccent: () => {},
 });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>("light");
-  const [accent, setAccentState] = useState<Accent>("neutral");
+  const [accent, setAccentState] = useState<Accent>("pink");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
