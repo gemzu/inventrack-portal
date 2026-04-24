@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { getOrders } from "@/lib/dataService";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { ClipboardList, Package, Clock, CheckCircle, XCircle, ArrowRight, ShoppingBag } from "lucide-react";
 import { useToast } from "@/components/Toast";
@@ -19,24 +20,55 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
 };
 
 export default function BuyerOrdersPage() {
-  const { user, orgId } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [orders, setOrders] = useState<{id?: string; status?: string; createdAt?: string; created_at?: string; totalQty?: number; total_qty?: number; items?: unknown[]}[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!orgId || !user) return;
+    if (!user) return;
     (async () => {
       try {
-        const o = await getOrders(orgId, { buyerId: user.id });
-        setOrders((o || []) as typeof orders);
+        // For buyers, we query by buyer_id but we need to know the org_id from storefronts
+        // Get storefront orgs connected to this buyer first
+        const { data: storefronts } = await supabase
+          .from("storefront_buyers")
+          .select("storefronts(org_id)")
+          .eq("buyer_id", user.id)
+          .eq("status", "active");
+        
+        if (!storefronts || storefronts.length === 0) {
+          setOrders([]);
+          return;
+        }
+        
+        // Get all org_ids from connected storefronts
+        const orgIds = storefronts
+          .map((s: unknown) => (s as { storefronts?: { org_id?: string } })?.storefronts?.org_id)
+          .filter(Boolean);
+        
+        if (orgIds.length === 0) {
+          setOrders([]);
+          return;
+        }
+        
+        // Query orders from these orgs where buyer_id matches
+        const { data: orderData, error } = await supabase
+          .from("orders")
+          .select("*")
+          .in("org_id", orgIds)
+          .eq("buyer_id", user.id)
+          .order("created_at", { ascending: false });
+        
+        if (error) throw error;
+        setOrders((orderData || []) as typeof orders);
       } catch (e) {
         toast((e as Error).message || "Failed to load orders", "error");
       } finally {
         setLoading(false);
       }
     })();
-  }, [orgId, user, toast]);
+  }, [user, toast]);
 
   const sortedOrders = useMemo(() => {
     return [...orders].sort((a, b) => {

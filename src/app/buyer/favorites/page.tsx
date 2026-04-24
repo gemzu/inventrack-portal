@@ -20,20 +20,20 @@ interface FavItem {
 }
 
 export default function BuyerFavoritesPage() {
-  const { user, orgId } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const { addToCart } = useCart();
   const [items, setItems] = useState<FavItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user || !orgId) return;
+    if (!user) return;
     setLoading(true);
-    getFavorites(orgId, user.id)
+    getFavorites("", user.id)
       .then((rows) => setItems(rows as unknown as FavItem[]))
       .catch((e) => toast((e as Error).message || "Failed to load favorites", "error"))
       .finally(() => setLoading(false));
-  }, [user, orgId, toast]);
+  }, [user, toast]);
 
   const onRemove = async (id: string) => {
     if (!user) return;

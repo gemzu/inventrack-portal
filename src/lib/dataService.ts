@@ -689,11 +689,10 @@ export async function updateTicket(id: string, patch: AnyRow) {
  * array of buyer user ids. Matches mobile app's current convention.
  */
 
-export async function getFavorites(orgId: string, buyerId: string) {
+export async function getFavorites(_orgId: string, buyerId: string) {
   const { data, error } = await supabase
     .from("inventory")
     .select("*")
-    .eq("org_id", orgId)
     .contains("favorited_by", [buyerId]);
   if (error) throw error;
   return mapAll(data);
