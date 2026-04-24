@@ -482,13 +482,27 @@ export async function disconnectStorefront(buyerId: string, storefrontId: string
 /* ─── Messages ─────────────────────────────────────────── */
 
 export async function getConversations(userId: string) {
-  // All messages involving this user, latest per peer.
+  // Get storefront orgs for this buyer
+  const { data: sfs } = await supabase
+    .from("storefront_buyers")
+    .select("storefronts(org_id)")
+    .eq("buyer_id", userId)
+    .eq("status", "active");
+  
+  if (!sfs || sfs.length === 0) return [];
+  
+  const orgIds = sfs.map((s: unknown) => (s as { storefronts?: { org_id?: string } })?.storefronts?.org_id).filter(Boolean);
+  if (orgIds.length === 0) return [];
+  
+  // All messages in these orgs involving this user
   const { data, error } = await supabase
     .from("messages")
     .select("*")
+    .in("org_id", orgIds)
     .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
     .order("created_at", { ascending: false });
   if (error) throw error;
+  
   const byPeer = new Map<string, AnyRow>();
   for (const m of data || []) {
     const peer = m.sender_id === userId ? m.receiver_id : m.sender_id;
