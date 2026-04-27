@@ -37,6 +37,7 @@ export default function ChatPage() {
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [userNames, setUserNames] = useState<Record<string, string>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const userId = user?.id;
 
@@ -45,14 +46,12 @@ export default function ChatPage() {
   }, []);
 
   // Build conversation list grouped by other user
-  const buildConversations = useCallback((msgs: Message[]) => {
+  const buildConversations = useCallback((msgs: Message[], names: Record<string, string>) => {
     const convMap = new Map<string, Conversation>();
 
     for (const msg of msgs) {
       const otherUserId = msg.sender_id === userId ? msg.receiver_id : msg.sender_id;
-      const otherUserName = msg.sender_id === userId
-        ? msg.receiver_name || "Unknown"
-        : msg.sender_name || "Unknown";
+      const otherUserName = names[otherUserId] || otherUserId.slice(0, 8);
 
       if (!convMap.has(otherUserId)) {
         convMap.set(otherUserId, {
@@ -77,7 +76,7 @@ export default function ChatPage() {
     setConversations(sorted);
   }, [userId]);
 
-  // Fetch all messages for this user in their org
+  // Fetch all messages for this user in their org, then resolve peer names
   const fetchMessages = useCallback(async () => {
     if (!userId || !orgId) return;
     try {
@@ -90,14 +89,33 @@ export default function ChatPage() {
 
       if (!error && data) {
         setMessages(data);
-        buildConversations(data);
+
+        // Collect unique peer IDs and fetch their names
+        const peerIds = [...new Set(
+          data.map((m) => m.sender_id === userId ? m.receiver_id : m.sender_id)
+        )].filter(Boolean);
+
+        let names: Record<string, string> = {};
+        if (peerIds.length > 0) {
+          const { data: users } = await supabase
+            .from("users")
+            .select("id, name, email")
+            .in("id", peerIds);
+          if (users) {
+            for (const u of users) {
+              names[u.id] = u.name || u.email || u.id.slice(0, 8);
+            }
+          }
+        }
+        setUserNames(names);
+        buildConversations(data, names);
       }
     } catch (err) {
       console.error("Error fetching messages:", err);
     } finally {
       setLoading(false);
     }
-  }, [userId, orgId, buildConversations]);
+  }, [userId, orgId, buildConversations]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     fetchMessages();
@@ -117,11 +135,13 @@ export default function ChatPage() {
           if (newMsg.org_id !== orgId) return;
           if (newMsg.sender_id !== userId && newMsg.receiver_id !== userId) return;
 
-          setMessages((prev) => [newMsg, ...prev]);
-          // Re-build conversations
           setMessages((prev) => {
-            buildConversations(prev);
-            return prev;
+            const updated = [newMsg, ...prev];
+            setUserNames((currentNames) => {
+              buildConversations(updated, currentNames);
+              return currentNames;
+            });
+            return updated;
           });
           scrollToBottom();
         }

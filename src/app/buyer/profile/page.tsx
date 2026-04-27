@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/Toast";
 import {
   User as UserIcon, Mail, Store, Shield, LogOut,
-  CheckCircle2, QrCode, Moon, Sun,
+  CheckCircle2, QrCode, Moon, Sun, Trash2, AlertTriangle,
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 
@@ -85,6 +85,24 @@ export default function BuyerProfilePage() {
   const handleLogout = async () => {
     await logout();
     router.push("/login");
+  };
+
+  // Two-step confirm so the destructive action requires deliberate intent.
+  const [deleteConfirmStep, setDeleteConfirmStep] = useState(0);
+  const [deleting, setDeleting] = useState(false);
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmStep === 0) { setDeleteConfirmStep(1); return; }
+    setDeleting(true);
+    try {
+      const { error } = await supabase.rpc("delete_my_account");
+      if (error) throw error;
+      // The auth user is gone server-side; clear local session and bounce.
+      await logout();
+      router.push("/login?deleted=1");
+    } catch (e) {
+      toast((e as Error).message || "Could not delete account", "error");
+      setDeleting(false);
+    }
   };
 
   return (
@@ -281,6 +299,51 @@ export default function BuyerProfilePage() {
             <LogOut className="w-4 h-4" />
             Sign out
           </button>
+        </div>
+
+        {/* Danger zone — account deletion (Apple App Store 5.1.1(v) compliance) */}
+        <div className="mt-12 border-t border-border pt-8 scale-in" style={{ animationDelay: "300ms" }}>
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle className="w-4 h-4 text-destructive" />
+            <h3 className="text-sm font-bold text-destructive uppercase tracking-wider">Danger zone</h3>
+          </div>
+          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 space-y-3">
+            <div>
+              <p className="text-sm font-semibold text-foreground">Delete your account</p>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                Permanently removes your profile, push notification token, and disconnects you from all storefronts.
+                Past orders and messages are anonymised but kept for the vendor&apos;s records. This cannot be undone.
+              </p>
+            </div>
+            {deleteConfirmStep === 0 ? (
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-destructive/40 text-destructive text-sm font-semibold hover:bg-destructive/10 transition-all disabled:opacity-50"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete account
+              </button>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => setDeleteConfirmStep(0)}
+                  disabled={deleting}
+                  className="px-4 py-2 rounded-lg border border-border text-sm font-medium hover:bg-secondary transition-all disabled:opacity-50"
+                >
+                  Cancel — keep my account
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deleting}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {deleting ? "Deleting…" : "Yes, delete forever"}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

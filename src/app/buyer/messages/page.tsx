@@ -74,7 +74,7 @@ export default function BuyerMessagesPage() {
           .from("users")
           .select("id, name, email, role, org_id")
           .in("org_id", orgIds)
-          .in("role", ["admin", "owner"]);
+          .in("role", ["admin", "owner", "superadmin"]);
 
         const admins: OrgUser[] = (adminRows || []).map((u) => ({
           id: u.id,
@@ -233,7 +233,7 @@ export default function BuyerMessagesPage() {
   };
 
   return (
-    <div className="h-screen bg-background flex flex-col animate-page-enter overflow-hidden">
+    <div className="h-[calc(100svh-128px)] md:h-screen bg-background flex flex-col animate-page-enter overflow-hidden">
       {/* Header */}
       <div className="border-b border-border bg-card shrink-0">
         <div className="max-w-7xl mx-auto px-4 py-5 flex items-center justify-between">

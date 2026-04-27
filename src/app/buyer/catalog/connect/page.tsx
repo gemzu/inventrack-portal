@@ -84,29 +84,23 @@ export default function ConnectStorefrontPage() {
     if (!sf?.orgId) { toast("Storefront org not found", "error"); return; }
     setChattingId(sf.id);
     try {
-      // Try admin/owner first, fall back to any org member
+      // Buyers only chat with leadership — admin / owner / superadmin.
+      // Workers are deliberately excluded; if a storefront has no leadership
+      // user we surface that as an error rather than leaking a worker contact.
       let adminId: string | null = null;
 
       const { data: admins } = await supabase
         .from("users")
         .select("id")
         .eq("org_id", sf.orgId)
-        .in("role", ["admin", "owner", "worker"])
+        .in("role", ["admin", "owner", "superadmin"])
         .limit(1);
 
       if (admins && admins.length > 0) {
         adminId = admins[0].id;
-      } else {
-        // Last resort: any user in the org
-        const { data: anyone } = await supabase
-          .from("users")
-          .select("id")
-          .eq("org_id", sf.orgId)
-          .limit(1);
-        if (anyone && anyone.length > 0) adminId = anyone[0].id;
       }
 
-      if (!adminId) throw new Error("No users found in this storefront's organization");
+      if (!adminId) throw new Error("This storefront has no admin available to chat right now");
       router.push(`/buyer/messages?peer=${adminId}&org=${sf.orgId}`);
     } catch (e) {
       toast((e as Error).message || "Could not find storefront admin", "error");
