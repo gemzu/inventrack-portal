@@ -57,7 +57,7 @@ export default function InvitesPage() {
   const handleShare = async () => {
     const code = codes[active];
     if (!code) return;
-    const text = `Join our INVENTRACK org with code: ${code}`;
+    const text = `Join our Invems org with code: ${code}`;
     if (typeof navigator !== "undefined" && "share" in navigator) {
       try {
         await (navigator as Navigator & { share: (d: { text: string }) => Promise<void> }).share({ text });

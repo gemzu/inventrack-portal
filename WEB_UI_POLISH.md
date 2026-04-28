@@ -1,4 +1,4 @@
-# INVENTRACK Web Portal — UI polish rules
+# Invems Web Portal — UI polish rules
 
 Mirrors the mobile `UI_POLISH.md`. These rules are the baseline for every
 page, component, and interaction in the web portal. Deviations need a

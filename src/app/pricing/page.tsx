@@ -31,7 +31,7 @@ export default function PricingPage() {
               <div className="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center">
                 <Boxes className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold tracking-tight">INVENTRACK</span>
+              <span className="text-xl font-bold tracking-tight">Invems</span>
             </Link>
             <div className="flex items-center gap-4">
               <button onClick={toggleTheme} className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition">
@@ -53,7 +53,7 @@ export default function PricingPage() {
               <ArrowLeft className="w-4 h-4" /> Back to home
             </Link>
             <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight">
-              INVENTRACK is free for everyone.
+              Invems is free for everyone.
             </h1>
             <p className="mt-4 text-lg text-muted-foreground">
               Full access to every feature. No payment required. No limits.
@@ -67,7 +67,7 @@ export default function PricingPage() {
             </div>
 
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold mb-2">INVENTRACK Full Access</h2>
+              <h2 className="text-2xl font-bold mb-2">Invems Full Access</h2>
               <p className="text-sm text-muted-foreground">
                 Everything you need to manage your warehouse operations.
               </p>

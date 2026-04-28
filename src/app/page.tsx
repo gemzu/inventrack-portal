@@ -35,7 +35,7 @@ export default function LandingPage() {
             <div className={`w-7 h-7 rounded-lg flex items-center justify-center bg-foreground transition-transform group-hover:scale-105`}>
               <Boxes className="w-3.5 h-3.5 text-background" />
             </div>
-            <span className="text-sm font-semibold tracking-wide">INVENTRACK</span>
+            <span className="text-sm font-semibold tracking-wide">Invems</span>
           </Link>
 
           <div className="flex items-center gap-5">
@@ -180,7 +180,7 @@ export default function LandingPage() {
       <section className={`py-24 ${isDark ? "bg-secondary/30" : "bg-secondary/30"}`}>
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className={`text-3xl font-bold ${isDark ? "text-foreground" : "text-foreground"}`}>Ready to streamline your warehouse?</h2>
-          <p className={`mt-4 mb-8 ${isDark ? "text-muted-foreground" : "text-muted-foreground"}`}>Join thousands of businesses managing inventory with INVENTRACK.</p>
+          <p className={`mt-4 mb-8 ${isDark ? "text-muted-foreground" : "text-muted-foreground"}`}>Join thousands of businesses managing inventory with Invems.</p>
           <Link href="/signup" className="inline-flex items-center gap-2 bg-foreground text-background px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-colors">
             Get started free <ArrowRight className="w-4 h-4" />
           </Link>
@@ -191,7 +191,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Boxes className="w-4 h-4" />
-            <span className={`text-sm font-medium ${isDark ? "text-foreground" : "text-foreground"}`}>INVENTRACK</span>
+            <span className={`text-sm font-medium ${isDark ? "text-foreground" : "text-foreground"}`}>Invems</span>
           </div>
           <div className={`flex items-center gap-6 text-sm ${isDark ? "text-muted-foreground" : "text-muted-foreground"}`}>
             <a href="/terms" className="hover:text-foreground transition-colors">Terms</a>

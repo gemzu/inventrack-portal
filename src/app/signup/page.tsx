@@ -66,7 +66,7 @@ export default function SignupPage() {
             <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-foreground">
               <Boxes className="w-3.5 h-3.5 text-background" />
             </div>
-            <span className="text-sm font-semibold text-foreground tracking-wide">INVENTRACK</span>
+            <span className="text-sm font-semibold text-foreground tracking-wide">Invems</span>
           </div>
 
           <h1 className="text-2xl font-bold text-foreground mb-1">Create your account</h1>
