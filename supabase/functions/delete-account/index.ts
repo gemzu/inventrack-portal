@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Anon client to resolve the JWT → user
+    // Resolve the JWT → user using anon client
     const supabaseAnon = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
@@ -35,7 +35,8 @@ Deno.serve(async (req) => {
     }
 
     const userId = user.id;
-    const { reason } = await req.json().catch(() => ({ reason: null }));
+    const body = await req.json().catch(() => ({}));
+    const reason: string | null = body.reason ?? null;
 
     // ── Admin client (service role) for destructive operations ──────────
     const admin = createClient(
@@ -43,39 +44,33 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Log the deletion request for audit trail before wiping anything
+    // Audit log before deleting anything
     await admin.from("deletion_requests").insert({
       user_id: userId,
       email: user.email,
-      reason: reason ?? null,
+      reason,
       status: "processing",
-    }).throwOnError();
+    });
 
-    // ── Delete user-owned rows from all tables ───────────────────────────
-    // Order matters: delete children before parents to avoid FK violations.
-    const tables: Array<{ table: string; column: string }> = [
-      { table: "inventory",        column: "created_by" },
-      { table: "boxes",            column: "created_by" },
-      { table: "orders",           column: "buyer_user_id" },
-      { table: "order_items",      column: "created_by" },
-      { table: "messages",         column: "sender_id" },
-      { table: "conversations",    column: "created_by" },
-      { table: "favorites",        column: "user_id" },
-      { table: "notifications",    column: "user_id" },
-      { table: "activity_logs",    column: "user_id" },
-      { table: "org_members",      column: "user_id" },
-      { table: "users",            column: "id" },
-    ];
+    // ── Delete user-owned rows (correct columns per live schema) ─────────
+    // messages: sender_id and receiver_id
+    await admin.from("messages").delete().eq("sender_id", userId);
+    await admin.from("messages").delete().eq("receiver_id", userId);
 
-    for (const { table, column } of tables) {
-      const { error } = await admin.from(table).delete().eq(column, userId);
-      // Ignore "table doesn't exist" or "column doesn't exist" errors gracefully
-      if (error && !error.message.includes("does not exist")) {
-        console.error(`Error deleting from ${table}:`, error.message);
-      }
-    }
+    // notifications, support_tickets: user_id
+    await admin.from("notifications").delete().eq("user_id", userId);
+    await admin.from("support_tickets").delete().eq("user_id", userId);
 
-    // ── Delete the auth user (this is irreversible) ──────────────────────
+    // storefront_buyers: buyer_id (buyer-side connections)
+    await admin.from("storefront_buyers").delete().eq("buyer_id", userId);
+
+    // orders placed as buyer
+    await admin.from("orders").delete().eq("buyer_id", userId);
+
+    // users profile row
+    await admin.from("users").delete().eq("id", userId);
+
+    // ── Delete the auth user — irreversible ──────────────────────────────
     const { error: deleteAuthErr } = await admin.auth.admin.deleteUser(userId);
     if (deleteAuthErr) throw deleteAuthErr;
 
