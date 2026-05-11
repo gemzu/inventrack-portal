@@ -102,16 +102,19 @@ export default function DeleteAccountPage() {
           <div className="flex items-center gap-3 mb-4">
             <span className="px-3 py-1 rounded-full bg-destructive/10 text-destructive text-sm font-medium">
               <Trash2 className="w-3 h-3 inline mr-1" />
-              Account
+              Account Deletion
             </span>
           </div>
           <h1 className="text-5xl sm:text-6xl font-bold tracking-tight mb-4">
             <span className="bg-gradient-to-r from-foreground via-foreground to-muted-foreground bg-clip-text text-transparent">
-              Delete Account
+              Delete Your Account
             </span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl">
-            Permanently delete your INVENTRACK account and all associated data.
+            Permanently delete your <strong>Inve Management System</strong> account and all associated data.
+          </p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Developed by <strong>Alkasid Inc.</strong> · App: Inve Management System (com.invems.invems)
           </p>
         </div>
       </div>
@@ -154,7 +157,7 @@ export default function DeleteAccountPage() {
             <div className="bg-card border border-border rounded-2xl p-8">
               <h2 className="text-xl font-semibold mb-2">Verify your identity</h2>
               <p className="text-sm text-muted-foreground mb-6">
-                Enter your email and password to confirm you own this account before we delete anything.
+                Enter your <strong>Inve Management System</strong> account email and password to confirm ownership before we permanently delete your data.
               </p>
 
               {errorMsg && (
@@ -325,7 +328,7 @@ export default function DeleteAccountPage() {
             <Link href="/terms" className="hover:text-foreground transition">Terms</Link>
             <Link href="/privacy" className="hover:text-foreground transition">Privacy</Link>
           </div>
-          <p className="text-xs text-muted-foreground">&copy; 2026 INVENTRACK. All rights reserved.</p>
+          <p className="text-xs text-muted-foreground">&copy; 2026 Alkasid Inc. · Inve Management System. All rights reserved.</p>
         </div>
       </footer>
     </div>
