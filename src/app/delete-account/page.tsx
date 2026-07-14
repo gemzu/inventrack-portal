@@ -75,7 +75,7 @@ export default function DeleteAccountPage() {
                 <div className="w-9 h-9 rounded-xl bg-foreground flex items-center justify-center">
                   <Boxes className="w-5 h-5 text-background" />
                 </div>
-                <span className="text-xl font-bold tracking-tight">INVENTRACK</span>
+                <span className="text-xl font-bold tracking-tight">Invems</span>
               </Link>
 
               <div className="hidden md:flex items-center gap-6">
@@ -322,7 +322,7 @@ export default function DeleteAccountPage() {
             <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center">
               <Boxes className="w-4 h-4 text-background" />
             </div>
-            <span className="font-bold">INVENTRACK</span>
+            <span className="font-bold">Invems</span>
           </div>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
             <Link href="/terms" className="hover:text-foreground transition">Terms</Link>

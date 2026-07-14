@@ -25,7 +25,7 @@ export default function TermsPage() {
                 <div className="w-9 h-9 rounded-xl bg-foreground flex items-center justify-center">
                   <Boxes className="w-5 h-5 text-background" />
                 </div>
-                <span className="text-xl font-bold tracking-tight">INVENTRACK</span>
+                <span className="text-xl font-bold tracking-tight">Invems</span>
               </Link>
 
               <div className="hidden md:flex items-center gap-6">
@@ -61,7 +61,7 @@ export default function TermsPage() {
             </span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl">
-            Please read these terms carefully before using INVENTRACK. By accessing our service, you agree to be bound by these terms.
+            Please read these terms carefully before using Invems. By accessing our service, you agree to be bound by these terms.
           </p>
           <p className="text-sm text-muted-foreground mt-6">
             Last updated: April 23, 2026
@@ -82,7 +82,7 @@ export default function TermsPage() {
                 <div className="flex-1">
                   <h2 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors">1. Acceptance of Terms</h2>
                   <p className="text-muted-foreground leading-relaxed">
-                    By accessing or using INVENTRACK ("the Service"), available at alkasid.net and through our mobile applications, you agree to be bound by these Terms of Service ("Terms"). If you do not agree to all of these Terms, you may not access or use the Service. These Terms constitute a legally binding agreement between you and INVENTRACK.
+                    By accessing or using Invems ("the Service"), available at alkasid.net and through our mobile applications, you agree to be bound by these Terms of Service ("Terms"). If you do not agree to all of these Terms, you may not access or use the Service. These Terms constitute a legally binding agreement between you and Invems.
                   </p>
                 </div>
               </div>
@@ -97,7 +97,7 @@ export default function TermsPage() {
                 <div className="flex-1">
                   <h2 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors">2. Account Terms</h2>
                   <p className="text-muted-foreground leading-relaxed">
-                    You must provide accurate, complete, and current information when creating an account. You are responsible for maintaining the security of your account credentials and for all activities that occur under your account. You must be at least 18 years of age to use this Service. You agree to notify us immediately of any unauthorized use of your account. INVENTRACK reserves the right to suspend or terminate accounts that violate these Terms.
+                    You must provide accurate, complete, and current information when creating an account. You are responsible for maintaining the security of your account credentials and for all activities that occur under your account. You must be at least 18 years of age to use this Service. You agree to notify us immediately of any unauthorized use of your account. Invems reserves the right to suspend or terminate accounts that violate these Terms.
                   </p>
                 </div>
               </div>
@@ -112,7 +112,7 @@ export default function TermsPage() {
                 <div className="flex-1">
                   <h2 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors">3. User Responsibilities</h2>
                   <p className="text-muted-foreground leading-relaxed">
-                    You agree to use the Service only for lawful purposes and in accordance with these Terms. You shall not: (a) use the Service to store or transmit any unlawful, harmful, or objectionable content; (b) interfere with or disrupt the integrity or performance of the Service; (c) attempt to gain unauthorized access to the Service or its related systems; (d) reverse engineer, decompile, or disassemble any part of the Service; or (e) use the Service to compete directly with INVENTRACK.
+                    You agree to use the Service only for lawful purposes and in accordance with these Terms. You shall not: (a) use the Service to store or transmit any unlawful, harmful, or objectionable content; (b) interfere with or disrupt the integrity or performance of the Service; (c) attempt to gain unauthorized access to the Service or its related systems; (d) reverse engineer, decompile, or disassemble any part of the Service; or (e) use the Service to compete directly with Invems.
                   </p>
                 </div>
               </div>
@@ -142,7 +142,7 @@ export default function TermsPage() {
                 <div className="flex-1">
                   <h2 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors">5. Intellectual Property</h2>
                   <p className="text-muted-foreground leading-relaxed">
-                    The Service and its original content, features, and functionality are owned by INVENTRACK and are protected by international copyright, trademark, and other intellectual property laws. You retain ownership of all data you upload to the Service. By using the Service, you grant INVENTRACK a limited license to use, store, and process your data solely for the purpose of providing and improving the Service.
+                    The Service and its original content, features, and functionality are owned by Invems and are protected by international copyright, trademark, and other intellectual property laws. You retain ownership of all data you upload to the Service. By using the Service, you grant Invems a limited license to use, store, and process your data solely for the purpose of providing and improving the Service.
                   </p>
                 </div>
               </div>
@@ -157,7 +157,7 @@ export default function TermsPage() {
                 <div className="flex-1">
                   <h2 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors">6. Limitation of Liability</h2>
                   <p className="text-muted-foreground leading-relaxed">
-                    To the maximum extent permitted by applicable law, INVENTRACK and its officers, directors, employees, and agents shall not be liable for any indirect, incidental, special, consequential, or punitive damages. Our total liability shall not exceed the amount you paid us in the twelve months preceding the claim.
+                    To the maximum extent permitted by applicable law, Invems and its officers, directors, employees, and agents shall not be liable for any indirect, incidental, special, consequential, or punitive damages. Our total liability shall not exceed the amount you paid us in the twelve months preceding the claim.
                   </p>
                 </div>
               </div>
@@ -188,13 +188,13 @@ export default function TermsPage() {
             <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center">
               <Boxes className="w-4 h-4 text-background" />
             </div>
-            <span className="font-bold">INVENTRACK</span>
+            <span className="font-bold">Invems</span>
           </div>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
             <Link href="/terms" className="hover:text-foreground transition">Terms</Link>
             <Link href="/privacy" className="hover:text-foreground transition">Privacy</Link>
           </div>
-          <p className="text-xs text-muted-foreground">&copy; 2026 INVENTRACK. All rights reserved.</p>
+          <p className="text-xs text-muted-foreground">&copy; 2026 Invems. All rights reserved.</p>
         </div>
       </footer>
     </div>

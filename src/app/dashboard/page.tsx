@@ -256,7 +256,7 @@ export default function DashboardPage() {
             <div className="w-20 h-20 rounded-2xl bg-secondary mx-auto mb-6 flex items-center justify-center">
               <Package className="w-8 h-8" />
             </div>
-            <h2 className="text-xl font-semibold">Welcome to INVENTRACK</h2>
+            <h2 className="text-xl font-semibold">Welcome to Invems</h2>
             <p className="text-muted-foreground mt-2">
               You&apos;re not part of an organization yet.
             </p>

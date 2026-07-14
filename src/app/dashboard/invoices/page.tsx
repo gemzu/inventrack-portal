@@ -203,7 +203,7 @@ export default function InvoicesPage() {
             )}
             <button
               onClick={() => setShowModal(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-dark transition"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary-dark transition"
             >
               <Plus className="w-4 h-4" />
               Create Invoice
@@ -412,7 +412,7 @@ export default function InvoicesPage() {
                 <button
                   onClick={handleSaveInvoice}
                   disabled={!buyerName.trim() || saving}
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-dark transition disabled:opacity-40"
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary-dark transition disabled:opacity-40"
                 >
                   {saving ? "Saving..." : "Save Invoice"}
                 </button>

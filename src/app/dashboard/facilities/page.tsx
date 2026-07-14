@@ -109,7 +109,7 @@ export default function FacilitiesPage() {
         </div>
         <button
           onClick={() => { setShowForm(true); setEditing(null); setForm({ name: "", state: "", address: "" }); }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-dark transition shadow-lg shadow-primary/25"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary-dark transition shadow-lg shadow-primary/25"
         >
           <Plus className="w-4 h-4" /> Add Facility
         </button>
@@ -183,7 +183,7 @@ export default function FacilitiesPage() {
                   placeholder="123 Main St"
                 />
               </div>
-              <button onClick={handleSave} className="w-full py-2.5 rounded-xl bg-primary text-white font-medium hover:bg-primary-dark transition">
+              <button onClick={handleSave} className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-medium hover:bg-primary-dark transition">
                 {editing ? "Update" : "Add"} Facility
               </button>
             </div>

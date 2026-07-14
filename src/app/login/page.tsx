@@ -71,7 +71,7 @@ export default function LoginPage() {
             <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${isDark ? "bg-foreground" : "bg-foreground"}`}>
               <Boxes className={`w-3.5 h-3.5 ${isDark ? "text-background" : "text-background"}`} />
             </div>
-            <span className={`text-sm font-semibold tracking-wide ${isDark ? "text-foreground" : "text-foreground"}`}>INVENTRACK</span>
+            <span className={`text-sm font-semibold tracking-wide ${isDark ? "text-foreground" : "text-foreground"}`}>Invems</span>
           </div>
 
           <h1 className={`text-2xl font-bold mb-1 ${isDark ? "text-foreground" : "text-foreground"}`}>Welcome back</h1>

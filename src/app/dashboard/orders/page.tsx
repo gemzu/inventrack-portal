@@ -248,7 +248,7 @@ export default function OrdersPage() {
               {normalizeOrderStatus(selectedOrder.status) === ORDER_STATUS.CONFIRMED && (
                 <button
                   onClick={() => updateOrderStatus(selectedOrder, ORDER_STATUS.PROCESSING)}
-                  className="w-full py-2 rounded-xl bg-primary text-white text-sm font-medium hover:opacity-90 transition mt-2"
+                  className="w-full py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition mt-2"
                 >
                   Mark Processing
                 </button>

@@ -29,7 +29,7 @@ function Sidebar({ pathname, onNavigate }: { pathname: string; onNavigate?: () =
           <div className="w-9 h-9 rounded-xl bg-foreground flex items-center justify-center">
             <Boxes className="w-5 h-5 text-background" />
           </div>
-          <span className="font-bold text-lg tracking-tight">INVENTRACK</span>
+          <span className="font-bold text-lg tracking-tight">Invems</span>
         </Link>
       </div>
 
@@ -153,7 +153,7 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
             <div className="w-7 h-7 rounded-lg bg-foreground flex items-center justify-center">
               <Boxes className="w-4 h-4 text-background" />
             </div>
-            <span className="font-bold text-sm">INVENTRACK</span>
+            <span className="font-bold text-sm">Invems</span>
           </Link>
           <div className="flex items-center gap-2">
             <button onClick={toggleTheme} className="p-2">

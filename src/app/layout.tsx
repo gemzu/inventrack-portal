@@ -10,7 +10,7 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "INVENTRACK - Warehouse Management Made Simple",
+  title: "Invems - Warehouse Management Made Simple",
   description: "Modern warehouse & inventory management. Scan, track, order, and manage your entire operation from one platform.",
   icons: {
     icon: [

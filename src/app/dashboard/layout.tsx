@@ -105,7 +105,7 @@ function SidebarNav({
           <div className="w-9 h-9 rounded-xl bg-foreground flex items-center justify-center">
             <Boxes className="w-5 h-5 text-background" />
           </div>
-          <span className="font-bold text-lg tracking-tight">INVENTRACK</span>
+          <span className="font-bold text-lg tracking-tight">Invems</span>
         </Link>
       </div>
 
