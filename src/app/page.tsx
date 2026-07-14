@@ -32,8 +32,9 @@ export default function LandingPage() {
       <nav className={`fixed top-0 left-0 right-0 z-50 border-b ${isDark ? "border-border bg-background/80" : "border-border bg-background/80"} backdrop-blur-sm`}>
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className={`w-7 h-7 rounded-lg flex items-center justify-center bg-foreground transition-transform group-hover:scale-105`}>
-              <Boxes className="w-3.5 h-3.5 text-background" />
+            <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center transition-transform group-hover:scale-105">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.svg" alt="Invems" className="w-full h-full object-contain" />
             </div>
             <span className="text-sm font-semibold tracking-wide">Invems</span>
           </Link>

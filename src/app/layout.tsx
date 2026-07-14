@@ -14,9 +14,9 @@ export const metadata: Metadata = {
   description: "Modern warehouse & inventory management. Scan, track, order, and manage your entire operation from one platform.",
   icons: {
     icon: [
-      { url: "/logo.png", type: "image/png" },
+      { url: "/logo.svg", type: "image/svg+xml" },
     ],
-    apple: "/logo.png",
+    apple: "/logo.svg",
   },
 };
 

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Boxes, Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 
@@ -68,8 +68,9 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
           <div className="flex items-center gap-2.5 mb-10">
-            <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${isDark ? "bg-foreground" : "bg-foreground"}`}>
-              <Boxes className={`w-3.5 h-3.5 ${isDark ? "text-background" : "text-background"}`} />
+            <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.svg" alt="Invems" className="w-full h-full object-contain" />
             </div>
             <span className={`text-sm font-semibold tracking-wide ${isDark ? "text-foreground" : "text-foreground"}`}>Invems</span>
           </div>

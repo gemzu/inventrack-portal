@@ -1,0 +1,14 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="112" fill="#0e0e0e"/>
+  <g stroke="#EFEBDD" stroke-width="15" stroke-linejoin="round" stroke-linecap="round" fill="none">
+    <!-- Top cube -->
+    <path d="M256 108 L320 145 L320 219 L256 256 L192 219 L192 145 Z"/>
+    <path d="M256 182 L256 108 M256 182 L320 219 M256 182 L192 219"/>
+    <!-- Bottom-left cube -->
+    <path d="M188 242 L252 279 L252 353 L188 390 L124 353 L124 279 Z"/>
+    <path d="M188 316 L188 242 M188 316 L252 353 M188 316 L124 353"/>
+    <!-- Bottom-right cube -->
+    <path d="M324 242 L388 279 L388 353 L324 390 L260 353 L260 279 Z"/>
+    <path d="M324 316 L324 242 M324 316 L388 353 M324 316 L260 353"/>
+  </g>
+</svg>
