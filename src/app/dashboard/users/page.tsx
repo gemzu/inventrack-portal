@@ -4,7 +4,7 @@ import AdminGuard from "@/components/AdminGuard";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { Users as UsersIcon, Search, UserCheck, UserX } from "lucide-react";
+import { Users as UsersIcon, Search, UserCheck, UserX, Trash2 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
@@ -62,6 +62,11 @@ export default function UsersPage() {
   });
   const { toast } = useToast();
 
+  // Owner-controlled delete access - free only for our organization (matches app).
+  const DELETE_ACCESS_ORGS = ["054fd1ca-927b-413f-93a4-c1e4d1f3853a"];
+  const canEditDeleteAccess = isOwner(userPermissions) && orgId != null && DELETE_ACCESS_ORGS.includes(orgId);
+  const [deleteAccessMap, setDeleteAccessMap] = useState<Record<string, boolean>>({});
+
   useEffect(() => {
     if (!orgId) { setLoading(false); return; }
     const load = async () => {
@@ -70,9 +75,34 @@ export default function UsersPage() {
       setUsers(mapped);
       setFiltered(mapped);
       setLoading(false);
+      if (canEditDeleteAccess) {
+        const { data: mem } = await supabase
+          .from("organization_memberships")
+          .select("user_id, can_delete")
+          .eq("org_id", orgId);
+        const map: Record<string, boolean> = {};
+        (mem || []).forEach((r: Record<string, unknown>) => { map[r.user_id as string] = r.can_delete === true; });
+        setDeleteAccessMap(map);
+      }
     };
     load();
-  }, [orgId]);
+  }, [orgId, canEditDeleteAccess]);
+
+  const toggleDeleteAccess = async (u: UserDoc) => {
+    const next = !deleteAccessMap[u.id];
+    setDeleteAccessMap((m) => ({ ...m, [u.id]: next }));
+    const { error } = await supabase
+      .from("organization_memberships")
+      .update({ can_delete: next })
+      .eq("org_id", orgId)
+      .eq("user_id", u.id);
+    if (error) {
+      setDeleteAccessMap((m) => ({ ...m, [u.id]: !next }));
+      toast("Failed to update delete access", "error");
+    } else {
+      toast(next ? "Delete access granted" : "Delete access revoked", "success");
+    }
+  };
 
   useEffect(() => {
     let result = users;
@@ -254,18 +284,31 @@ export default function UsersPage() {
                     {formatDate(user.createdAt as string)}
                   </td>
                   <td className="px-4 py-3">
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => toggleActive(user)}
-                      disabled={!canManage({ id: currentUser?.id || null, role: userRole, permissions: userPermissions }, user)}
-                      className={`transition ${
-                        user.active ? "hover:bg-danger/10 text-danger" : "hover:bg-success/10 text-success"
-                      }`}
-                      title={user.active ? "Deactivate" : "Activate"}
-                    >
-                      {user.active ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      {canEditDeleteAccess && user.role !== "buyer" && !isOwner(user.permissions) && (
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => toggleDeleteAccess(user)}
+                          className={`transition ${deleteAccessMap[user.id] ? "text-danger bg-danger/10" : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5"}`}
+                          title={deleteAccessMap[user.id] ? "Delete access: ON (tap to revoke)" : "Delete access: OFF (tap to grant)"}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => toggleActive(user)}
+                        disabled={!canManage({ id: currentUser?.id || null, role: userRole, permissions: userPermissions }, user)}
+                        className={`transition ${
+                          user.active ? "hover:bg-danger/10 text-danger" : "hover:bg-success/10 text-success"
+                        }`}
+                        title={user.active ? "Deactivate" : "Activate"}
+                      >
+                        {user.active ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}

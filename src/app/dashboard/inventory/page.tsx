@@ -229,6 +229,18 @@ export default function InventoryPage() {
     setEditItem((prev) => (prev ? { ...prev, ...patch } : null));
   };
 
+  const saveField = async (field: "display_name" | "brand" | "part_number", value: string) => {
+    if (!editItem) return;
+    const key = field === "display_name" ? "displayName" : field === "part_number" ? "partNumber" : "brand";
+    const current = (editItem as unknown as Record<string, unknown>)[key];
+    if ((current || "") === value) return; // no change
+    try {
+      const { error } = await supabase.from("inventory").update({ [field]: value || null }).eq("id", editItem.id);
+      if (error) throw error;
+      applyItemChange({ [key]: value || undefined } as Partial<Item>);
+    } catch { toast("Failed to save", "error"); }
+  };
+
   const moveToFacility = async (facilityId: string | null) => {
     if (!editItem) return;
     try {
@@ -579,28 +591,38 @@ export default function InventoryPage() {
                   <label className="block text-xs font-medium mb-1 text-muted-foreground">Barcode</label>
                   <div className="text-sm font-mono">{editItem.barcode}</div>
                 </div>
-                {editItem.displayName && (
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-muted-foreground">Name</label>
+                  <input
+                    key={`name-${editItem.id}`}
+                    defaultValue={editItem.displayName || ""}
+                    onBlur={(e) => saveField("display_name", e.target.value.trim())}
+                    placeholder="Product name"
+                    className="w-full px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium mb-1 text-muted-foreground">Display Name</label>
-                    <div className="text-sm">{editItem.displayName}</div>
+                    <label className="block text-xs font-medium mb-1 text-muted-foreground">Make / Brand</label>
+                    <input
+                      key={`brand-${editItem.id}`}
+                      defaultValue={editItem.brand || ""}
+                      onBlur={(e) => saveField("brand", e.target.value.trim())}
+                      placeholder="Brand"
+                      className="w-full px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
+                    />
                   </div>
-                )}
-                {(editItem.brand || editItem.partNumber) && (
-                  <div className="grid grid-cols-2 gap-4">
-                    {editItem.brand && (
-                      <div>
-                        <label className="block text-xs font-medium mb-1 text-muted-foreground">Brand</label>
-                        <div className="text-sm">{editItem.brand}</div>
-                      </div>
-                    )}
-                    {editItem.partNumber && (
-                      <div>
-                        <label className="block text-xs font-medium mb-1 text-muted-foreground">Part Number</label>
-                        <div className="text-sm">{editItem.partNumber}</div>
-                      </div>
-                    )}
+                  <div>
+                    <label className="block text-xs font-medium mb-1 text-muted-foreground">Model</label>
+                    <input
+                      key={`part-${editItem.id}`}
+                      defaultValue={editItem.partNumber || ""}
+                      onBlur={(e) => saveField("part_number", e.target.value.trim())}
+                      placeholder="Model / part #"
+                      className="w-full px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
+                    />
                   </div>
-                )}
+                </div>
                 {(editItem.costPrice != null || editItem.sellingPrice != null) && (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
