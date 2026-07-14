@@ -102,8 +102,9 @@ function SidebarNav({
       {/* Logo area */}
       <div className="h-16 flex items-center px-5 shrink-0 border-b border-border">
         <Link href="/" className="flex items-center gap-3" onClick={onNavigate}>
-          <div className="w-9 h-9 rounded-xl bg-foreground flex items-center justify-center">
-            <Boxes className="w-5 h-5 text-background" />
+          <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center bg-black">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Invems" className="w-full h-full object-contain" />
           </div>
           <span className="font-bold text-lg tracking-tight">Invems</span>
         </Link>
