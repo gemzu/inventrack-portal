@@ -17,6 +17,8 @@ interface Item {
   barcode: string;
   displayName?: string;
   brand?: string;
+  partNumber?: string;
+  manufacturer?: string;
   description?: string;
   quantity: number;
   status: string;
@@ -24,6 +26,8 @@ interface Item {
   boxId?: string;
   costPrice?: number;
   sellingPrice?: number;
+  imageUrl?: string;
+  imageUrls?: string[];
   createdAt: unknown;
   updatedAt: unknown;
 }
@@ -41,6 +45,8 @@ function mapItem(row: Record<string, unknown>): Item {
     barcode: row.barcode as string,
     displayName: row.display_name as string | undefined,
     brand: row.brand as string | undefined,
+    partNumber: row.part_number as string | undefined,
+    manufacturer: row.manufacturer as string | undefined,
     description: row.description as string | undefined,
     quantity: row.quantity as number,
     status: row.status as string,
@@ -48,6 +54,8 @@ function mapItem(row: Record<string, unknown>): Item {
     boxId: row.box_id as string | undefined,
     costPrice: row.cost_price as number | undefined,
     sellingPrice: row.selling_price as number | undefined,
+    imageUrl: row.image_url as string | undefined,
+    imageUrls: Array.isArray(row.image_urls) ? (row.image_urls as string[]) : [],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -71,6 +79,7 @@ export default function InventoryPage() {
   const [importResult, setImportResult] = useState<{ added: number; updated: number; errors: number } | null>(null);
   const [editQty, setEditQty] = useState(0);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [uploadingImg, setUploadingImg] = useState(false);
 
   const handleCsvFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -213,6 +222,73 @@ export default function InventoryPage() {
     }
   };
 
+  // Reflect a partial item change into both the list and the open panel.
+  const applyItemChange = (patch: Partial<Item>) => {
+    if (!editItem) return;
+    setItems((prev) => prev.map((i) => (i.id === editItem.id ? { ...i, ...patch } : i)));
+    setEditItem((prev) => (prev ? { ...prev, ...patch } : null));
+  };
+
+  const moveToFacility = async (facilityId: string | null) => {
+    if (!editItem) return;
+    try {
+      const { error } = await supabase.from("inventory").update({ facility_id: facilityId }).eq("id", editItem.id);
+      if (error) throw error;
+      applyItemChange({ facilityId: facilityId || undefined });
+      toast("Facility updated", "success");
+    } catch { toast("Failed to move facility", "error"); }
+  };
+
+  const moveToBox = async (boxId: string | null) => {
+    if (!editItem) return;
+    try {
+      const { error } = await supabase.from("inventory").update({ box_id: boxId }).eq("id", editItem.id);
+      if (error) throw error;
+      applyItemChange({ boxId: boxId || undefined });
+      toast(boxId ? "Moved to box" : "Removed from box", "success");
+    } catch { toast("Failed to move box", "error"); }
+  };
+
+  const handleUploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !editItem) return;
+    setUploadingImg(true);
+    try {
+      const key = editItem.barcode || editItem.modelId || editItem.id;
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const path = `items/${key}/${Date.now()}.${ext}`;
+      let bucketUsed = "product-images";
+      let upErr = (await supabase.storage.from("product-images").upload(path, file, { contentType: file.type, upsert: true })).error;
+      if (upErr) {
+        bucketUsed = "chat-images";
+        upErr = (await supabase.storage.from("chat-images").upload(path, file, { contentType: file.type, upsert: true })).error;
+      }
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from(bucketUsed).getPublicUrl(path);
+      const url = pub.publicUrl;
+      const nextUrls = [...(editItem.imageUrls || []), url];
+      const { error } = await supabase.from("inventory").update({ image_urls: nextUrls, image_url: nextUrls[0] }).eq("id", editItem.id);
+      if (error) {
+        // image_urls column may not exist yet - at least set the cover.
+        await supabase.from("inventory").update({ image_url: nextUrls[0] }).eq("id", editItem.id);
+      }
+      applyItemChange({ imageUrls: nextUrls, imageUrl: nextUrls[0] });
+      toast("Photo added", "success");
+    } catch { toast("Upload failed", "error"); }
+    finally { setUploadingImg(false); }
+  };
+
+  const removeImage = async (url: string) => {
+    if (!editItem) return;
+    const nextUrls = (editItem.imageUrls || []).filter((u) => u !== url);
+    try {
+      const { error } = await supabase.from("inventory").update({ image_urls: nextUrls, image_url: nextUrls[0] || null }).eq("id", editItem.id);
+      if (error) await supabase.from("inventory").update({ image_url: nextUrls[0] || null }).eq("id", editItem.id);
+      applyItemChange({ imageUrls: nextUrls, imageUrl: nextUrls[0] || undefined });
+    } catch { toast("Failed to remove photo", "error"); }
+  };
+
   const openPanel = (item: Item) => {
     setEditItem(item);
     setEditQty(item.quantity);
@@ -235,12 +311,30 @@ export default function InventoryPage() {
   return (
     <AdminGuard><PageShell title="Inventory" subtitle={`${filtered.length} items`}>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="inline-flex rounded-xl border p-1 bg-muted/40">
-          <button onClick={() => setView("items")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${view === "items" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground"}`}>Items</button>
-          <button onClick={() => setView("boxes")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${view === "boxes" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground"}`}>Boxes</button>
+        <div className="flex items-center gap-3">
+          <div className="inline-flex rounded-xl border p-1 bg-muted/40">
+            <button onClick={() => setView("items")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${view === "items" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground"}`}>Items</button>
+            <button onClick={() => setView("boxes")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${view === "boxes" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground"}`}>Boxes</button>
+          </div>
+          {(facilities || []).length > 0 && (
+            <div className="relative">
+              <select
+                value={facilityFilter}
+                onChange={(e) => setFacilityFilter(e.target.value)}
+                className="appearance-none pl-4 pr-9 py-2 rounded-xl border text-sm outline-none cursor-pointer bg-input border-border text-foreground"
+                title="Filter by facility"
+              >
+                <option value="all">All Facilities</option>
+                {(facilities || []).map((f) => (
+                  <option key={f.id} value={f.id}>{f.name}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />
+            </div>
+          )}
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setShowImport(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-dark transition shadow-lg shadow-primary/25">
+          <button onClick={() => setShowImport(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary-dark transition shadow-lg shadow-primary/25">
             <Upload className="w-4 h-4" /> Import CSV
           </button>
           <button onClick={exportCsv} className="flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium hover:border-primary transition">
@@ -273,21 +367,6 @@ export default function InventoryPage() {
           </select>
           <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />
         </div>
-        {(facilities || []).length > 0 && (
-          <div className="relative">
-            <select
-              value={facilityFilter}
-              onChange={(e) => setFacilityFilter(e.target.value)}
-              className="appearance-none px-4 py-2.5 pr-10 rounded-xl border text-sm outline-none cursor-pointer bg-input border-border text-foreground"
-            >
-              <option value="all">All Facilities</option>
-              {(facilities || []).map((f) => (
-                <option key={f.id} value={f.id}>{f.name}</option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />
-          </div>
-        )}
       </div>
 
       {view === "items" ? (
@@ -428,7 +507,7 @@ export default function InventoryPage() {
                   <button onClick={() => setImportData([])} className="flex-1 py-2.5 rounded-xl border text-sm font-medium hover:border-primary transition">
                     Cancel
                   </button>
-                  <button onClick={runImport} disabled={importing} className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-dark transition flex items-center justify-center gap-2 disabled:opacity-60">
+                  <button onClick={runImport} disabled={importing} className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark transition flex items-center justify-center gap-2 disabled:opacity-60">
                     {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                     {importing ? "Importing..." : `Import ${importData.length} Items`}
                   </button>
@@ -441,7 +520,7 @@ export default function InventoryPage() {
                 <p className="text-xs mb-4 text-muted-foreground">
                   Must have a &quot;Model ID&quot; column. &quot;Qty&quot; column is optional.
                 </p>
-                <label className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white font-medium cursor-pointer hover:bg-primary-dark transition">
+                <label className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium cursor-pointer hover:bg-primary-dark transition">
                   <Upload className="w-4 h-4" /> Choose File
                   <input type="file" accept=".csv" onChange={handleCsvFile} className="hidden" />
                 </label>
@@ -461,7 +540,7 @@ export default function InventoryPage() {
           <div
             className={`fixed top-0 right-0 h-full w-96 max-w-full z-50 transition-transform duration-300 ${panelOpen ? "translate-x-0" : "translate-x-full"}`}
           >
-            <div className="h-full flex flex-col border-l">
+            <div className="h-full flex flex-col border-l border-border bg-background shadow-2xl">
               <div className="flex items-center justify-between p-6 border-b border-border">
                 <h3 className="text-lg font-bold">Item Details</h3>
                 <button onClick={closePanel} className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition">
@@ -469,6 +548,29 @@ export default function InventoryPage() {
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                {/* Photos - multiple, first is cover */}
+                <div>
+                  <label className="block text-xs font-medium mb-2 text-muted-foreground">
+                    Photos {(editItem.imageUrls || []).length > 0 ? `(${(editItem.imageUrls || []).length})` : ""}
+                  </label>
+                  <div className="flex gap-2 flex-wrap">
+                    {(editItem.imageUrls || []).map((url, i) => (
+                      <div key={`${url}-${i}`} className="relative group">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={url} alt="item" className="w-20 h-20 rounded-lg object-cover border border-border" />
+                        {i === 0 && <span className="absolute bottom-1 left-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-black/60 text-white">COVER</span>}
+                        <button onClick={() => removeImage(url)} className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-danger text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                    <label className="w-20 h-20 rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-primary/10 transition">
+                      {uploadingImg ? <Loader2 className="w-5 h-5 text-primary animate-spin" /> : <><Upload className="w-4 h-4 text-primary" /><span className="text-[10px] text-primary font-medium">Add</span></>}
+                      <input type="file" accept="image/*" onChange={handleUploadImage} className="hidden" disabled={uploadingImg} />
+                    </label>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-xs font-medium mb-1 text-muted-foreground">Model ID</label>
                   <div className="text-sm font-semibold">{editItem.modelId}</div>
@@ -481,6 +583,34 @@ export default function InventoryPage() {
                   <div>
                     <label className="block text-xs font-medium mb-1 text-muted-foreground">Display Name</label>
                     <div className="text-sm">{editItem.displayName}</div>
+                  </div>
+                )}
+                {(editItem.brand || editItem.partNumber) && (
+                  <div className="grid grid-cols-2 gap-4">
+                    {editItem.brand && (
+                      <div>
+                        <label className="block text-xs font-medium mb-1 text-muted-foreground">Brand</label>
+                        <div className="text-sm">{editItem.brand}</div>
+                      </div>
+                    )}
+                    {editItem.partNumber && (
+                      <div>
+                        <label className="block text-xs font-medium mb-1 text-muted-foreground">Part Number</label>
+                        <div className="text-sm">{editItem.partNumber}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {(editItem.costPrice != null || editItem.sellingPrice != null) && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium mb-1 text-muted-foreground">Cost</label>
+                      <div className="text-sm">{editItem.costPrice != null ? `$${editItem.costPrice}` : "-"}</div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1 text-muted-foreground">Sell Price</label>
+                      <div className="text-sm">{editItem.sellingPrice != null ? `$${editItem.sellingPrice}` : "-"}</div>
+                    </div>
                   </div>
                 )}
                 {editItem.description && (
@@ -507,6 +637,44 @@ export default function InventoryPage() {
                   </div>
                 </div>
                 <div>
+                  <label className="block text-xs font-medium mb-1.5 text-muted-foreground">Facility</label>
+                  <div className="relative">
+                    <select
+                      value={editItem.facilityId || ""}
+                      onChange={(e) => moveToFacility(e.target.value || null)}
+                      className="w-full appearance-none px-3 py-2 pr-9 rounded-xl border text-sm outline-none cursor-pointer bg-input border-border text-foreground"
+                    >
+                      <option value="">No facility</option>
+                      {(facilities || []).map((f) => (
+                        <option key={f.id} value={f.id}>{f.name}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium mb-1.5 text-muted-foreground">Box</label>
+                  <div className="relative">
+                    <select
+                      value={editItem.boxId || ""}
+                      onChange={(e) => moveToBox(e.target.value || null)}
+                      className="w-full appearance-none px-3 py-2 pr-9 rounded-xl border text-sm outline-none cursor-pointer bg-input border-border text-foreground"
+                    >
+                      <option value="">Loose (no box)</option>
+                      {boxes
+                        .filter((b) => !editItem.facilityId || !b.facility_id || b.facility_id === editItem.facilityId)
+                        .map((b) => (
+                          <option key={String(b.id)} value={String(b.id)}>
+                            {String(b.code || "Box")}{b.label ? ` - ${String(b.label)}` : ""}
+                          </option>
+                        ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />
+                  </div>
+                </div>
+
+                <div>
                   <label className="block text-xs font-medium mb-1.5 text-muted-foreground">Status</label>
                   <div className="flex gap-2">
                     {["available", "reserved", "sold"].map((s) => (
@@ -514,7 +682,7 @@ export default function InventoryPage() {
                         key={s}
                         onClick={() => updateStatus(editItem, s)}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
-                          editItem.status === s ? "bg-primary text-white border-primary" : "hover:border-primary"
+                          editItem.status === s ? "bg-primary text-primary-foreground border-primary" : "hover:border-primary"
                         }`}
                         style={editItem.status !== s ? { borderColor: "var(--border)" } : undefined}
                       >
