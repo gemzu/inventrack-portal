@@ -26,7 +26,7 @@ export default function PageShell({
   children,
 }: PageShellProps) {
   return (
-    <div className={cn("animate-page-enter space-y-6", className)}>
+    <div className={cn("space-y-6", className)}>
       {breadcrumb && <div className="text-sm text-muted-foreground">{breadcrumb}</div>}
       {(title || actions) && (
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
