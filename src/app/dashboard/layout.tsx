@@ -125,13 +125,13 @@ function SidebarNav({
                     key={item.href}
                     href={item.href}
                     onClick={onNavigate}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 group motion-safe:hover:translate-x-0.5 ${
                       active
                         ? "bg-foreground text-background font-medium"
                         : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                     }`}
                   >
-                    <item.icon className="w-4 h-4" />
+                    <item.icon className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
                     {item.label}
                   </Link>
                 );
@@ -147,7 +147,7 @@ function SidebarNav({
           <Link
             href="/dashboard/settings"
             onClick={onNavigate}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 group motion-safe:hover:translate-x-0.5 ${
               pathname === "/dashboard/settings"
                 ? "bg-foreground text-background font-medium"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary"
