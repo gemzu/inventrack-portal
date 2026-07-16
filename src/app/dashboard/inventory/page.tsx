@@ -62,8 +62,9 @@ function mapItem(row: Record<string, unknown>): Item {
 }
 
 export default function InventoryPage() {
-  const { orgId, facilities } = useAuth();
+  const { orgId, facilities, user, userPermissions, orgData } = useAuth();
   const { toast } = useToast();
+  const [myCanDelete, setMyCanDelete] = useState(false);
   const [view, setView] = useState<"items" | "boxes">("items");
   const [items, setItems] = useState<Item[]>([]);
   const [boxes, setBoxes] = useState<Array<Record<string, unknown>>>([]);
@@ -80,6 +81,46 @@ export default function InventoryPage() {
   const [editQty, setEditQty] = useState(0);
   const [panelOpen, setPanelOpen] = useState(false);
   const [uploadingImg, setUploadingImg] = useState(false);
+
+  // Delete-access gating (mirrors the mobile app). Free only for our org; every
+  // other org keeps unrestricted delete. Org creator/owner/superadmin always
+  // can; other members need the owner-granted can_delete flag.
+  const DELETE_ACCESS_ORGS = ["054fd1ca-927b-413f-93a4-c1e4d1f3853a"];
+  const isOrgCreator = !!(orgData?.ownerId && user?.id && orgData.ownerId === user.id);
+  const isOwner = isOrgCreator || userPermissions === "owner";
+  const isSuperAdmin = isOwner || userPermissions === "superadmin";
+  const deleteAccessEnabled = orgId ? DELETE_ACCESS_ORGS.includes(orgId) : false;
+  const canDelete = deleteAccessEnabled ? (isSuperAdmin || myCanDelete) : true;
+
+  // Load this user's own delete grant so granted staff can delete too.
+  useEffect(() => {
+    if (!orgId || !user?.id || !deleteAccessEnabled) return;
+    supabase
+      .from("organization_memberships")
+      .select("can_delete")
+      .eq("org_id", orgId)
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => setMyCanDelete(data?.can_delete === true));
+  }, [orgId, user?.id, deleteAccessEnabled]);
+
+  const deleteItem = async () => {
+    if (!editItem) return;
+    if (!canDelete) {
+      toast("You don't have delete access. Ask your organization owner.", "error");
+      return;
+    }
+    if (!confirm(`Delete "${editItem.displayName || editItem.modelId}"? This cannot be undone.`)) return;
+    try {
+      const { error } = await supabase.from("inventory").delete().eq("id", editItem.id);
+      if (error) throw error;
+      setItems((prev) => prev.filter((i) => i.id !== editItem.id));
+      toast("Item deleted", "success");
+      closePanel();
+    } catch {
+      toast("Could not delete item", "error");
+    }
+  };
 
   const handleCsvFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -183,11 +224,12 @@ export default function InventoryPage() {
   }, [items]);
 
   const exportCsv = () => {
-    const header = "Model ID,Barcode,Name,Brand,Status,Quantity,Cost,Price,Facility\n";
+    const header = "Model ID,Barcode,Name,Brand,Status,Quantity,Cost,Price,Facility,Box,Box ID\n";
     const rows = filtered.map((i) => {
       const fac = (facilities || []).find((f) => f.id === i.facilityId)?.name || "";
-      const boxCode = boxes.find((b) => b.id === i.boxId)?.code || "";
-      return `"${i.modelId}","${i.barcode}","${i.displayName || ""}","${i.brand || ""}","${i.status}",${i.quantity},${i.costPrice || ""},${i.sellingPrice || ""},"${fac}","${boxCode}"`;
+      const boxCode = i.boxId ? (String(boxes.find((b) => b.id === i.boxId)?.code || "")) : "Loose";
+      const boxId = i.boxId || "";
+      return `"${i.modelId}","${i.barcode}","${i.displayName || ""}","${i.brand || ""}","${i.status}",${i.quantity},${i.costPrice || ""},${i.sellingPrice || ""},"${fac}","${boxCode}","${boxId}"`;
     }).join("\n");
     const blob = new Blob([header + rows], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -715,7 +757,15 @@ export default function InventoryPage() {
                   </div>
                 </div>
               </div>
-              <div className="p-6 border-t border-border">
+              <div className="p-6 border-t border-border space-y-2">
+                {canDelete && (
+                  <button
+                    onClick={deleteItem}
+                    className="w-full py-2.5 rounded-xl border border-danger/40 text-danger text-sm font-medium hover:bg-danger/10 transition"
+                  >
+                    Delete item
+                  </button>
+                )}
                 <button
                   onClick={closePanel}
                   className="w-full py-2.5 rounded-xl border text-sm font-medium hover:border-primary transition"
