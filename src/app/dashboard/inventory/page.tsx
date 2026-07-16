@@ -4,7 +4,7 @@ import AdminGuard from "@/components/AdminGuard";
 import PageShell from "@/components/page-shell";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { Search, Download, Package, Boxes, ChevronDown, Upload, Loader2, X, FileSpreadsheet, Save } from "lucide-react";
+import { Search, Download, Package, Boxes, ChevronDown, ChevronRight, Upload, Loader2, X, FileSpreadsheet, Save, Pencil } from "lucide-react";
 import { statusColor } from "@/lib/utils";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
@@ -427,43 +427,45 @@ export default function InventoryPage() {
       <Card className="overflow-hidden"><CardContent className="p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Model ID</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Barcode</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden md:table-cell text-muted-foreground">Name</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Status</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Qty</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden lg:table-cell text-muted-foreground">Facility / Box</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Actions</th>
+            <thead className="sticky top-0 z-10 bg-muted/60 backdrop-blur">
+              <tr className="border-b-2 border-border">
+                <th className="text-left px-4 py-3.5 font-semibold text-[11px] uppercase tracking-wider text-muted-foreground">Model ID</th>
+                <th className="text-left px-4 py-3.5 font-semibold text-[11px] uppercase tracking-wider hidden sm:table-cell text-muted-foreground">Barcode</th>
+                <th className="text-left px-4 py-3.5 font-semibold text-[11px] uppercase tracking-wider hidden md:table-cell text-muted-foreground">Name</th>
+                <th className="text-left px-4 py-3.5 font-semibold text-[11px] uppercase tracking-wider text-muted-foreground">Status</th>
+                <th className="text-right px-4 py-3.5 font-semibold text-[11px] uppercase tracking-wider text-muted-foreground">Qty</th>
+                <th className="text-left px-4 py-3.5 font-semibold text-[11px] uppercase tracking-wider hidden lg:table-cell text-muted-foreground">Facility / Box</th>
+                <th className="text-right px-4 py-3.5 font-semibold text-[11px] uppercase tracking-wider text-muted-foreground">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((item) => (
-                <tr key={item.id} className="hover:bg-black/3 dark:hover:bg-white/3 transition border-b border-border">
-                  <td className="px-4 py-3 font-medium">{item.modelId}</td>
-                  <td className="px-4 py-3 font-mono text-xs">{item.barcode}</td>
-                  <td className="px-4 py-3 hidden md:table-cell">{item.displayName || "-"}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusColor(item.status)}`}>
+                <tr
+                  key={item.id}
+                  onClick={() => openPanel(item)}
+                  className="group cursor-pointer hover:bg-primary/[0.04] transition-colors border-b border-border last:border-0"
+                >
+                  <td className="px-4 py-3.5 font-semibold">{item.modelId}</td>
+                  <td className="px-4 py-3.5 font-mono text-xs text-muted-foreground hidden sm:table-cell">{item.barcode}</td>
+                  <td className="px-4 py-3.5 hidden md:table-cell">{item.displayName || <span className="text-muted-foreground">-</span>}</td>
+                  <td className="px-4 py-3.5">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statusColor(item.status)}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[item.status] || "bg-gray-400"}`} />
                       {item.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 font-medium">{item.quantity}</td>
-                  <td className="px-4 py-3 hidden lg:table-cell text-xs text-muted-foreground">
+                  <td className="px-4 py-3.5 text-right font-semibold tabular-nums">{item.quantity}</td>
+                  <td className="px-4 py-3.5 hidden lg:table-cell text-xs text-muted-foreground">
                     <div>{(facilities || []).find((f) => f.id === item.facilityId)?.name || "-"}</div>
-                    <div className={`inline-flex mt-1 px-2 py-0.5 rounded-full text-[10px] ${item.boxId ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
+                    <div className={`inline-flex mt-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${item.boxId ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
                       {item.boxId ? `Box ${String(boxes.find((b) => b.id === item.boxId)?.code || "")}` : "Loose"}
                     </div>
                   </td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => openPanel(item)}
-                      className="text-xs text-primary hover:underline"
-                    >
-                      Edit
-                    </button>
+                  <td className="px-4 py-3.5 text-right">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-medium text-foreground/80 group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                      <Pencil className="w-3.5 h-3.5" /> Edit
+                      <ChevronRight className="w-3.5 h-3.5 -mr-1 opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-transform" />
+                    </span>
                   </td>
                 </tr>
               ))}

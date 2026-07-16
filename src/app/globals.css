@@ -62,6 +62,7 @@
   --popover-foreground: #18181b;
   --primary: #18181b;
   --primary-foreground: #fafafa;
+  --primary-dark: #3f3f46;
   --secondary: #f4f4f5;
   --secondary-foreground: #18181b;
   --muted: #f4f4f5;
@@ -102,6 +103,7 @@
   --popover-foreground: #fafafa;
   --primary: #fafafa;
   --primary-foreground: #18181b;
+  --primary-dark: #d4d4d8;
   --secondary: #27272a;
   --secondary-foreground: #fafafa;
   --muted: #27272a;
@@ -135,6 +137,7 @@
 :root.pink-accent {
   --primary: #E398CA !important;
   --primary-foreground: #3d2a35 !important;
+  --primary-dark: #c87aad !important;
   --secondary: #fdf2f7 !important;
   --secondary-foreground: #3d2a35 !important;
   --accent: #fce4ec !important;
@@ -158,6 +161,7 @@
 .dark.pink-accent {
   --primary: #E398CA !important;
   --primary-foreground: #1f1a1d !important;
+  --primary-dark: #c87aad !important;
   --secondary: #1f1518 !important;
   --secondary-foreground: #fce4f0 !important;
   --accent: #2a1a20 !important;
@@ -208,6 +212,7 @@
 .dark.pink-accent {
   --primary: #E398CA;
   --primary-foreground: #1f1a1d;
+  --primary-dark: #c87aad;
   --secondary: #1f1518;
   --secondary-foreground: #fce4f0;
   --accent: #2a1a20;
@@ -226,6 +231,13 @@
   --btn-fg: #1f1a1d;
   --btn-border: #d88ab8;
   --btn-shadow: 0 4px 12px rgba(227,152,202,0.4);
+}
+
+/* Hover shade for solid primary buttons. Defined as a real utility so the
+   `hover:bg-primary-dark` variant used across the app actually paints (the
+   token was previously undefined, so every primary button had a dead hover). */
+@utility bg-primary-dark {
+  background-color: var(--primary-dark);
 }
 
 /* ── Base Styles ──────────────────────────────────────────────── */
