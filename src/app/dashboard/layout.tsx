@@ -288,7 +288,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <div className="min-h-screen flex bg-background text-foreground">
+    <div className="portal min-h-screen flex bg-background text-foreground">
       {/* ── Desktop Sidebar ──────────────── */}
       <aside className="hidden lg:block sticky top-0 h-screen w-64 shrink-0">
         <SidebarNav
@@ -309,7 +309,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <SheetTrigger className="lg:hidden p-2 rounded-lg hover:bg-secondary transition-colors">
                 <Menu className="w-5 h-5" />
               </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-72 bg-card border-r">
+              <SheetContent side="left" className="portal p-0 w-72 bg-card border-r">
                 <SidebarNav
                   visibleGroups={visibleGroups}
                   showSettings={showSettings}
