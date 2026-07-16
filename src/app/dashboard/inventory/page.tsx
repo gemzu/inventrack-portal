@@ -586,17 +586,16 @@ export default function InventoryPage() {
         </div>
       )}
 
-      {/* Slide-out Panel */}
+      {/* Item editor - centered modal so it opens in view wherever you clicked */}
       {editItem && (
-        <>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
           <div
-            className={`fixed inset-0 bg-black/40 z-40 transition-opacity duration-300 ${panelOpen ? "opacity-100" : "opacity-0"}`}
+            className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-200 ${panelOpen ? "opacity-100" : "opacity-0"}`}
             onClick={closePanel}
           />
           <div
-            className={`fixed top-0 right-0 h-full w-96 max-w-full z-50 transition-transform duration-300 ${panelOpen ? "translate-x-0" : "translate-x-full"}`}
+            className={`relative w-full max-w-lg max-h-[88vh] flex flex-col rounded-2xl border border-border bg-background shadow-2xl transition-all duration-200 ${panelOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-2"}`}
           >
-            <div className="h-full flex flex-col border-l border-border bg-background shadow-2xl">
               <div className="flex items-center justify-between p-6 border-b border-border">
                 <h3 className="text-lg font-bold">Item Details</h3>
                 <button onClick={closePanel} className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition">
@@ -777,7 +776,6 @@ export default function InventoryPage() {
               </div>
             </div>
           </div>
-        </>
       )}
     </PageShell></AdminGuard>
   );
