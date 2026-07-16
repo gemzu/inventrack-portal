@@ -8,11 +8,12 @@ import { useTheme } from "@/context/ThemeContext";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Building2,
   Ban, Activity, Settings, LogOut, Menu,
-  Sun, Moon, Boxes, Bell, Loader2, ClipboardCheck,
+  Sun, Moon, Boxes, Bell, ClipboardCheck,
   TrendingUp, FileBarChart, MessageCircle, FileText,
   Sparkles, ShoppingBag,
 } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
+import PageLoader from "@/components/PageLoader";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -212,11 +213,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (!user) return null;
