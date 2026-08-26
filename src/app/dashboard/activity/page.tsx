@@ -8,6 +8,7 @@ import { Activity, Search, ChevronDown } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
 import EmptyState from "@/components/EmptyState";
 import { Card, CardContent } from "@/components/ui/card";
+import PageShell from "@/components/page-shell";
 
 interface ScanLog {
   id: string;
@@ -71,14 +72,9 @@ export default function ActivityPage() {
   }
 
   return (<AdminGuard>
-    <div className="animate-page-enter space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Activity Log</h1>
-        <p className="text-sm text-muted-foreground">{filtered.length} entries</p>
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
+    <PageShell title="Activity Log" subtitle={`${filtered.length} entries`}>
+      <div className="flex flex-wrap gap-3">
+        <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by barcode or user..."
             className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
@@ -96,42 +92,30 @@ export default function ActivityPage() {
       </div>
 
       <Card className="overflow-hidden"><CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Barcode</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Action</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden md:table-cell text-muted-foreground">Result</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">User</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden sm:table-cell text-muted-foreground">Time</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((log) => (
-                <tr key={log.id} className="hover:bg-black/3 dark:hover:bg-white/3 transition border-b border-border">
-                  <td className="px-4 py-3 font-mono text-xs">{log.barcode}</td>
-                  <td className="px-4 py-3">
-                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">{log.action}</span>
-                  </td>
-                  <td className="px-4 py-3 hidden md:table-cell text-xs text-muted-foreground">{log.result || "-"}</td>
-                  <td className="px-4 py-3 text-xs">{log.scannedBy}</td>
-                  <td className="px-4 py-3 hidden sm:table-cell text-xs text-muted-foreground">
-                    {formatDateTime(log.createdAt as string)}
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={5}>
-                    <EmptyState icon={Activity} title="No activity logs" description="Scan events and inventory changes will be recorded here." />
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        {filtered.length === 0 ? (
+          <EmptyState icon={Activity} title="No activity logs" description="Scan events and inventory changes will be recorded here." />
+        ) : (
+          filtered.map((log) => (
+            <div key={log.id} className="flex items-center gap-4 px-4 py-3 border-b border-border/60 last:border-0 hover:bg-primary/[0.03] transition-colors">
+              <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                <Activity className="w-4 h-4 text-muted-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-mono text-sm font-medium truncate">{log.barcode}</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary shrink-0 capitalize">{log.action}</span>
+                </div>
+                <div className="text-xs text-muted-foreground truncate">
+                  {log.scannedBy}{log.result ? ` · ${log.result}` : ""}
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground shrink-0 hidden sm:block whitespace-nowrap">
+                {formatDateTime(log.createdAt as string)}
+              </div>
+            </div>
+          ))
+        )}
       </CardContent></Card>
-    </div>
+    </PageShell>
   </AdminGuard>);
 }

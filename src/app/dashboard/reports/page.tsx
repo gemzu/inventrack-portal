@@ -5,9 +5,12 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import {
   FileBarChart, Package, ShoppingCart, Activity, Download,
-  AlertTriangle, TrendingUp, Loader2, CheckCircle,
+  AlertTriangle, TrendingUp, Loader2, CheckCircle, DollarSign,
 } from "lucide-react";
+
+const money = (n: number) => `$${(Number(n) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 import { Card, CardContent } from "@/components/ui/card";
+import PageShell from "@/components/page-shell";
 import { normalizeOrderStatus, ORDER_STATUS } from "@/lib/orderStatus";
 import { SkeletonCard } from "@/components/Skeleton";
 
@@ -40,6 +43,8 @@ export default function ReportsPage() {
     ordersRejected: 0,
     pendingApprovals: 0,
     fulfillmentRate: 0,
+    totalValue: 0,
+    totalCost: 0,
     lowStockItems: [] as { modelId: string; quantity: number; brand: string }[],
   });
   const [generating, setGenerating] = useState<string | null>(null);
@@ -59,6 +64,11 @@ export default function ReportsPage() {
       const available = items.filter((i) => i.status === "available").length;
       const reserved = items.filter((i) => i.status === "reserved").length;
       const sold = items.filter((i) => i.status === "sold").length;
+
+      // Valuation of available stock (retail value + cost basis / COGS).
+      const avail = items.filter((i) => i.status === "available");
+      const totalValue = avail.reduce((s, i) => s + (Number(i.selling_price) || 0) * (Number(i.quantity) || 0), 0);
+      const totalCost = avail.reduce((s, i) => s + (Number(i.cost_price) || 0) * (Number(i.quantity) || 0), 0);
 
       // Orders this month
       const monthStart = new Date();
@@ -100,6 +110,8 @@ export default function ReportsPage() {
         ordersRejected: rejected,
         pendingApprovals: pendingApprovals || 0,
         fulfillmentRate,
+        totalValue,
+        totalCost,
         lowStockItems: lowStock,
       });
     } catch (err) {
@@ -149,6 +161,20 @@ export default function ReportsPage() {
           s.barcode || "", s.action || "", s.scanned_by || "", s.created_at || "",
         ]);
         downloadCsv("activity_report.csv", header, rows);
+      } else if (type === "valuation") {
+        const { data } = await supabase.from("inventory").select("*").eq("org_id", orgId).eq("status", "available");
+        const items = data || [];
+        const header = "Model ID,Brand,Category,Quantity,Unit Cost,Unit Price,Cost Value,Retail Value";
+        const rows = items.map((i) => {
+          const q = Number(i.quantity) || 0;
+          const cost = Number(i.cost_price) || 0;
+          const price = Number(i.selling_price) || 0;
+          return [
+            i.model_id || "", i.brand || "", i.category || "", String(q),
+            cost.toFixed(2), price.toFixed(2), (cost * q).toFixed(2), (price * q).toFixed(2),
+          ];
+        });
+        downloadCsv("valuation_report.csv", header, rows);
       } else if (type === "low_stock") {
         const header = "Model ID,Brand,Quantity";
         const rows = snapshot.lowStockItems.map((i) => [i.modelId, i.brand, String(i.quantity)]);
@@ -214,6 +240,9 @@ export default function ReportsPage() {
     { label: "Available", value: snapshot.available, icon: CheckCircle, color: "text-success", bg: "bg-success/10" },
     { label: "Reserved", value: snapshot.reserved, icon: AlertTriangle, color: "text-warning", bg: "bg-warning/10" },
     { label: "Sold", value: snapshot.sold, icon: TrendingUp, color: "text-accent", bg: "bg-accent/10" },
+    { label: "Retail Value", value: money(snapshot.totalValue), icon: DollarSign, color: "text-success", bg: "bg-success/10" },
+    { label: "Inventory at Cost", value: money(snapshot.totalCost), icon: DollarSign, color: "text-primary", bg: "bg-primary/10" },
+    { label: "Potential Margin", value: money(snapshot.totalValue - snapshot.totalCost), icon: TrendingUp, color: "text-accent", bg: "bg-accent/10" },
   ];
 
   const reportCards = [
@@ -249,17 +278,18 @@ export default function ReportsPage() {
       color: "text-success",
       bg: "bg-success/10",
     },
+    {
+      title: "Valuation & COGS",
+      desc: "Per-item cost value, retail value, and margin for stock on hand",
+      icon: DollarSign,
+      type: "valuation",
+      color: "text-success",
+      bg: "bg-success/10",
+    },
   ];
 
   return (
-    <div className="animate-page-enter space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Reports</h1>
-        <p className="text-sm text-muted-foreground">
-          Generate and download reports for your organization
-        </p>
-      </div>
-
+    <PageShell title="Reports" subtitle="Generate and download reports for your organization">
       {/* Current Snapshot */}
       <div>
         <div className="flex items-center gap-2 mb-3">
@@ -389,6 +419,6 @@ export default function ReportsPage() {
           ))}
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 }

@@ -92,7 +92,7 @@ export default function SignupPage() {
                     onClick={() => setRole(r.value)}
                     className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
                       role === r.value
-                        ? "bg-foreground text-background"
+                        ? "bg-brand-gradient text-white shadow-[0_4px_12px_-4px_var(--brand-1)]"
                         : `border border-border hover:bg-secondary ${isDark ? "text-muted-foreground" : "text-foreground"}`
                     }`}
                   >
@@ -149,7 +149,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading || !agreedToTerms}
-              className="w-full bg-foreground text-background font-medium text-sm py-3 rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all mt-2"
+              className="w-full bg-brand-gradient text-white font-semibold text-sm py-3 rounded-lg hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all mt-2 shadow-[0_8px_24px_-8px_var(--brand-1)]"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">

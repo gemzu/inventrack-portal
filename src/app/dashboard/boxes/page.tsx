@@ -150,7 +150,7 @@ export default function BoxesPage() {
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger
               render={
-                <Button>
+                <Button variant="brand">
                   <Plus /> New Box
                 </Button>
               }
@@ -257,7 +257,7 @@ export default function BoxesPage() {
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button onClick={handleCreate} disabled={saving}>
+                <Button variant="brand" onClick={handleCreate} disabled={saving}>
                   {saving ? "Creating..." : "Create"}
                 </Button>
               </DialogFooter>

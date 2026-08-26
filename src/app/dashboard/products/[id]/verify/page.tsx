@@ -224,7 +224,7 @@ export default function ProductVerificationPage() {
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-xl font-bold">Review Product</h1>
+            <h1 className="text-xl sm:text-2xl font-display font-bold tracking-tight">Review Product</h1>
             <p className="text-sm text-muted-foreground">{product.modelId}</p>
           </div>
         </div>

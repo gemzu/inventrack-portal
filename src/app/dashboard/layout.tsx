@@ -3,14 +3,15 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import {
-  LayoutDashboard, Package, ShoppingCart, Users, Building2,
+  LayoutDashboard, Package, BookOpen, ShoppingCart, Users, Building2,
   Ban, Activity, Settings, LogOut, Menu,
-  Sun, Moon, Boxes, Bell, ClipboardCheck,
+  Sun, Moon, Boxes, Bell, ClipboardCheck, ClipboardList,
   TrendingUp, FileBarChart, MessageCircle, FileText,
-  Sparkles, ShoppingBag,
+  Sparkles, ShoppingBag, ShieldCheck,
 } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
 import PageLoader from "@/components/PageLoader";
@@ -18,8 +19,9 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { getNotifications, getUnreadNotificationCount, markAllNotificationsRead } from "@/lib/dataService";
+import { getNotifications, getUnreadNotificationCount } from "@/lib/dataService";
 import { useToast } from "@/components/Toast";
+import { spring } from "@/lib/motion";
 
 /* ── Nav structure with groups ───────────────────────── */
 interface NavItem {
@@ -36,16 +38,16 @@ interface NavGroup {
 const navGroups: NavGroup[] = [
   {
     label: "OVERVIEW",
-    items: [
-      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    ],
+    items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }],
   },
   {
     label: "OPERATIONS",
     items: [
       { href: "/dashboard/inventory", label: "Inventory", icon: Package },
+      { href: "/dashboard/catalog", label: "Product Catalog", icon: BookOpen },
       { href: "/dashboard/boxes", label: "Boxes", icon: Boxes },
       { href: "/dashboard/orders", label: "Orders", icon: ShoppingCart },
+      { href: "/dashboard/purchase-orders", label: "Purchase Orders", icon: ClipboardList },
       { href: "/dashboard/approvals", label: "Approvals", icon: ClipboardCheck },
     ],
   },
@@ -63,7 +65,7 @@ const navGroups: NavGroup[] = [
       { href: "/dashboard/facilities", label: "Facilities", icon: Building2 },
       { href: "/dashboard/storefronts", label: "Storefronts", icon: ShoppingBag },
       { href: "/dashboard/blacklist", label: "Blacklist", icon: Ban },
-      { href: "/dashboard/whitelist", label: "Whitelist", icon: Ban },
+      { href: "/dashboard/whitelist", label: "Whitelist", icon: ShieldCheck },
       { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
       { href: "/dashboard/support", label: "Support", icon: MessageCircle },
       { href: "/dashboard/enrichment", label: "AI Enrichment", icon: Sparkles },
@@ -85,6 +87,41 @@ const adminOnlyPages = [
   "/dashboard/storefronts",
 ];
 
+function NavLink({
+  item,
+  active,
+  onNavigate,
+}: {
+  item: NavItem;
+  active: boolean;
+  onNavigate?: () => void;
+}) {
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
+        active
+          ? "text-white font-semibold"
+          : "text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {active && (
+        <motion.span
+          layoutId="nav-active"
+          transition={spring}
+          className="absolute inset-0 rounded-xl bg-brand-gradient shadow-[0_8px_20px_-8px_var(--brand-1)]"
+        />
+      )}
+      {!active && (
+        <span className="absolute inset-0 rounded-xl bg-transparent group-hover:bg-secondary transition-colors" />
+      )}
+      <item.icon className="relative w-[18px] h-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" />
+      <span className="relative">{item.label}</span>
+    </Link>
+  );
+}
+
 function SidebarNav({
   visibleGroups,
   showSettings,
@@ -99,70 +136,53 @@ function SidebarNav({
   onLogout: () => void;
 }) {
   return (
-    <div className="flex flex-col h-full bg-card border-r border-border">
+    <div className="flex flex-col h-full bg-sidebar border-r border-sidebar-border">
       {/* Logo area */}
-      <div className="h-16 flex items-center px-5 shrink-0 border-b border-border">
-        <Link href="/" className="flex items-center gap-3" onClick={onNavigate}>
-          <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.svg" alt="Invems" className="w-full h-full object-contain" />
+      <div className="h-16 flex items-center px-5 shrink-0">
+        <Link href="/" className="flex items-center gap-3 group" onClick={onNavigate}>
+          <div className="relative w-9 h-9 rounded-xl bg-brand-gradient flex items-center justify-center shadow-[0_6px_16px_-6px_var(--brand-1)] overflow-hidden">
+            <span className="font-display font-extrabold text-white text-lg leading-none">I</span>
+            <span className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors" />
           </div>
-          <span className="font-bold text-lg tracking-tight">Invems</span>
+          <span className="font-display font-bold text-lg tracking-tight">Invems</span>
         </Link>
       </div>
 
       {/* Nav groups */}
-      <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-6">
+      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-5">
         {visibleGroups.map((group) => (
           <div key={group.label}>
-            <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider px-3 mb-3">
+            <div className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-[0.14em] px-3 mb-2">
               {group.label}
             </div>
-            <div className="space-y-1">
-              {group.items.map((item) => {
-                const active = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={onNavigate}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 group ${
-                      active
-                        ? "bg-foreground text-background font-medium"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                    }`}
-                  >
-                    <item.icon className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                    {item.label}
-                  </Link>
-                );
-              })}
+            <div className="space-y-0.5">
+              {group.items.map((item) => (
+                <NavLink
+                  key={item.href}
+                  item={item}
+                  active={pathname === item.href}
+                  onNavigate={onNavigate}
+                />
+              ))}
             </div>
           </div>
         ))}
       </nav>
 
       {/* Settings + Sign out (bottom) */}
-      <div className="shrink-0 border-t border-border p-3 space-y-1">
+      <div className="shrink-0 border-t border-sidebar-border p-3 space-y-0.5">
         {showSettings && (
-          <Link
-            href="/dashboard/settings"
-            onClick={onNavigate}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 group ${
-              pathname === "/dashboard/settings"
-                ? "bg-foreground text-background font-medium"
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-            }`}
-          >
-            <Settings className="w-4 h-4" />
-            Settings
-          </Link>
+          <NavLink
+            item={{ href: "/dashboard/settings", label: "Settings", icon: Settings }}
+            active={pathname === "/dashboard/settings"}
+            onNavigate={onNavigate}
+          />
         )}
         <button
           onClick={onLogout}
-          className="flex items-center justify-start gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 w-full"
+          className="group flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors w-full"
         >
-          <LogOut className="w-4 h-4" />
+          <LogOut className="w-[18px] h-[18px] transition-transform duration-200 group-hover:-translate-x-0.5" />
           Sign Out
         </button>
       </div>
@@ -247,7 +267,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const visibleGroups = (() => {
     const isAdmin = userRole === "admin";
 
-    // Deep copy + filter by role
     const groups: NavGroup[] = navGroups.map((group) => ({
       label: group.label,
       items: isAdmin
@@ -255,7 +274,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         : group.items.filter((item) => !adminOnlyPages.includes(item.href)),
     })).filter((group) => group.items.length > 0);
 
-    // Add Reports to TOOLS for admin (without mutating the original)
     if (isAdmin) {
       const toolsIdx = groups.findIndex((g) => g.label === "TOOLS");
       if (toolsIdx !== -1) {
@@ -266,20 +284,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
     }
 
-    // Add ADMIN group for superadmin
     if (userPermissions === "superadmin") {
       groups.push({
         label: "ADMIN",
-        items: [
-          { href: "/dashboard/analytics", label: "Platform Analytics", icon: TrendingUp },
-        ],
+        items: [{ href: "/dashboard/analytics", label: "Platform Analytics", icon: TrendingUp }],
       });
     }
 
     return groups;
   })();
 
-  // Settings visible only to admins
   const showSettings = userRole === "admin";
 
   const handleLogout = async () => {
@@ -288,7 +302,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <div className="portal min-h-screen flex bg-background text-foreground">
+    <div className="min-h-screen flex bg-background text-foreground">
       {/* ── Desktop Sidebar ──────────────── */}
       <aside className="hidden lg:block sticky top-0 h-screen w-64 shrink-0">
         <SidebarNav
@@ -302,14 +316,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* ── Main content ────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Topbar */}
-        <header className="bg-background/80 backdrop-blur-md border-b border-border h-16 flex items-center justify-between px-4 lg:px-6 shrink-0 sticky top-0 z-30">
+        <header className="glass border-b border-border/60 h-16 flex items-center justify-between px-4 lg:px-6 shrink-0 sticky top-0 z-30">
           <div className="flex items-center gap-3">
-            {/* Mobile sidebar trigger */}
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
               <SheetTrigger className="lg:hidden p-2 rounded-lg hover:bg-secondary transition-colors">
                 <Menu className="w-5 h-5" />
               </SheetTrigger>
-              <SheetContent side="left" className="portal p-0 w-72 bg-card border-r">
+              <SheetContent side="left" className="p-0 w-72 bg-sidebar border-r border-sidebar-border">
                 <SidebarNav
                   visibleGroups={visibleGroups}
                   showSettings={showSettings}
@@ -323,56 +336,91 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className="flex items-center gap-1">
-            <button onClick={toggleTheme} className="p-2.5 rounded-lg hover:bg-secondary transition-colors">
-              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            <button
+              onClick={toggleTheme}
+              className="p-2.5 rounded-xl hover:bg-secondary transition-colors"
+              aria-label="Toggle theme"
+            >
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                  key={theme}
+                  initial={{ rotate: -90, opacity: 0, scale: 0.6 }}
+                  animate={{ rotate: 0, opacity: 1, scale: 1 }}
+                  exit={{ rotate: 90, opacity: 0, scale: 0.6 }}
+                  transition={{ duration: 0.2 }}
+                  className="block"
+                >
+                  {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                </motion.span>
+              </AnimatePresence>
             </button>
             <div className="relative">
-              <button onClick={openNotifications} className="p-2.5 rounded-lg hover:bg-secondary transition-colors relative">
+              <button
+                onClick={openNotifications}
+                className="p-2.5 rounded-xl hover:bg-secondary transition-colors relative"
+                aria-label="Notifications"
+              >
                 <Bell className="w-4 h-4" />
                 {unreadCount > 0 ? (
-                  <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
+                  <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-destructive ring-2 ring-background pulse-dot" />
                 ) : null}
               </button>
-              {notifOpen ? (
-                <div className="absolute right-0 mt-2 w-80 rounded-xl border border-border bg-card shadow-xl z-40">
-                  <div className="p-4 border-b border-border">
-                    <span className="text-sm font-semibold">Notifications</span>
-                  </div>
-                  <div className="max-h-80 overflow-y-auto">
-                    {notifPreview.length === 0 ? (
-                      <div className="p-4 text-sm text-muted-foreground">No recent notifications.</div>
-                    ) : (
-                      notifPreview.map((n, i) => (
-                        <Link
-                          key={`${n.id || i}`}
-                          href="/dashboard/notifications"
-                          className="block p-4 border-b border-border/50 last:border-0 hover:bg-secondary/50"
-                        >
-                          <div className="text-sm font-medium truncate">{String(n.title || n.type || "Notification")}</div>
-                          <div className="text-xs text-muted-foreground truncate">{String(n.body || n.message || "")}</div>
-                        </Link>
-                      ))
-                    )}
-                  </div>
-                </div>
-              ) : null}
+              <AnimatePresence>
+                {notifOpen ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                    transition={{ duration: 0.16 }}
+                    className="absolute right-0 mt-2 w-80 rounded-2xl border border-border bg-popover backdrop-blur-xl shadow-glow z-40 overflow-hidden"
+                  >
+                    <div className="p-4 border-b border-border">
+                      <span className="text-sm font-semibold">Notifications</span>
+                    </div>
+                    <div className="max-h-80 overflow-y-auto">
+                      {notifPreview.length === 0 ? (
+                        <div className="p-4 text-sm text-muted-foreground">No recent notifications.</div>
+                      ) : (
+                        notifPreview.map((n, i) => (
+                          <Link
+                            key={`${n.id || i}`}
+                            href="/dashboard/notifications"
+                            className="block p-4 border-b border-border/50 last:border-0 hover:bg-secondary/50 transition-colors"
+                          >
+                            <div className="text-sm font-medium truncate">{String(n.title || n.type || "Notification")}</div>
+                            <div className="text-xs text-muted-foreground truncate">{String(n.body || n.message || "")}</div>
+                          </Link>
+                        ))
+                      )}
+                    </div>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
             </div>
             <Link
               href="/dashboard/settings"
-              className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-100 text-xs font-bold ml-1"
+              className="w-9 h-9 rounded-full bg-brand-gradient flex items-center justify-center text-white text-xs font-bold ml-1 shadow-[0_4px_12px_-4px_var(--brand-1)] hover:scale-105 transition-transform"
             >
               {userName?.charAt(0).toUpperCase() || "U"}
             </Link>
           </div>
         </header>
 
-        {/* Page content */}
+        {/* Page content — fade only (NO transform: a transform here would
+            make position:fixed drawers/modals anchor to this box instead of
+            the viewport, pinning them to the top of the page). */}
         <main className="flex-1 overflow-auto">
-          <div className="max-w-6xl mx-auto p-6 lg:p-8 animate-page-enter">
+          <motion.div
+            key={pathname}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="max-w-6xl mx-auto p-6 lg:p-8"
+          >
             <ErrorBoundary>
               {children}
             </ErrorBoundary>
-          </div>
+          </motion.div>
         </main>
       </div>
     </div>

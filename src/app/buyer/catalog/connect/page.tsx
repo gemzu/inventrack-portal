@@ -39,7 +39,7 @@ export default function ConnectStorefrontPage() {
               <Store className="w-5 h-5 text-primary" />
             </div>
             <h1 className="text-4xl font-bold tracking-tight">
-              <span className="bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
+              <span className="text-brand-gradient">
                 Storefronts
               </span>
             </h1>

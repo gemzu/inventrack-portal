@@ -122,38 +122,27 @@ export default function WhitelistPage() {
         </div>
 
         <Card className="overflow-hidden"><CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Barcode</th>
-                  <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden sm:table-cell text-muted-foreground">Label</th>
-                  <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden md:table-cell text-muted-foreground">Note</th>
-                  <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden sm:table-cell text-muted-foreground">Added</th>
-                  <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Remove</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan={5} className="p-8 text-center text-sm text-muted-foreground">Loading…</td></tr>
-                ) : filtered.length === 0 ? (
-                  <tr><td colSpan={5}>
-                    <EmptyState icon={ShieldCheck} title="Nothing whitelisted" description="Barcodes you add here will bypass blacklist and scanning warnings." />
-                  </td></tr>
-                ) : filtered.map((r) => (
-                  <tr key={r.id} className="hover:bg-black/3 dark:hover:bg-white/3 transition border-b border-border">
-                    <td className="px-4 py-3 font-mono text-xs font-medium">{r.barcode}</td>
-                    <td className="px-4 py-3 hidden sm:table-cell">{r.label || "-"}</td>
-                    <td className="px-4 py-3 hidden md:table-cell text-xs text-muted-foreground">{r.reason || "-"}</td>
-                    <td className="px-4 py-3 hidden sm:table-cell text-xs text-muted-foreground">{r.createdAt ? formatDate(r.createdAt) : "-"}</td>
-                    <td className="px-4 py-3">
-                      <Button variant="ghost" size="icon-sm" onClick={() => remove(r.id)} aria-label="Remove"><Trash2 /></Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {loading ? (
+            <div className="p-8 text-center text-sm text-muted-foreground">Loading…</div>
+          ) : filtered.length === 0 ? (
+            <EmptyState icon={ShieldCheck} title="Nothing whitelisted" description="Barcodes you add here will bypass blacklist and scanning warnings." />
+          ) : filtered.map((r) => (
+            <div key={r.id} className="group flex items-center gap-4 px-4 py-3 border-b border-border/60 last:border-0 hover:bg-success/[0.05] transition-colors">
+              <div className="w-9 h-9 rounded-lg bg-success/10 text-success flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold font-mono text-sm truncate">{r.barcode}</div>
+                <div className="text-xs text-muted-foreground truncate">
+                  {r.label || "No label"}{r.reason ? ` · ${r.reason}` : ""}
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground shrink-0 hidden sm:block">{r.createdAt ? formatDate(r.createdAt) : ""}</div>
+              <button onClick={() => remove(r.id)} title="Remove" className="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center bg-secondary text-muted-foreground hover:bg-destructive hover:text-white transition-colors">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
         </CardContent></Card>
       </PageShell>
     </AdminGuard>

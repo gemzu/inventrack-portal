@@ -8,6 +8,8 @@ import { Building2, Plus, Pencil, Trash2, MapPin, Users, X } from "lucide-react"
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import PageShell from "@/components/page-shell";
 
 interface Facility {
   id: string;
@@ -101,20 +103,15 @@ export default function FacilitiesPage() {
   }
 
   return (<AdminGuard>
-    <div className="animate-page-enter space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Facilities</h1>
-          <p className="text-sm text-muted-foreground">{facilities.length} locations</p>
-        </div>
-        <button
-          onClick={() => { setShowForm(true); setEditing(null); setForm({ name: "", state: "", address: "" }); }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary-dark transition shadow-lg shadow-primary/25"
-        >
+    <PageShell
+      title="Facilities"
+      subtitle={`${facilities.length} location${facilities.length !== 1 ? "s" : ""}`}
+      actions={
+        <Button variant="brand" onClick={() => { setShowForm(true); setEditing(null); setForm({ name: "", state: "", address: "" }); }}>
           <Plus className="w-4 h-4" /> Add Facility
-        </button>
-      </div>
-
+        </Button>
+      }
+    >
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {facilities.map((fac) => (
           <Card key={fac.id}><CardContent className="p-5">
@@ -183,13 +180,13 @@ export default function FacilitiesPage() {
                   placeholder="123 Main St"
                 />
               </div>
-              <button onClick={handleSave} className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-medium hover:bg-primary-dark transition">
+              <Button variant="brand" onClick={handleSave} className="w-full h-11">
                 {editing ? "Update" : "Add"} Facility
-              </button>
+              </Button>
             </div>
           </CardContent></Card>
         </div>
       )}
-    </div>
+    </PageShell>
   </AdminGuard>);
 }

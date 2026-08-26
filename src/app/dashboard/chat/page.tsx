@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import AdminGuard from "@/components/AdminGuard";
+import PageShell from "@/components/page-shell";
 import { Send, MessageCircle, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -179,9 +180,7 @@ export default function ChatPage() {
 
   return (
     <AdminGuard>
-      <div className="animate-page-enter">
-        <h1 className="text-2xl font-bold mb-6">Messages</h1>
-
+      <PageShell title="Messages">
         <Card><CardContent className="overflow-hidden flex p-0 h-[calc(100vh-220px)] min-h-[400px]"
         >
           {/* Left panel - Conversation list */}
@@ -330,7 +329,7 @@ export default function ChatPage() {
             )}
           </div>
         </CardContent></Card>
-      </div>
+      </PageShell>
     </AdminGuard>
   );
 }

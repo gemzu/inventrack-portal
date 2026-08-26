@@ -68,7 +68,7 @@ export default function BuyerFavoritesPage() {
               <Heart className="w-5 h-5 text-primary fill-primary" />
             </div>
             <h1 className="text-4xl font-bold tracking-tight">
-              <span className="bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
+              <span className="text-brand-gradient">
                 Favorites
               </span>
             </h1>
@@ -129,6 +129,7 @@ export default function BuyerFavoritesPage() {
                 </div>
                 <div className="flex gap-2">
                   <Button
+                    variant="brand"
                     size="sm"
                     className="flex-1"
                     onClick={() => onAddToCart(it)}

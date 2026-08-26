@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { Users as UsersIcon, Search, UserCheck, UserX, Trash2 } from "lucide-react";
-import { formatDate } from "@/lib/utils";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
 import { Card, CardContent } from "@/components/ui/card";
@@ -209,119 +208,85 @@ export default function UsersPage() {
       </div>
 
       <Card className="overflow-hidden"><CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">User</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Role</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden md:table-cell text-muted-foreground">Facility</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Status</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden sm:table-cell text-muted-foreground">Joined</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((user) => (
-                <tr key={user.id} className="hover:bg-black/3 dark:hover:bg-white/3 transition border-b border-border">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
-                        {user.name?.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <div className="font-medium">{user.name}</div>
-                        <div className="text-xs text-muted-foreground">{user.email}</div>
-                      </div>
+        {filtered.length === 0 ? (
+          <EmptyState icon={UsersIcon} title="No users found" description="Team members who join your organization will appear here." />
+        ) : (
+          filtered.map((user) => {
+            const manageable = canManage({ id: currentUser?.id || null, role: userRole, permissions: userPermissions }, user);
+            return (
+              <div key={user.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3.5 border-b border-border/60 last:border-0 hover:bg-primary/[0.03] transition-colors">
+                {/* Identity */}
+                <div className="flex items-center gap-3 flex-1 min-w-[200px]">
+                  <div className="w-9 h-9 rounded-full bg-brand-gradient flex items-center justify-center text-white text-xs font-bold shrink-0">
+                    {user.name?.charAt(0).toUpperCase() || "?"}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-semibold truncate flex items-center gap-2">
+                      {user.name || "Unnamed"}
+                      <Badge variant="secondary" className="hidden sm:inline-flex">{roleBadgeLabel(user.role, user.permissions)}</Badge>
                     </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="space-y-1">
-                      <Badge variant="secondary">{roleBadgeLabel(user.role, user.permissions)}</Badge>
-                      <Select
-                        value={user.role}
-                        onValueChange={(val) => changeRole(user, val || user.role)}
-                        disabled={!canManage({ id: currentUser?.id || null, role: userRole, permissions: userPermissions }, user) || isOwner(user.permissions)}
-                      >
-                        <SelectTrigger className="h-8 w-[120px] text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="worker">Worker</SelectItem>
-                          <SelectItem value="buyer">Buyer</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 hidden md:table-cell">
-                    <Select
-                      value={user.facilityId || "none"}
-                      onValueChange={(val) => assignFacility(user, (val || "none") === "none" ? "" : (val || ""))}
-                      disabled={!canManage({ id: currentUser?.id || null, role: userRole, permissions: userPermissions }, user)}
-                    >
-                      <SelectTrigger className="h-8 w-[160px] text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
+                    <div className="text-xs text-muted-foreground truncate">{user.email}</div>
+                  </div>
+                </div>
+
+                {/* Inline controls — wrap onto next line instead of scrolling off */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Select
+                    value={user.role}
+                    onValueChange={(val) => changeRole(user, val || user.role)}
+                    disabled={!manageable || isOwner(user.permissions)}
+                  >
+                    <SelectTrigger className="h-9 w-[110px] text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="worker">Worker</SelectItem>
+                      <SelectItem value="buyer">Buyer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={user.facilityId || "none"}
+                    onValueChange={(val) => assignFacility(user, (val || "none") === "none" ? "" : (val || ""))}
+                    disabled={!manageable}
+                  >
+                    <SelectTrigger className="h-9 w-[140px] text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No facility</SelectItem>
                       {facilities.map((f) => (
                         <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                       ))}
-                      </SelectContent>
-                    </Select>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      user.active
-                        ? "bg-success/10 text-success border border-success/20"
-                        : "bg-danger/10 text-danger border border-danger/20"
-                    }`}>
-                      {user.active ? "Active" : "Inactive"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 hidden sm:table-cell text-xs text-muted-foreground">
-                    {formatDate(user.createdAt as string)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      {canEditDeleteAccess && user.role !== "buyer" && !isOwner(user.permissions) && (
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => toggleDeleteAccess(user)}
-                          className={`transition ${deleteAccessMap[user.id] ? "text-danger bg-danger/10" : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5"}`}
-                          title={deleteAccessMap[user.id] ? "Delete access: ON (tap to revoke)" : "Delete access: OFF (tap to grant)"}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => toggleActive(user)}
-                        disabled={!canManage({ id: currentUser?.id || null, role: userRole, permissions: userPermissions }, user)}
-                        className={`transition ${
-                          user.active ? "hover:bg-danger/10 text-danger" : "hover:bg-success/10 text-success"
-                        }`}
-                        title={user.active ? "Deactivate" : "Activate"}
-                      >
-                        {user.active ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={6}>
-                    <EmptyState icon={UsersIcon} title="No users found" description="Team members who join your organization will appear here." />
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                    </SelectContent>
+                  </Select>
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                    user.active ? "bg-success/10 text-success border border-success/20" : "bg-destructive/10 text-destructive border border-destructive/20"
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${user.active ? "bg-success" : "bg-destructive"}`} />
+                    {user.active ? "Active" : "Inactive"}
+                  </span>
+                  {/* Actions — always visible */}
+                  {canEditDeleteAccess && user.role !== "buyer" && !isOwner(user.permissions) && (
+                    <Button
+                      variant="ghost" size="icon-sm"
+                      onClick={() => toggleDeleteAccess(user)}
+                      className={`h-9 w-9 ${deleteAccessMap[user.id] ? "text-destructive bg-destructive/10" : "text-muted-foreground"}`}
+                      title={deleteAccessMap[user.id] ? "Delete access: ON (tap to revoke)" : "Delete access: OFF (tap to grant)"}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost" size="icon-sm"
+                    onClick={() => toggleActive(user)}
+                    disabled={!manageable}
+                    className={`h-9 w-9 ${user.active ? "hover:bg-destructive/10 text-destructive" : "hover:bg-success/10 text-success"}`}
+                    title={user.active ? "Deactivate" : "Activate"}
+                  >
+                    {user.active ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+            );
+          })
+        )}
       </CardContent></Card>
     </PageShell>
     {showAdd && (
@@ -371,18 +336,18 @@ export default function UsersPage() {
                   }
                   try {
                     setCreating(true);
-                    await adminCreateUser({
+                    const res = await adminCreateUser({
                       name: newUser.name,
                       email: newUser.email,
                       password: newUser.password,
                       role: newUser.role as "admin" | "worker" | "buyer",
                       permissions: newUser.role === "admin" ? (newUser.permissions as "admin" | "superadmin") : undefined,
                       facilityId: newUser.role === "worker" && newUser.facilityId !== "none" ? newUser.facilityId : null,
-                    });
+                    }) as { invited?: boolean; message?: string } | undefined;
                     const { data } = await supabase.from("users").select("*").eq("org_id", orgId);
                     const mapped = (data || []).map(mapUser);
                     setUsers(mapped);
-                    toast("User created", "success");
+                    toast(res?.invited ? (res.message || "Invitation sent to existing user") : "User created", "success");
                     setShowAdd(false);
                     setNewUser({ name: "", email: "", password: "", role: "worker", permissions: "admin", facilityId: "none" });
                   } catch (e) {

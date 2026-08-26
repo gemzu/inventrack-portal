@@ -6,6 +6,8 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { Users, Clock, TrendingUp, Monitor, RefreshCw, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import PageShell from "@/components/page-shell";
 
 interface ActiveUser {
   id: string;
@@ -131,25 +133,16 @@ export default function TeamPage() {
 
   return (
     <AdminGuard>
-      <div className="animate-page-enter space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Team Activity</h1>
-            <p className="text-sm mt-1 text-muted-foreground">
-              Live team status & shift tracking
-            </p>
-          </div>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition hover:bg-black/5 dark:hover:bg-white/5 border border-border"
-          >
+      <PageShell
+        title="Team Activity"
+        subtitle="Live team status & shift tracking"
+        actions={
+          <Button variant="outline" onClick={handleRefresh} disabled={refreshing} className="h-10">
             {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             Refresh
-          </button>
-        </div>
-
+          </Button>
+        }
+      >
         {/* Summary Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
@@ -240,44 +233,27 @@ export default function TeamPage() {
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : todayShifts.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">User</th>
-                    <th className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Clock In</th>
-                    <th className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Clock Out</th>
-                    <th className="text-right px-5 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Duration</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {todayShifts.map((shift) => (
-                    <tr key={shift.id}>
-                      <td className="px-5 py-3">
-                        <div className="font-medium">{shift.userName || "Unknown"}</div>
-                        {shift.userEmail && (
-                          <div className="text-xs mt-0.5 text-muted-foreground">{shift.userEmail}</div>
-                        )}
-                      </td>
-                      <td className="px-5 py-3 text-muted-foreground">{formatTime(shift.clockIn)}</td>
-                      <td className="px-5 py-3">
-                        {shift.clockOut ? (
-                          <span className="text-muted-foreground">{formatTime(shift.clockOut)}</span>
-                        ) : (
-                          <span className="text-green-500 font-medium">Still active</span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3 text-right font-semibold">
-                        {shift.durationMinutes ? (
-                          <span className="text-primary">{formatDuration(shift.durationMinutes)}</span>
-                        ) : (
-                          <span className="text-green-500">Active</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div>
+              {todayShifts.map((shift) => (
+                <div key={shift.id} className="flex items-center gap-4 px-5 py-3 border-b border-border/60 last:border-0">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate">{shift.userName || "Unknown"}</div>
+                    {shift.userEmail && <div className="text-xs text-muted-foreground truncate">{shift.userEmail}</div>}
+                  </div>
+                  <div className="text-sm text-muted-foreground shrink-0 hidden sm:block whitespace-nowrap">
+                    {formatTime(shift.clockIn)}
+                    {" → "}
+                    {shift.clockOut ? formatTime(shift.clockOut) : <span className="text-green-500 font-medium">now</span>}
+                  </div>
+                  <div className="text-sm font-semibold shrink-0 w-16 text-right">
+                    {shift.durationMinutes ? (
+                      <span className="text-primary">{formatDuration(shift.durationMinutes)}</span>
+                    ) : (
+                      <span className="text-green-500">Active</span>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <div className="flex flex-col items-center py-10">
@@ -286,7 +262,7 @@ export default function TeamPage() {
             </div>
           )}
         </CardContent></Card>
-      </div>
+      </PageShell>
     </AdminGuard>
   );
 }

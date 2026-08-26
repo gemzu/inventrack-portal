@@ -7,13 +7,14 @@ import { ArrowLeft, Boxes, CheckCircle2, Eye, EyeOff, KeyRound, Loader2, MailWar
 import { supabase } from "@/lib/supabase";
 import { useTheme } from "@/context/ThemeContext";
 
-type ResolveState = "checking" | "ready" | "invalid" | "success";
+type ResolveState = "checking" | "ready" | "invalid" | "needlink" | "success";
 
 function readAuthParams(searchParams: URLSearchParams, hashParams: URLSearchParams) {
   return {
     accessToken: hashParams.get("access_token") || searchParams.get("access_token"),
     refreshToken: hashParams.get("refresh_token") || searchParams.get("refresh_token"),
     type: hashParams.get("type") || searchParams.get("type"),
+    tokenHash: searchParams.get("token_hash") || hashParams.get("token_hash"),
     code: searchParams.get("code") || hashParams.get("code"),
     errorDescription:
       hashParams.get("error_description") ||
@@ -77,6 +78,21 @@ function ResetPageContent() {
       }
 
       try {
+        // Preferred: token_hash + verifyOtp. The single-use check runs here in
+        // client JS, so email link-scanners (Gmail/Outlook/corporate) can't
+        // pre-consume it, and it needs no PKCE verifier so it works across
+        // devices (request on desktop, open on phone).
+        if (params.tokenHash) {
+          const { error } = await supabase.auth.verifyOtp({
+            type: "recovery",
+            token_hash: params.tokenHash,
+          });
+          if (error) throw error;
+          scrubRecoveryUrl();
+          if (!cancelled) setState("ready");
+          return;
+        }
+
         if (params.code) {
           const { error } = await supabase.auth.exchangeCodeForSession(params.code);
           if (error) throw error;
@@ -104,8 +120,10 @@ function ResetPageContent() {
         }
 
         if (!cancelled) {
-          setError("This password reset link is invalid or has expired.");
-          setState("invalid");
+          // No token in the URL at all (someone opened /reset directly, not via
+          // an email link). Show a calm "request a link" state, not a scary
+          // "expired" error.
+          setState("needlink");
         }
       } catch (err) {
         if (!cancelled) {
@@ -282,7 +300,7 @@ function ResetPageContent() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full rounded-lg bg-foreground py-3 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full rounded-lg bg-brand-gradient py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {submitting ? (
                     <span className="flex items-center justify-center gap-2">
@@ -297,16 +315,30 @@ function ResetPageContent() {
             </>
           )}
 
-          {state === "invalid" && (
+          {(state === "invalid" || state === "needlink") && (
             <div className="space-y-5">
               <div className="text-center">
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10">
-                  <MailWarning className="h-6 w-6 text-amber-500" />
-                </div>
-                <h1 className="text-2xl font-bold">This reset link is no longer valid</h1>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {error || "Request a new password reset email and try again."}
-                </p>
+                {state === "needlink" ? (
+                  <>
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-500/10">
+                      <KeyRound className="h-6 w-6 text-indigo-500" />
+                    </div>
+                    <h1 className="text-2xl font-bold">Reset your password</h1>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Enter your email and we&apos;ll send you a secure reset link.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10">
+                      <MailWarning className="h-6 w-6 text-amber-500" />
+                    </div>
+                    <h1 className="text-2xl font-bold">This reset link is no longer valid</h1>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {error || "Request a new password reset email and try again."}
+                    </p>
+                  </>
+                )}
               </div>
 
               <div className="space-y-3">
@@ -334,7 +366,7 @@ function ResetPageContent() {
                   type="button"
                   onClick={handleResend}
                   disabled={resending}
-                  className="w-full rounded-lg bg-foreground py-3 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full rounded-lg bg-brand-gradient py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {resending ? (
                     <span className="flex items-center justify-center gap-2">
@@ -363,7 +395,7 @@ function ResetPageContent() {
               <button
                 type="button"
                 onClick={() => router.push("/login")}
-                className="w-full rounded-lg bg-foreground py-3 text-sm font-medium text-background transition-opacity hover:opacity-90"
+                className="w-full rounded-lg bg-brand-gradient py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
               >
                 Go to login
               </button>

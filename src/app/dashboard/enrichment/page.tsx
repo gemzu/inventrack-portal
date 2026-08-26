@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import PageShell from "@/components/page-shell";
 import { useToast } from "@/components/Toast";
 import Link from "next/link";
 
@@ -176,24 +177,15 @@ export default function EnrichmentDashboardPage() {
   }
 
   return (
-    <div className="animate-page-enter space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-primary" />
-            AI Enrichment
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Manage AI-enriched product data and verification queue
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={loadData} variant="outline" size="sm">
-            <RefreshCw className="w-4 h-4 mr-2" /> Refresh
-          </Button>
-        </div>
-      </div>
-
+    <PageShell
+      title={<span className="flex items-center gap-2"><Sparkles className="w-6 h-6 text-primary" /> AI Enrichment</span>}
+      subtitle="Manage AI-enriched product data and verification queue"
+      actions={
+        <Button onClick={loadData} variant="outline" size="sm">
+          <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+        </Button>
+      }
+    >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
@@ -354,6 +346,6 @@ export default function EnrichmentDashboardPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageShell>
   );
 }

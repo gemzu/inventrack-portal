@@ -12,74 +12,69 @@ import { normalizeOrderStatus } from "@/lib/orderStatus";
 import { SkeletonCard, SkeletonChart } from "@/components/Skeleton";
 import Link from "next/link";
 import PageShell from "@/components/page-shell";
+import { Stagger, StaggerItem, MotionCard, AnimatedNumber, Reveal } from "@/components/motion/primitives";
+import InventoryDonut from "@/components/dashboard/InventoryDonut";
+import { PieChart as PieIcon } from "lucide-react";
 
 const STATUS_STYLES: Record<string, string> = {
-  pending_approval: "bg-amber-50 text-amber-700 border-amber-200",
-  confirmed: "bg-gray-50 text-gray-700 border-gray-200",
-  processing: "bg-gray-50 text-gray-700 border-gray-200",
-  shipped: "bg-purple-50 text-purple-700 border-purple-200",
-  delivered: "bg-green-50 text-green-700 border-green-200",
-  cancelled: "bg-gray-50 text-gray-400 border-gray-200",
-};
-
-const STATUS_STYLES_DARK: Record<string, string> = {
-  pending_approval: "bg-amber-950/50 text-amber-400 border-amber-800",
-  confirmed: "bg-gray-800/50 text-gray-400 border-gray-700",
-  processing: "bg-gray-800/50 text-gray-400 border-gray-700",
-  shipped: "bg-purple-950/50 text-purple-400 border-purple-800",
-  delivered: "bg-green-950/50 text-green-400 border-green-800",
-  cancelled: "bg-gray-800/50 text-gray-500 border-gray-700",
+  pending_approval: "bg-amber-500/12 text-amber-600 border-amber-500/25 dark:text-amber-400",
+  confirmed: "bg-primary/12 text-primary border-primary/25",
+  processing: "bg-primary/12 text-primary border-primary/25",
+  shipped: "bg-violet-500/12 text-violet-600 border-violet-500/25 dark:text-violet-400",
+  delivered: "bg-emerald-500/12 text-emerald-600 border-emerald-500/25 dark:text-emerald-400",
+  cancelled: "bg-muted text-muted-foreground border-border",
 };
 
 interface StatCardProps {
   label: string;
-  value: string | number;
+  value: number;
   icon: React.ElementType;
-  trend?: string;
-  delay?: number;
+  suffix?: string;
+  accent?: boolean;
+  href?: string;
 }
 
-function StatCard({ label, value, icon: Icon, trend, delay = 0 }: StatCardProps) {
-  return (
-    <div 
-      className="card-luxury p-6 group"
-      style={{ animationDelay: `${delay}ms` }}
-    >
+function StatCard({ label, value, icon: Icon, suffix, accent, href }: StatCardProps) {
+  const inner = (
+    <MotionCard className="p-5 group overflow-hidden h-full" glow={accent}>
+      {accent && (
+        <div className="absolute -right-8 -top-8 w-28 h-28 rounded-full bg-brand-gradient opacity-[0.14] blur-2xl pointer-events-none" />
+      )}
       <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">{label}</p>
-          <p className="text-3xl font-semibold mt-2 tracking-tight">{value}</p>
-          {trend && (
-            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-              <TrendingUp className="w-3 h-3" />
-              {trend}
-            </p>
-          )}
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</p>
+          <p className="text-3xl font-display font-bold mt-2 tracking-tight">
+            <AnimatedNumber value={value} />
+            {suffix}
+          </p>
         </div>
-        <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-          <Icon className="w-5 h-5 text-foreground" />
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3 ${
+          accent ? "bg-brand-gradient text-white shadow-[0_6px_16px_-6px_var(--brand-1)]" : "bg-secondary text-foreground"
+        }`}>
+          <Icon className="w-5 h-5" />
         </div>
       </div>
-    </div>
+    </MotionCard>
   );
+  return href ? <Link href={href} className="block h-full">{inner}</Link> : inner;
 }
 
-function QuickAction({ icon: Icon, title, description, href, delay = 0 }: { icon: React.ElementType; title: string; description: string; href: string; delay?: number }) {
+function QuickAction({ icon: Icon, title, description, href }: { icon: React.ElementType; title: string; description: string; href: string }) {
   return (
-    <Link 
-      href={href} 
-      className="card-luxury p-5 flex items-center gap-4 group"
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
-        <Icon className="w-5 h-5 text-foreground" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-medium">{title}</p>
-        <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
-      </div>
-      <ArrowRight className="w-5 h-5 text-muted-foreground opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
-    </Link>
+    <StaggerItem>
+      <Link href={href} className="block">
+        <MotionCard className="p-5 flex items-center gap-4 group">
+          <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center shrink-0 transition-all duration-300 group-hover:bg-brand-gradient group-hover:text-white group-hover:scale-110">
+            <Icon className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold">{title}</p>
+            <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
+          </div>
+          <ArrowRight className="w-5 h-5 text-muted-foreground opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
+        </MotionCard>
+      </Link>
+    </StaggerItem>
   );
 }
 
@@ -125,10 +120,14 @@ export default function DashboardPage() {
       try {
         const { data: invData } = await supabase.from("inventory").select("*").eq("org_id", orgId);
         const items = invData || [];
-        const available = items.filter((d) => d.status === "available").length;
-        const reserved = items.filter((d) => d.status === "reserved").length;
-        const sold = items.filter((d) => d.status === "sold").length;
         const lowStock = items.filter((d) => (d.quantity || 0) <= 2 && d.status === "available").length;
+
+        const countBy = (s: string) => items.filter((d) => d.status === s).length;
+        setStatusData([
+          { name: "Available", value: countBy("available") },
+          { name: "Reserved", value: countBy("reserved") },
+          { name: "Sold", value: countBy("sold") },
+        ].filter((d) => d.value > 0));
 
         const { count: ordCount } = await supabase.from("orders").select("*", { count: "exact", head: true }).eq("org_id", orgId);
         const { data: ordMetrics } = await supabase.from("orders").select("status").eq("org_id", orgId);
@@ -157,12 +156,6 @@ export default function DashboardPage() {
           pendingApprovals: pendingApprovals || 0,
           fulfillmentRate,
         });
-
-        setStatusData([
-          { name: "Available", value: available },
-          { name: "Reserved", value: reserved },
-          { name: "Sold", value: sold },
-        ].filter((d) => d.value > 0));
 
         try {
           const { data: recentOrdData } = await supabase
@@ -221,13 +214,13 @@ export default function DashboardPage() {
     load();
   }, [orgId, facilities]);
 
-  const kpis = [
-    { label: "Total Items", value: stats.items, icon: Package },
-    { label: "Low Stock", value: stats.lowStock, icon: AlertTriangle },
-    { label: "Orders", value: stats.orders, icon: ShoppingCart },
-    { label: "Users", value: stats.users, icon: UsersIcon },
-    { label: "Pending", value: stats.pendingApprovals, icon: Clock },
-    { label: "Fulfillment", value: `${stats.fulfillmentRate}%`, icon: TrendingUp },
+  const kpis: StatCardProps[] = [
+    { label: "Total Items", value: stats.items, icon: Package, accent: true, href: "/dashboard/inventory" },
+    { label: "Low Stock", value: stats.lowStock, icon: AlertTriangle, href: "/dashboard/inventory" },
+    { label: "Orders", value: stats.orders, icon: ShoppingCart, href: "/dashboard/orders" },
+    { label: "Users", value: stats.users, icon: UsersIcon, href: "/dashboard/users" },
+    { label: "Pending", value: stats.pendingApprovals, icon: Clock, href: "/dashboard/approvals" },
+    { label: "Fulfillment", value: stats.fulfillmentRate, suffix: "%", icon: TrendingUp, href: "/dashboard/reports" },
   ];
 
   if (loading) {
@@ -253,16 +246,16 @@ export default function DashboardPage() {
       <PageShell title="Dashboard">
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center max-w-md">
-            <div className="w-20 h-20 rounded-2xl bg-secondary mx-auto mb-6 flex items-center justify-center">
+            <div className="w-20 h-20 rounded-2xl bg-brand-gradient mx-auto mb-6 flex items-center justify-center text-white shadow-glow">
               <Package className="w-8 h-8" />
             </div>
-            <h2 className="text-xl font-semibold">Welcome to Invems</h2>
+            <h2 className="text-xl font-bold">Welcome to Invems</h2>
             <p className="text-muted-foreground mt-2">
               You&apos;re not part of an organization yet.
             </p>
             {userRole === "admin" ? (
               <Link href="/setup/organization">
-                <button className="mt-6 px-6 py-3 rounded-lg bg-foreground text-background font-medium hover:opacity-90 transition-opacity">
+                <button className="mt-6 px-6 py-3 rounded-xl bg-brand-gradient text-white font-semibold hover:brightness-110 transition shadow-[0_8px_24px_-8px_var(--brand-1)]">
                   Create Organization
                 </button>
               </Link>
@@ -282,157 +275,180 @@ export default function DashboardPage() {
       <div className="space-y-8">
         {/* Announcement */}
         {announcement && (
-          <div className={`card-luxury p-4 flex items-center gap-4 ${announcement.type === "warning" ? "border-amber-300" : ""}`}>
-            <AlertTriangle className={`w-5 h-5 shrink-0 ${announcement.type === "warning" ? "text-amber-500" : "text-muted-foreground"}`} />
-            <div className="flex-1 min-w-0">
-              <p className="font-medium">{announcement.title}</p>
-              <p className="text-sm text-muted-foreground truncate">{announcement.message}</p>
-            </div>
-            <button onClick={dismissAnnouncement} className="text-muted-foreground hover:text-foreground">
-              <span className="sr-only">Dismiss</span>
-              &times;
-            </button>
-          </div>
+          <Reveal>
+            <MotionCard interactive={false} className={`p-4 flex items-center gap-4 ${announcement.type === "warning" ? "border-amber-400/40" : ""}`}>
+              <AlertTriangle className={`w-5 h-5 shrink-0 ${announcement.type === "warning" ? "text-amber-500" : "text-primary"}`} />
+              <div className="flex-1 min-w-0">
+                <p className="font-medium">{announcement.title}</p>
+                <p className="text-sm text-muted-foreground truncate">{announcement.message}</p>
+              </div>
+              <button onClick={dismissAnnouncement} className="text-muted-foreground hover:text-foreground text-lg leading-none">
+                <span className="sr-only">Dismiss</span>
+                &times;
+              </button>
+            </MotionCard>
+          </Reveal>
         )}
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
-          {kpis.map((kpi, idx) => (
-            <StatCard key={kpi.label} {...kpi} delay={idx * 60} />
+        <Stagger className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          {kpis.map((kpi) => (
+            <StaggerItem key={kpi.label}>
+              <StatCard {...kpi} />
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
 
         {/* Quick Actions */}
-        <div className="grid sm:grid-cols-3 gap-4 stagger-children">
-          <QuickAction icon={Upload} title="Import Inventory" description="Upload CSV to add items" href="/dashboard/inventory" delay={360} />
-          <QuickAction icon={UserPlus} title="Invite Team" description="Add workers or buyers" href="/dashboard/users" delay={420} />
-          <QuickAction icon={ShoppingCart} title="View Orders" description="Manage incoming orders" href="/dashboard/orders" delay={480} />
-        </div>
+        <Stagger className="grid sm:grid-cols-3 gap-4" delay={0.15}>
+          <QuickAction icon={Upload} title="Import Inventory" description="Upload CSV to add items" href="/dashboard/inventory" />
+          <QuickAction icon={UserPlus} title="Invite Team" description="Add workers or buyers" href="/dashboard/users" />
+          <QuickAction icon={ShoppingCart} title="View Orders" description="Manage incoming orders" href="/dashboard/orders" />
+        </Stagger>
 
         {/* Team Overview */}
-        <div className="card-luxury p-6 scale-in" style={{ animationDelay: "540ms" }}>
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <UsersIcon className="w-5 h-5" />
-              <h3 className="font-semibold">Team Overview</h3>
+        <Reveal delay={0.05}>
+          <MotionCard interactive={false} className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <UsersIcon className="w-5 h-5 text-primary" />
+                <h3 className="font-semibold">Team Overview</h3>
+              </div>
+              <Link href="/dashboard/users" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors">
+                Manage <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
-            <Link href="/dashboard/users" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
-              Manage <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-          <div className="flex items-center gap-8 flex-wrap">
-            <div>
-              <p className="text-3xl font-semibold">{stats.users}</p>
-              <p className="text-sm text-muted-foreground">Total Members</p>
+            <div className="flex items-center gap-8 flex-wrap">
+              <div>
+                <p className="text-3xl font-display font-bold"><AnimatedNumber value={stats.users} /></p>
+                <p className="text-sm text-muted-foreground">Total Members</p>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-secondary">{teamBreakdown.admins} admin{teamBreakdown.admins !== 1 ? "s" : ""}</span>
+                <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-secondary">{teamBreakdown.workers} worker{teamBreakdown.workers !== 1 ? "s" : ""}</span>
+                <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-secondary">{teamBreakdown.buyers} buyer{teamBreakdown.buyers !== 1 ? "s" : ""}</span>
+              </div>
+              <div className="flex items-center gap-2 ml-auto">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 pulse-dot" />
+                <span className="text-sm text-muted-foreground">{teamBreakdown.active} active</span>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-secondary">{teamBreakdown.admins} admin{teamBreakdown.admins !== 1 ? "s" : ""}</span>
-              <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-secondary">{teamBreakdown.workers} worker{teamBreakdown.workers !== 1 ? "s" : ""}</span>
-              <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-secondary">{teamBreakdown.buyers} buyer{teamBreakdown.buyers !== 1 ? "s" : ""}</span>
+          </MotionCard>
+        </Reveal>
+
+        {/* Inventory status breakdown */}
+        <Reveal delay={0.05}>
+          <MotionCard interactive={false} className="p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <PieIcon className="w-5 h-5 text-primary" />
+              <h3 className="font-semibold">Inventory Status</h3>
             </div>
-            <div className="flex items-center gap-2 ml-auto">
-              <span className="w-2 h-2 rounded-full bg-green-500 pulse-dot" />
-              <span className="text-sm text-muted-foreground">{teamBreakdown.active} active</span>
-            </div>
-          </div>
-        </div>
+            <InventoryDonut data={statusData} />
+          </MotionCard>
+        </Reveal>
 
         {/* Facilities */}
         {facilities && facilities.length > 0 && (
-          <div className="scale-in" style={{ animationDelay: "600ms" }}>
+          <Reveal delay={0.05}>
             <div className="flex items-center gap-2 mb-4">
-              <MapPin className="w-5 h-5" />
+              <MapPin className="w-5 h-5 text-primary" />
               <h3 className="font-semibold">Facilities</h3>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <Stagger className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {facilities.map((fac) => (
-                <div key={fac.id} className="card-luxury p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
-                      <MapPin className="w-4 h-4" />
+                <StaggerItem key={fac.id}>
+                  <MotionCard className="p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
+                        <MapPin className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{fac.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{fac.state}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="font-medium truncate">{fac.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{fac.state}</p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {facilityItems[fac.id] ?? 0} items
-                  </p>
-                </div>
+                    <p className="text-sm text-muted-foreground">
+                      {facilityItems[fac.id] ?? 0} items
+                    </p>
+                  </MotionCard>
+                </StaggerItem>
               ))}
-            </div>
-          </div>
+            </Stagger>
+          </Reveal>
         )}
 
         {/* Recent Orders & Activity */}
-        <div className="grid lg:grid-cols-2 gap-6 stagger-children">
-          <div className="card-luxury p-6 scale-in" style={{ animationDelay: "660ms" }}>
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <ShoppingCart className="w-5 h-5" />
-                <h3 className="font-semibold">Recent Orders</h3>
+        <div className="grid lg:grid-cols-2 gap-6">
+          <Reveal delay={0.05}>
+            <MotionCard interactive={false} className="p-6 h-full">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <ShoppingCart className="w-5 h-5 text-primary" />
+                  <h3 className="font-semibold">Recent Orders</h3>
+                </div>
+                <Link href="/dashboard/orders" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors">
+                  View All <ArrowRight className="w-4 h-4" />
+                </Link>
               </div>
-              <Link href="/dashboard/orders" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
-                View All <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-            {recentOrders.length > 0 ? (
-              <div className="space-y-4">
-                {recentOrders.map((order) => (
-                  <div key={order.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-                        <ShoppingCart className="w-4 h-4" />
+              {recentOrders.length > 0 ? (
+                <div className="space-y-1">
+                  {recentOrders.map((order) => (
+                    <div key={order.id} className="flex items-center justify-between py-2.5 border-b border-border/50 last:border-0">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
+                          <ShoppingCart className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{order.buyerName}</p>
+                          <p className="text-xs text-muted-foreground">{order.itemCount} item{order.itemCount !== 1 ? "s" : ""}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium">{order.buyerName}</p>
-                        <p className="text-xs text-muted-foreground">{order.itemCount} item{order.itemCount !== 1 ? "s" : ""}</p>
+                      <div className="flex items-center gap-3">
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium capitalize border ${STATUS_STYLES[order.status] || STATUS_STYLES.pending_approval}`}>
+                          {order.status.replace(/_/g, " ")}
+                        </span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap hidden sm:inline">{formatDateTime(order.createdAt as string)}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium capitalize border ${STATUS_STYLES[order.status] || STATUS_STYLES.pending_approval} dark:${STATUS_STYLES_DARK[order.status] || STATUS_STYLES_DARK.pending_approval}`}>
-                        {order.status.replace(/_/g, " ")}
-                      </span>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">{formatDateTime(order.createdAt as string)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-sm">No orders yet</p>
-            )}
-          </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-sm">No orders yet</p>
+              )}
+            </MotionCard>
+          </Reveal>
 
-          <div className="card-luxury p-6 scale-in" style={{ animationDelay: "720ms" }}>
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <Activity className="w-5 h-5" />
-                <h3 className="font-semibold">Recent Activity</h3>
+          <Reveal delay={0.1}>
+            <MotionCard interactive={false} className="p-6 h-full">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <Activity className="w-5 h-5 text-primary" />
+                  <h3 className="font-semibold">Recent Activity</h3>
+                </div>
+                <Link href="/dashboard/activity" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors">
+                  View All <ArrowRight className="w-4 h-4" />
+                </Link>
               </div>
-              <Link href="/dashboard/activity" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
-                View All <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-            {recentLogs.length > 0 ? (
-              <div className="space-y-4">
-                {recentLogs.map((log) => (
-                  <div key={log.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                    <div>
-                      <span className="text-sm font-mono">{log.barcode}</span>
-                      <span className="text-xs ml-2 px-2 py-0.5 rounded-full bg-secondary">{log.action}</span>
+              {recentLogs.length > 0 ? (
+                <div className="space-y-1">
+                  {recentLogs.map((log) => (
+                    <div key={log.id} className="flex items-center justify-between py-2.5 border-b border-border/50 last:border-0">
+                      <div>
+                        <span className="text-sm mono">{log.barcode}</span>
+                        <span className="text-xs ml-2 px-2 py-0.5 rounded-full bg-secondary">{log.action}</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">{log.scannedBy}</p>
+                        <p className="text-xs text-muted-foreground">{formatDateTime(log.createdAt as string)}</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">{log.scannedBy}</p>
-                      <p className="text-xs text-muted-foreground">{formatDateTime(log.createdAt as string)}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-sm">No recent activity</p>
-            )}
-          </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-sm">No recent activity</p>
+              )}
+            </MotionCard>
+          </Reveal>
         </div>
       </div>
     </PageShell>

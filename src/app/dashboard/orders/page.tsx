@@ -9,6 +9,8 @@ import { normalizeOrderStatus, orderStatusLabel, ORDER_STATUS_FLOW, ORDER_STATUS
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import PageShell from "@/components/page-shell";
 
 interface OrderItem {
   modelId: string;
@@ -108,14 +110,9 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="animate-page-enter space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Orders</h1>
-        <p className="text-sm text-muted-foreground">{filtered.length} orders</p>
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
+    <PageShell title="Orders" subtitle={`${filtered.length} order${filtered.length !== 1 ? "s" : ""}`}>
+      <div className="flex flex-wrap gap-3">
+        <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             value={search}
@@ -140,64 +137,49 @@ export default function OrdersPage() {
       </div>
 
       <Card className="overflow-hidden"><CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Buyer</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden md:table-cell text-muted-foreground">Company</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Items</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Status</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden sm:table-cell text-muted-foreground">Date</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((order) => (
-                <tr key={order.id} className="hover:bg-black/3 dark:hover:bg-white/3 transition border-b border-border">
-                  <td className="px-4 py-3">
-                    <div className="font-medium">{order.buyerName}</div>
-                    <div className="text-xs text-muted-foreground">{order.buyerEmail}</div>
-                  </td>
-                  <td className="px-4 py-3 hidden md:table-cell text-xs">{order.buyerCompany || "-"}</td>
-                  <td className="px-4 py-3 font-medium">{order.totalQty}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusColor(order.status)}`}>
-                      {orderStatusLabel(order.status)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 hidden sm:table-cell text-xs text-muted-foreground">
-                    {formatDateTime(order.createdAt as string)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => setSelectedOrder(order)} className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition">
-                        <Eye className="w-4 h-4" />
+        {filtered.length === 0 ? (
+          <EmptyState icon={ShoppingCart} title="No orders found" description="Orders placed by buyers will appear here for review and approval." />
+        ) : (
+          filtered.map((order) => {
+            const pending = normalizeOrderStatus(order.status) === ORDER_STATUS.PENDING_APPROVAL;
+            return (
+              <div key={order.id} className="group flex items-center gap-4 px-4 py-3 border-b border-border/60 last:border-0 hover:bg-primary/[0.05] transition-colors">
+                <button onClick={() => setSelectedOrder(order)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+                  <div className="w-9 h-9 rounded-full bg-brand-gradient flex items-center justify-center text-white text-xs font-bold shrink-0">
+                    {(order.buyerName || "?").charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-semibold truncate">{order.buyerName || "Unknown buyer"}</div>
+                    <div className="text-xs text-muted-foreground truncate">{order.buyerCompany || order.buyerEmail}</div>
+                  </div>
+                </button>
+                <div className="w-16 shrink-0 text-sm text-muted-foreground hidden sm:block">{order.totalQty} item{order.totalQty !== 1 ? "s" : ""}</div>
+                <div className="shrink-0 hidden md:block">
+                  <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border ${statusColor(order.status)}`}>
+                    {orderStatusLabel(order.status)}
+                  </span>
+                </div>
+                <div className="w-32 shrink-0 text-xs text-muted-foreground hidden lg:block">{formatDateTime(order.createdAt as string)}</div>
+                {/* Actions — always visible, pinned right */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {pending && (
+                    <>
+                      <button onClick={() => updateOrderStatus(order, ORDER_STATUS.CONFIRMED)} title="Approve" className="w-9 h-9 rounded-lg flex items-center justify-center bg-success/10 text-success hover:bg-success hover:text-white transition-colors">
+                        <Check className="w-4 h-4" />
                       </button>
-                      {normalizeOrderStatus(order.status) === ORDER_STATUS.PENDING_APPROVAL && (
-                        <>
-                          <button onClick={() => updateOrderStatus(order, ORDER_STATUS.CONFIRMED)} className="p-1.5 rounded-lg hover:bg-success/10 text-success transition">
-                            <Check className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => updateOrderStatus(order, ORDER_STATUS.CANCELLED)} className="p-1.5 rounded-lg hover:bg-danger/10 text-danger transition">
-                            <X className="w-4 h-4" />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={6}>
-                    <EmptyState icon={ShoppingCart} title="No orders found" description="Orders placed by buyers will appear here for review and approval." />
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                      <button onClick={() => updateOrderStatus(order, ORDER_STATUS.CANCELLED)} title="Reject" className="w-9 h-9 rounded-lg flex items-center justify-center bg-destructive/10 text-destructive hover:bg-destructive hover:text-white transition-colors">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+                  <button onClick={() => setSelectedOrder(order)} title="View" className="w-9 h-9 rounded-lg flex items-center justify-center bg-secondary text-muted-foreground group-hover:bg-brand-gradient group-hover:text-white transition-colors">
+                    <Eye className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
       </CardContent></Card>
 
       {/* Order Detail Modal */}
@@ -254,15 +236,12 @@ export default function OrdersPage() {
                 </button>
               )}
             </div>
-            <button
-              onClick={() => setSelectedOrder(null)}
-              className="mt-4 w-full py-2 rounded-xl border text-sm font-medium hover:border-primary transition"
-            >
+            <Button variant="outline" onClick={() => setSelectedOrder(null)} className="mt-4 w-full h-10">
               Close
-            </button>
+            </Button>
           </CardContent></Card>
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

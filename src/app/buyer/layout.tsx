@@ -3,65 +3,79 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ShoppingBag, ClipboardList, Heart, MessageCircle, User, LogOut, Sun, Moon, Menu, Boxes } from "lucide-react";
+import { Loader2, ShoppingBag, ClipboardList, Heart, MessageCircle, User, LogOut, Sun, Moon, ShoppingCart } from "lucide-react";
 import { getUnreadNotificationCount } from "@/lib/dataService";
+import { spring } from "@/lib/motion";
 
 const links = [
   { href: "/buyer/catalog", label: "Catalog", icon: ShoppingBag },
+  { href: "/buyer/cart", label: "Cart", icon: ShoppingCart },
   { href: "/buyer/orders", label: "My Orders", icon: ClipboardList },
   { href: "/buyer/favorites", label: "Favorites", icon: Heart },
   { href: "/buyer/messages", label: "Messages", icon: MessageCircle },
   { href: "/buyer/profile", label: "Profile", icon: User },
 ];
 
-function Sidebar({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
-  const { toggleTheme, theme } = useTheme();
-  
+function NavItem({
+  href, label, icon: Icon, active, badge, onNavigate, layoutId,
+}: {
+  href: string; label: string; icon: typeof ShoppingBag; active: boolean; badge?: number; onNavigate?: () => void; layoutId: string;
+}) {
   return (
-    <div className="flex flex-col h-full bg-card border-r border-border">
-      {/* Logo */}
-      <div className="h-16 flex items-center px-5 shrink-0 border-b border-border">
-        <Link href="/buyer/catalog" className="flex items-center gap-3" onClick={onNavigate}>
-          <div className="w-9 h-9 rounded-xl bg-foreground flex items-center justify-center">
-            <Boxes className="w-5 h-5 text-background" />
+    <Link
+      href={href}
+      onClick={onNavigate}
+      className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
+        active ? "text-white font-semibold" : "text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {active && (
+        <motion.span layoutId={layoutId} transition={spring} className="absolute inset-0 rounded-xl bg-brand-gradient shadow-[0_8px_20px_-8px_var(--brand-1)]" />
+      )}
+      {!active && <span className="absolute inset-0 rounded-xl group-hover:bg-secondary transition-colors" />}
+      <span className="relative"><Icon className="w-[18px] h-[18px] transition-transform group-hover:scale-110" /></span>
+      <span className="relative flex-1">{label}</span>
+      {badge ? <span className="relative text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-destructive text-white">{badge}</span> : null}
+    </Link>
+  );
+}
+
+function Sidebar({ pathname, onNavigate, unread, cartCount }: { pathname: string; onNavigate?: () => void; unread: number; cartCount: number }) {
+  const { toggleTheme, theme } = useTheme();
+  return (
+    <div className="flex flex-col h-full bg-sidebar border-r border-sidebar-border">
+      <div className="h-16 flex items-center px-5 shrink-0">
+        <Link href="/buyer/catalog" className="flex items-center gap-3 group" onClick={onNavigate}>
+          <div className="w-9 h-9 rounded-xl bg-brand-gradient flex items-center justify-center shadow-[0_6px_16px_-6px_var(--brand-1)]">
+            <span className="font-display font-extrabold text-white text-lg leading-none">I</span>
           </div>
-          <span className="font-bold text-lg tracking-tight">Invems</span>
+          <span className="font-display font-bold text-lg tracking-tight">Invems</span>
         </Link>
       </div>
-
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1">
-        {links.map((l) => {
-          const active = pathname === l.href;
-          return (
-            <Link
-              key={l.href}
-              href={l.href}
-              onClick={onNavigate}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${
-                active
-                  ? "bg-foreground text-background font-medium"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-              }`}
-            >
-              <l.icon className="w-4 h-4" />
-              {l.label}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
+        {links.map((l) => (
+          <NavItem
+            key={l.href}
+            {...l}
+            active={pathname === l.href}
+            badge={l.href === "/buyer/messages" ? unread : l.href === "/buyer/cart" ? cartCount : undefined}
+            onNavigate={onNavigate}
+            layoutId="buyer-nav-active"
+          />
+        ))}
       </nav>
-
-      {/* Theme toggle at bottom */}
-      <div className="p-4 border-t border-border">
+      <div className="p-3 border-t border-sidebar-border">
         <button
           onClick={toggleTheme}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary w-full transition-all"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-secondary w-full transition-colors"
         >
-          {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          {theme === "dark" ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
           {theme === "dark" ? "Light Mode" : "Dark Mode"}
         </button>
       </div>
@@ -69,21 +83,21 @@ function Sidebar({ pathname, onNavigate }: { pathname: string; onNavigate?: () =
   );
 }
 
-function MobileNav({ pathname }: { pathname: string }) {
+function MobileNav({ pathname, unread, cartCount }: { pathname: string; unread: number; cartCount: number }) {
+  // Compact bottom bar — 5 primary destinations.
+  const mobileLinks = links.filter((l) => l.href !== "/buyer/profile");
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border md:hidden z-50">
-      <div className="flex items-center justify-around py-2">
-        {links.map((l) => {
+    <div className="fixed bottom-0 left-0 right-0 glass border-t border-border md:hidden z-50">
+      <div className="flex items-center justify-around py-1.5">
+        {mobileLinks.map((l) => {
           const active = pathname === l.href;
+          const badge = l.href === "/buyer/messages" ? unread : l.href === "/buyer/cart" ? cartCount : 0;
           return (
-            <Link
-              key={l.href}
-              href={l.href}
-              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs ${
-                active ? "text-primary" : "text-muted-foreground"
-              }`}
-            >
-              <l.icon className="w-5 h-5" />
+            <Link key={l.href} href={l.href} className={`relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${active ? "text-primary" : "text-muted-foreground"}`}>
+              <div className="relative">
+                <l.icon className="w-5 h-5" />
+                {badge ? <span className="absolute -top-1.5 -right-2 text-[8px] font-bold px-1 py-px rounded-full bg-destructive text-white min-w-[14px] text-center">{badge}</span> : null}
+              </div>
               {l.label}
             </Link>
           );
@@ -96,10 +110,11 @@ function MobileNav({ pathname }: { pathname: string }) {
 export default function BuyerLayout({ children }: { children: React.ReactNode }) {
   const { user, userRole, userActive, loading, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { items: cartItems } = useCart();
   const pathname = usePathname();
   const router = useRouter();
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const cartCount = cartItems?.length || 0;
 
   useEffect(() => {
     if (!loading && !user) router.push("/login");
@@ -140,44 +155,39 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Desktop sidebar */}
       <aside className="hidden md:block w-64 fixed inset-y-0 left-0 z-40">
-        <Sidebar pathname={pathname} />
+        <Sidebar pathname={pathname} unread={unreadCount} cartCount={cartCount} />
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 md:pl-64">
+      <main className="flex-1 md:pl-64 w-full min-w-0">
         {/* Mobile header */}
-        <header className="md:hidden fixed top-0 left-0 right-0 h-14 bg-card/80 backdrop-blur-sm border-b border-border z-30 flex items-center justify-between px-4">
+        <header className="md:hidden fixed top-0 left-0 right-0 h-14 glass border-b border-border z-30 flex items-center justify-between px-4">
           <Link href="/buyer/catalog" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-foreground flex items-center justify-center">
-              <Boxes className="w-4 h-4 text-background" />
+            <div className="w-7 h-7 rounded-lg bg-brand-gradient flex items-center justify-center">
+              <span className="font-display font-extrabold text-white text-sm leading-none">I</span>
             </div>
-            <span className="font-bold text-sm">Invems</span>
+            <span className="font-display font-bold text-sm">Invems</span>
           </Link>
-          <div className="flex items-center gap-2">
-            <button onClick={toggleTheme} className="p-2">
+          <div className="flex items-center gap-1">
+            <Link href="/buyer/profile" className="p-2 rounded-lg hover:bg-secondary transition-colors"><User className="w-4 h-4" /></Link>
+            <button onClick={toggleTheme} className="p-2 rounded-lg hover:bg-secondary transition-colors">
               {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
-            <button onClick={() => setMobileOpen(true)} className="p-2">
-                <Menu className="w-4 h-4" />
-              </button>
-              {mobileOpen && (
-                <>
-                  <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40" onClick={() => setMobileOpen(false)} />
-                  <div className="fixed inset-y-0 left-0 w-72 bg-card border-r border-border z-50">
-                    <Sidebar pathname={pathname} onNavigate={() => setMobileOpen(false)} />
-                  </div>
-                </>
-              )}
           </div>
         </header>
 
-        {/* Page content */}
-        <div className="pt-14 md:pt-0 pb-20 md:pb-0">{children}</div>
+        {/* Fade only — a transform here would break position:fixed drawers/modals. */}
+        <motion.div
+          key={pathname}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          className="pt-14 md:pt-0 pb-24 md:pb-0"
+        >
+          {children}
+        </motion.div>
 
-        {/* Mobile nav */}
-        <MobileNav pathname={pathname} />
+        <MobileNav pathname={pathname} unread={unreadCount} cartCount={cartCount} />
       </main>
     </div>
   );

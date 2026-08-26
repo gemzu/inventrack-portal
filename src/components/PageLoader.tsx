@@ -19,9 +19,9 @@ export default function PageLoader({ label = "Loading" }: { label?: string }) {
         </svg>
 
         {/* Cube mark (static, crisp vector) */}
-        <div className="absolute inset-2.5 rounded-2xl bg-[#0e0e0e] flex items-center justify-center shadow-lg">
+        <div className="absolute inset-2.5 rounded-2xl bg-brand-gradient flex items-center justify-center shadow-[0_8px_24px_-8px_var(--brand-1)]">
           <svg width="46" height="46" viewBox="0 0 512 512" className="loader-fade" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <g stroke="#EFEBDD" strokeWidth="18" strokeLinejoin="round" strokeLinecap="round" fill="none">
+            <g stroke="#ffffff" strokeWidth="18" strokeLinejoin="round" strokeLinecap="round" fill="none">
               <path d="M256 108 L320 145 L320 219 L256 256 L192 219 L192 145 Z" />
               <path d="M256 182 L256 108 M256 182 L320 219 M256 182 L192 219" />
               <path d="M188 242 L252 279 L252 353 L188 390 L124 353 L124 279 Z" />

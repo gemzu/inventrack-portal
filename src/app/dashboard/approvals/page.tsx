@@ -9,6 +9,7 @@ import EmptyState from "@/components/EmptyState";
 import AdminGuard from "@/components/AdminGuard";
 import { ClipboardCheck, Check, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import PageShell from "@/components/page-shell";
 
 interface ApprovalDoc {
   id: string;
@@ -184,8 +185,7 @@ function ApprovalsContent() {
   }
 
   return (
-    <div className="animate-page-enter space-y-4">
-      <h1 className="text-2xl font-bold">Approvals</h1>
+    <PageShell title="Approvals" subtitle={`${approvals.length} pending`}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-500 font-semibold">
           Pending: {approvals.length}
@@ -270,6 +270,6 @@ function ApprovalsContent() {
           })}
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

@@ -8,7 +8,7 @@ import { useCart } from "@/context/CartContext";
 import { createOrder } from "@/lib/dataService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, Package, ShoppingBag } from "lucide-react";
+import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, ShoppingBag } from "lucide-react";
 import { useToast } from "@/components/Toast";
 
 export default function BuyerCartPage() {
@@ -58,10 +58,8 @@ export default function BuyerCartPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
         
         <div className="relative max-w-7xl mx-auto px-4 py-12">
-          <h1 className="text-4xl font-bold tracking-tight">
-            <span className="bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
-              Cart
-            </span>
+          <h1 className="text-4xl font-display font-extrabold tracking-tight">
+            <span className="text-brand-gradient">Cart</span>
           </h1>
           <p className="text-muted-foreground mt-2 text-lg">
             {count} item{count !== 1 ? "s" : ""} ready to order
@@ -151,6 +149,7 @@ export default function BuyerCartPage() {
 
                 <div className="space-y-3">
                   <Button
+                    variant="brand"
                     className="w-full h-12 text-lg"
                     onClick={handleSubmit}
                     disabled={submitting}

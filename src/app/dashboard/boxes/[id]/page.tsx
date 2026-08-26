@@ -12,11 +12,12 @@ import {
   deleteBox,
   updateBox,
   moveItemsToBox,
+  deleteInventoryItem,
   getInventoryPaginated,
   type Box,
   type BoxStats,
 } from "@/lib/dataService";
-import { ArrowLeft, Trash2, Edit2, Plus, Layers, X, Package } from "lucide-react";
+import { ArrowLeft, Trash2, Edit2, Plus, Layers, X, Package, PackageMinus } from "lucide-react";
 import PageShell from "@/components/page-shell";
 import GlassCard from "@/components/glass-card";
 import EmptyState from "@/components/EmptyState";
@@ -62,8 +63,17 @@ export default function BoxDetailPage() {
   const [addCandidates, setAddCandidates] = useState<Item[]>([]);
   const [addSelected, setAddSelected] = useState<Set<string>>(new Set());
   const [addLoading, setAddLoading] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const id = params?.id as string;
+
+  const toggleSelect = (itemId: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId); else next.add(itemId);
+      return next;
+    });
+  };
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -93,6 +103,43 @@ export default function BoxDetailPage() {
       load();
     } catch (e) {
       toast((e as Error).message || "Failed to remove", "error");
+    }
+  };
+
+  const deleteItem = async (itemId: string) => {
+    if (!confirm("Delete this item permanently? This cannot be undone.")) return;
+    try {
+      await deleteInventoryItem(itemId);
+      toast("Item deleted", "success");
+      setSelected((p) => { const n = new Set(p); n.delete(itemId); return n; });
+      load();
+    } catch (e) {
+      toast((e as Error).message || "Failed to delete", "error");
+    }
+  };
+
+  const bulkRemove = async () => {
+    if (selected.size === 0) return;
+    try {
+      await moveItemsToBox(Array.from(selected), null);
+      toast(`Removed ${selected.size} item(s) from box`, "success");
+      setSelected(new Set());
+      load();
+    } catch (e) {
+      toast((e as Error).message || "Failed to remove", "error");
+    }
+  };
+
+  const bulkDelete = async () => {
+    if (selected.size === 0) return;
+    if (!confirm(`Delete ${selected.size} item(s) permanently? This cannot be undone.`)) return;
+    try {
+      await Promise.all(Array.from(selected).map((iid) => deleteInventoryItem(iid)));
+      toast(`Deleted ${selected.size} item(s)`, "success");
+      setSelected(new Set());
+      load();
+    } catch (e) {
+      toast((e as Error).message || "Failed to delete", "error");
     }
   };
 
@@ -253,44 +300,66 @@ export default function BoxDetailPage() {
           </div>
         </GlassCard>
 
-        <Card className="overflow-hidden"><CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Barcode</th>
-                  <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Model</th>
-                  <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden md:table-cell text-muted-foreground">Brand</th>
-                  <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Qty</th>
-                  <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Status</th>
-                  <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((it) => (
-                  <tr key={it.id} className="hover:bg-black/3 dark:hover:bg-white/3 transition border-b border-border">
-                    <td className="px-4 py-3 font-mono text-xs">{it.barcode || "-"}</td>
-                    <td className="px-4 py-3">{it.modelId || it.displayName || "-"}</td>
-                    <td className="px-4 py-3 hidden md:table-cell text-muted-foreground">{it.brand || "-"}</td>
-                    <td className="px-4 py-3">{it.quantity ?? "-"}</td>
-                    <td className="px-4 py-3">
-                      <Badge variant="outline">{it.status || "-"}</Badge>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Button variant="ghost" size="sm" onClick={() => handleRemove(it.id)}>
-                        <X /> Remove
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-                {items.length === 0 && (
-                  <tr><td colSpan={6}>
-                    <EmptyState icon={Package} title="Box is empty" description="Use the Add Items button to pull loose inventory into this box." />
-                  </td></tr>
-                )}
-              </tbody>
-            </table>
+        {/* Bulk-action bar (appears when items are selected) */}
+        {selected.size > 0 && (
+          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-primary/10 border border-primary/25 sticky top-2 z-10 backdrop-blur-xl">
+            <span className="text-sm font-semibold">{selected.size} selected</span>
+            <div className="ml-auto flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={bulkRemove}><PackageMinus className="w-4 h-4" /> Remove from box</Button>
+              <Button variant="destructive" size="sm" onClick={bulkDelete}><Trash2 className="w-4 h-4" /> Delete</Button>
+              <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>Clear</Button>
+            </div>
           </div>
+        )}
+
+        <Card className="overflow-hidden"><CardContent className="p-0">
+          {items.length === 0 ? (
+            <EmptyState icon={Package} title="Box is empty" description="Use the Add Items button to pull loose inventory into this box." />
+          ) : (
+            <>
+              {/* Select-all header */}
+              <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border bg-muted/40 text-xs font-medium text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={selected.size === items.length && items.length > 0}
+                  onChange={(e) => setSelected(e.target.checked ? new Set(items.map((i) => i.id)) : new Set())}
+                  className="w-4 h-4 accent-[var(--primary)] cursor-pointer"
+                  title="Select all"
+                />
+                <span>{items.length} item{items.length !== 1 ? "s" : ""}</span>
+              </div>
+              {items.map((it) => {
+                const sel = selected.has(it.id);
+                return (
+                  <div key={it.id} className={`group flex items-center gap-3 px-4 py-3 border-b border-border/60 last:border-0 transition-colors ${sel ? "bg-primary/[0.07]" : "hover:bg-primary/[0.04]"}`}>
+                    <input
+                      type="checkbox"
+                      checked={sel}
+                      onChange={() => toggleSelect(it.id)}
+                      className="w-4 h-4 shrink-0 accent-[var(--primary)] cursor-pointer"
+                    />
+                    <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                      <Package className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold truncate">{it.modelId || it.displayName || "Item"}</div>
+                      <div className="text-xs text-muted-foreground font-mono truncate">
+                        {it.barcode || "-"}{it.brand ? ` · ${it.brand}` : ""}
+                      </div>
+                    </div>
+                    <div className="text-sm text-muted-foreground shrink-0 hidden sm:block">×{it.quantity ?? "-"}</div>
+                    <Badge variant="outline" className="shrink-0 hidden sm:inline-flex capitalize">{it.status || "-"}</Badge>
+                    <button onClick={() => handleRemove(it.id)} title="Remove from box (keeps the item)" className="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center bg-secondary text-muted-foreground hover:bg-amber-500 hover:text-white transition-colors">
+                      <PackageMinus className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => deleteItem(it.id)} title="Delete item permanently" className="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center bg-secondary text-muted-foreground hover:bg-destructive hover:text-white transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })}
+            </>
+          )}
         </CardContent></Card>
       </PageShell>
 

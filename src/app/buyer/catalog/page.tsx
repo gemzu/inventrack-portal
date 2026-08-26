@@ -112,23 +112,21 @@ export default function BuyerCatalogPage() {
         <div className="relative max-w-7xl mx-auto px-4 py-12">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-4xl font-bold tracking-tight">
-                <span className="bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
-                  Catalog
-                </span>
+              <h1 className="text-4xl font-display font-extrabold tracking-tight">
+                <span className="text-brand-gradient">Catalog</span>
               </h1>
               <p className="text-muted-foreground mt-2 text-lg">
                 {filtered.length} items available
                 {storefront && <span className="mx-2">·</span>}
-                {storefront && <span className="text-primary">{String(storefront.name || "Storefront")}</span>}
+                {storefront && <span className="text-primary font-medium">{String(storefront.name || "Storefront")}</span>}
               </p>
             </div>
             <Link href="/buyer/cart">
-              <Button size="lg" className="relative">
+              <Button variant="brand" size="lg" className="relative">
                 <ShoppingCart className="w-5 h-5 mr-2" />
                 Cart
                 {cartItems.length > 0 && (
-                  <span className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground text-xs font-bold rounded-full flex items-center justify-center">
+                  <span className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-white text-xs font-bold rounded-full flex items-center justify-center ring-2 ring-background">
                     {cartItems.length}
                   </span>
                 )}
@@ -193,7 +191,7 @@ export default function BuyerCatalogPage() {
                   onClick={() => setCategoryFilter(null)}
                   className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
                     !categoryFilter 
-                      ? "bg-foreground text-background" 
+                      ? "bg-brand-gradient text-white shadow-[0_4px_12px_-4px_var(--brand-1)]"
                       : "bg-muted text-muted-foreground hover:bg-muted/80"
                   }`}
                 >
@@ -205,7 +203,7 @@ export default function BuyerCatalogPage() {
                     onClick={() => setCategoryFilter(categoryFilter === cat ? null : cat)}
                     className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
                       categoryFilter === cat
-                        ? "bg-foreground text-background"
+                        ? "bg-brand-gradient text-white"
                         : "bg-muted text-muted-foreground hover:bg-muted/80"
                     }`}
                   >
@@ -268,8 +266,9 @@ export default function BuyerCatalogPage() {
                     )}
 
                     {/* Add Button */}
-                    <Button 
-                      className="w-full mt-3" 
+                    <Button
+                      variant="brand"
+                      className="w-full mt-3"
                       onClick={() => handleAddToCart(item)}
                       disabled={adding === item.id}
                     >

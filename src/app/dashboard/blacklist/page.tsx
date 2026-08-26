@@ -9,6 +9,8 @@ import { formatDate } from "@/lib/utils";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import PageShell from "@/components/page-shell";
 
 interface BlacklistItem {
   id: string;
@@ -90,17 +92,15 @@ export default function BlacklistPage() {
   }
 
   return (<AdminGuard>
-    <div className="animate-page-enter space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Blacklist</h1>
-          <p className="text-sm text-muted-foreground">{filtered.length} blocked barcodes</p>
-        </div>
-        <button onClick={() => setShowForm(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-danger text-white text-sm font-medium hover:opacity-90 transition">
+    <PageShell
+      title="Blacklist"
+      subtitle={`${filtered.length} blocked barcode${filtered.length !== 1 ? "s" : ""}`}
+      actions={
+        <Button variant="destructive" onClick={() => setShowForm(true)}>
           <Plus className="w-4 h-4" /> Add Barcode
-        </button>
-      </div>
-
+        </Button>
+      }
+    >
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search barcodes..."
@@ -109,41 +109,27 @@ export default function BlacklistPage() {
       </div>
 
       <Card className="overflow-hidden"><CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Barcode</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden sm:table-cell text-muted-foreground">Label</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden md:table-cell text-muted-foreground">Reason</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider hidden sm:table-cell text-muted-foreground">Added</th>
-                <th className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Remove</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((item) => (
-                <tr key={item.id} className="hover:bg-black/3 dark:hover:bg-white/3 transition border-b border-border">
-                  <td className="px-4 py-3 font-mono text-xs font-medium">{item.barcode}</td>
-                  <td className="px-4 py-3 hidden sm:table-cell">{item.label || "-"}</td>
-                  <td className="px-4 py-3 hidden md:table-cell text-xs text-muted-foreground">{item.reason || "-"}</td>
-                  <td className="px-4 py-3 hidden sm:table-cell text-xs text-muted-foreground">{formatDate(item.createdAt as string)}</td>
-                  <td className="px-4 py-3">
-                    <button onClick={() => handleDelete(item)} className="p-1.5 rounded-lg hover:bg-danger/10 text-danger transition">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={5}>
-                    <EmptyState icon={Ban} title="No blacklisted barcodes" description="Add barcodes here to prevent them from being scanned or submitted." />
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        {filtered.length === 0 ? (
+          <EmptyState icon={Ban} title="No blacklisted barcodes" description="Add barcodes here to prevent them from being scanned or submitted." />
+        ) : (
+          filtered.map((item) => (
+            <div key={item.id} className="group flex items-center gap-4 px-4 py-3 border-b border-border/60 last:border-0 hover:bg-destructive/[0.04] transition-colors">
+              <div className="w-9 h-9 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center shrink-0">
+                <Ban className="w-4 h-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold font-mono text-sm truncate">{item.barcode}</div>
+                <div className="text-xs text-muted-foreground truncate">
+                  {item.label || "No label"}{item.reason ? ` · ${item.reason}` : ""}
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground shrink-0 hidden sm:block">{formatDate(item.createdAt as string)}</div>
+              <button onClick={() => handleDelete(item)} title="Remove" className="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center bg-secondary text-muted-foreground hover:bg-destructive hover:text-white transition-colors">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))
+        )}
       </CardContent></Card>
 
       {showForm && (
@@ -169,13 +155,13 @@ export default function BlacklistPage() {
                 <input value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground" placeholder="Why is this blocked?" />
               </div>
-              <button onClick={handleAdd} className="w-full py-2.5 rounded-xl bg-danger text-white font-medium hover:opacity-90 transition">
+              <Button variant="destructive" onClick={handleAdd} className="w-full h-11">
                 Add to Blacklist
-              </button>
+              </Button>
             </div>
           </CardContent></Card>
         </div>
       )}
-    </div>
+    </PageShell>
   </AdminGuard>);
 }

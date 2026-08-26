@@ -80,7 +80,7 @@ function SelectContent({
           {...props}
         >
           <SelectScrollUpButton />
-          <SelectPrimitive.List className="max-h-[calc(72px-8px)] overflow-y-auto p-1">
+          <SelectPrimitive.List className="max-h-[16rem] overflow-y-auto p-1">
             {children}
           </SelectPrimitive.List>
           <SelectScrollDownButton />

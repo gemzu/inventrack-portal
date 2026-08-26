@@ -8,6 +8,8 @@ import {
   Plus, X, Download, FileText, Loader2, ChevronDown,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import PageShell from "@/components/page-shell";
 
 interface InvoiceItem {
   name: string;
@@ -188,29 +190,22 @@ export default function InvoicesPage() {
 
   return (
     <AdminGuard>
-      <div className="animate-page-enter">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Invoices</h1>
-          <div className="flex items-center gap-3">
+      <PageShell
+        title="Invoices"
+        subtitle={`${invoices.length} invoice${invoices.length !== 1 ? "s" : ""}`}
+        actions={
+          <div className="flex gap-2">
             {invoices.length > 0 && (
-              <button
-                onClick={downloadCsv}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition hover:bg-black/5 dark:hover:bg-white/5 border border-border"
-              >
-                <Download className="w-4 h-4" />
-                Export CSV
-              </button>
+              <Button variant="outline" onClick={downloadCsv} className="h-10">
+                <Download className="w-4 h-4" /> Export
+              </Button>
             )}
-            <button
-              onClick={() => setShowModal(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary-dark transition"
-            >
-              <Plus className="w-4 h-4" />
-              Create Invoice
-            </button>
+            <Button variant="brand" onClick={() => setShowModal(true)} className="h-10">
+              <Plus className="w-4 h-4" /> Create Invoice
+            </Button>
           </div>
-        </div>
-
+        }
+      >
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -225,56 +220,30 @@ export default function InvoicesPage() {
           </CardContent></Card>
         ) : (
           <Card className="overflow-hidden"><CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    {["Invoice #", "Buyer", "Total", "Status", "Date", ""].map(
-                      (h) => (
-                        <th
-                          key={h}
-                          className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground"
-                        >
-                          {h}
-                        </th>
-                      )
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {invoices.map((inv) => (
-                    <tr
-                      key={inv.id}
-                      className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition border-b border-border"
-                    >
-                      <td className="px-5 py-4 font-medium">{inv.invoice_number}</td>
-                      <td className="px-5 py-4">{inv.buyer_name}</td>
-                      <td className="px-5 py-4 font-medium">
-                        ${inv.total.toFixed(2)}
-                      </td>
-                      <td className="px-5 py-4">
-                        <button
-                          onClick={() => toggleStatus(inv)}
-                          disabled={inv.status === "paid"}
-                          className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${
-                            STATUS_STYLES[inv.status]
-                          } ${inv.status !== "paid" ? "cursor-pointer hover:opacity-80" : ""}`}
-                        >
-                          {inv.status}
-                          {inv.status !== "paid" && (
-                            <ChevronDown className="w-3 h-3 inline ml-1" />
-                          )}
-                        </button>
-                      </td>
-                      <td className="px-5 py-4 text-muted-foreground">
-                        {new Date(inv.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-5 py-4"></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {invoices.map((inv) => (
+              <div key={inv.id} className="flex items-center gap-4 px-4 py-3.5 border-b border-border/60 last:border-0 hover:bg-primary/[0.03] transition-colors">
+                <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                  <FileText className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold truncate">{inv.buyer_name}</div>
+                  <div className="text-xs text-muted-foreground font-mono truncate">{inv.invoice_number}</div>
+                </div>
+                <div className="font-semibold tabular-nums shrink-0">${inv.total.toFixed(2)}</div>
+                <div className="text-xs text-muted-foreground shrink-0 hidden sm:block whitespace-nowrap">
+                  {new Date(inv.created_at).toLocaleDateString()}
+                </div>
+                <button
+                  onClick={() => toggleStatus(inv)}
+                  disabled={inv.status === "paid"}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold capitalize shrink-0 ${STATUS_STYLES[inv.status]} ${inv.status !== "paid" ? "cursor-pointer hover:opacity-80" : ""}`}
+                  title={inv.status !== "paid" ? "Advance status" : "Paid"}
+                >
+                  {inv.status}
+                  {inv.status !== "paid" && <ChevronDown className="w-3 h-3 inline ml-1" />}
+                </button>
+              </div>
+            ))}
       </CardContent></Card>
         )}
 
@@ -420,7 +389,7 @@ export default function InvoicesPage() {
             </div>
           </div>
         )}
-      </div>
+      </PageShell>
     </AdminGuard>
   );
 }

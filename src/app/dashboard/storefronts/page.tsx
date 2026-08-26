@@ -164,7 +164,7 @@ export default function StorefrontsPage() {
       <PageShell
         title="Storefronts"
         subtitle="App-style filtering: facilities + categories + include/exclude lists."
-        actions={<Button onClick={openCreate}><Plus className="w-4 h-4" /> Create Storefront</Button>}
+        actions={<Button variant="brand" onClick={openCreate}><Plus className="w-4 h-4" /> Create Storefront</Button>}
       >
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {storefronts.map((sf) => (
@@ -235,7 +235,7 @@ export default function StorefrontsPage() {
                   <MultiList title="Exclude Boxes" icon={<Ban className="w-3 h-3" />} items={boxes.map((b) => ({ id: String(b.id), label: String(b.code || "") }))} selected={form.excludedBoxIds} onToggle={(id) => toggleList("excludedBoxIds", id)} tone="danger" />
                   <MultiList title="Exclude Items" icon={<Ban className="w-3 h-3" />} items={inventory.slice(0, 150).map((i) => ({ id: String(i.id), label: String(i.modelId || i.barcode || "Item") }))} selected={form.excludedItemIds} onToggle={(id) => toggleList("excludedItemIds", id)} tone="danger" />
                 </div>
-                <Button className="w-full h-11" onClick={save}>{editing ? "Save Changes" : "Create Storefront"}</Button>
+                <Button variant="brand" className="w-full h-11" onClick={save}>{editing ? "Save Changes" : "Create Storefront"}</Button>
               </CardContent>
             </Card>
           </div>

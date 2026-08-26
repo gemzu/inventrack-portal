@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { getOrders } from "@/lib/dataService";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { ClipboardList, Package, Clock, CheckCircle, XCircle, ArrowRight, ShoppingBag } from "lucide-react";
@@ -86,7 +85,7 @@ export default function BuyerOrdersPage() {
         
         <div className="relative max-w-7xl mx-auto px-4 py-12">
           <h1 className="text-4xl font-bold tracking-tight">
-            <span className="bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
+            <span className="text-brand-gradient">
               My Orders
             </span>
           </h1>
@@ -112,7 +111,7 @@ export default function BuyerOrdersPage() {
             <h2 className="text-2xl font-bold mb-2">No orders yet</h2>
             <p className="text-muted-foreground mb-6">Submit your first order from the cart.</p>
             <Link href="/buyer/catalog">
-              <Button size="lg">
+              <Button variant="brand" size="lg">
                 <ShoppingBag className="w-5 h-5 mr-2" />
                 Browse Catalog
               </Button>

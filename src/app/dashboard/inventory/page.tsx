@@ -4,7 +4,9 @@ import AdminGuard from "@/components/AdminGuard";
 import PageShell from "@/components/page-shell";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { Search, Download, Package, Boxes, ChevronDown, ChevronRight, Upload, Loader2, X, FileSpreadsheet, Save, Pencil } from "lucide-react";
+import { Search, Download, Package, Boxes, ChevronDown, ChevronRight, Upload, Loader2, X, FileSpreadsheet, Save, Trash2, Clock } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { spring } from "@/lib/motion";
 import { statusColor } from "@/lib/utils";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
@@ -26,6 +28,10 @@ interface Item {
   boxId?: string;
   costPrice?: number;
   sellingPrice?: number;
+  reorderPoint?: number | null;
+  expiryDate?: string | null;
+  lotNumber?: string | null;
+  serialNumber?: string | null;
   imageUrl?: string;
   imageUrls?: string[];
   createdAt: unknown;
@@ -54,6 +60,10 @@ function mapItem(row: Record<string, unknown>): Item {
     boxId: row.box_id as string | undefined,
     costPrice: row.cost_price as number | undefined,
     sellingPrice: row.selling_price as number | undefined,
+    reorderPoint: (row.reorder_point ?? null) as number | null,
+    expiryDate: (row.expiry_date ?? null) as string | null,
+    lotNumber: (row.lot_number ?? null) as string | null,
+    serialNumber: (row.serial_number ?? null) as string | null,
     imageUrl: row.image_url as string | undefined,
     imageUrls: Array.isArray(row.image_urls) ? (row.image_urls as string[]) : [],
     createdAt: row.created_at,
@@ -70,6 +80,7 @@ export default function InventoryPage() {
   const [boxes, setBoxes] = useState<Array<Record<string, unknown>>>([]);
   const [filtered, setFiltered] = useState<Item[]>([]);
   const [search, setSearch] = useState("");
+  const [histResults, setHistResults] = useState<Array<Record<string, unknown>>>([]);
   const [statusFilter, setStatusFilter] = useState("all");
   const [facilityFilter, setFacilityFilter] = useState("all");
   const [loading, setLoading] = useState(true);
@@ -79,8 +90,57 @@ export default function InventoryPage() {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ added: number; updated: number; errors: number } | null>(null);
   const [editQty, setEditQty] = useState(0);
-  const [panelOpen, setPanelOpen] = useState(false);
   const [uploadingImg, setUploadingImg] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBoxId, setBulkBoxId] = useState("");
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const clearSelection = () => setSelected(new Set());
+
+  const bulkDelete = async () => {
+    if (selected.size === 0) return;
+    if (!canDelete) { toast("You don't have delete access. Ask your organization owner.", "error"); return; }
+    if (!confirm(`Delete ${selected.size} item(s)? This cannot be undone.`)) return;
+    const ids = Array.from(selected);
+    try {
+      const { error } = await supabase.from("inventory").delete().in("id", ids);
+      if (error) throw error;
+      setItems((prev) => prev.filter((i) => !selected.has(i.id)));
+      clearSelection();
+      toast(`Deleted ${ids.length} item(s)`, "success");
+    } catch { toast("Could not delete items", "error"); }
+  };
+
+  const bulkMoveToBox = async (boxId: string | null) => {
+    if (selected.size === 0) return;
+    const ids = Array.from(selected);
+    try {
+      const { error } = await supabase.from("inventory").update({ box_id: boxId }).in("id", ids);
+      if (error) throw error;
+      setItems((prev) => prev.map((i) => (selected.has(i.id) ? { ...i, boxId: boxId || undefined } : i)));
+      clearSelection();
+      setBulkBoxId("");
+      toast(boxId ? `Moved ${ids.length} to box` : `Removed ${ids.length} from box`, "success");
+    } catch { toast("Could not move items", "error"); }
+  };
+
+  const bulkStatus = async (status: string) => {
+    if (selected.size === 0) return;
+    const ids = Array.from(selected);
+    try {
+      const { error } = await supabase.from("inventory").update({ status }).in("id", ids);
+      if (error) throw error;
+      setItems((prev) => prev.map((i) => (selected.has(i.id) ? { ...i, status } : i)));
+      clearSelection();
+      toast(`Set ${ids.length} to ${status}`, "success");
+    } catch { toast("Could not update items", "error"); }
+  };
 
   // Delete-access gating (mirrors the mobile app). Free only for our org; every
   // other org keeps unrestricted delete. Org creator/owner/superadmin always
@@ -167,6 +227,8 @@ export default function InventoryPage() {
         if (error) { result.errors++; } else {
           result.added++;
           if (newRow) existingMap.set(item.modelId, newRow.id);
+          // Remember in the permanent UPC catalog (fire-and-forget).
+          supabase.rpc("catalog_remember", { p_org_id: orgId, p_barcode: item.modelId, p_model_id: item.modelId }).then(() => {}, () => {});
         }
       }
     }
@@ -213,6 +275,34 @@ export default function InventoryPage() {
     if (facilityFilter !== "all") result = result.filter((i) => i.facilityId === facilityFilter);
     setFiltered(result);
   }, [search, statusFilter, facilityFilter, items]);
+
+  // "From history": products previously entered under this search term whose
+  // UPC is no longer in current inventory. Debounced query on product_catalog.
+  useEffect(() => {
+    const q = search.trim();
+    if (!orgId || q.length < 2) { setHistResults([]); return; }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      const like = `%${q.replace(/[%_]/g, "")}%`;
+      const { data } = await supabase
+        .from("product_catalog")
+        .select("*")
+        .eq("org_id", orgId)
+        .or(
+          `barcode.ilike.${like},brand.ilike.${like},part_number.ilike.${like},model_id.ilike.${like},display_name.ilike.${like}`
+        )
+        .order("last_seen_at", { ascending: false })
+        .limit(30);
+      if (cancelled) return;
+      const live = new Set(items.map((i) => (i.barcode || "").trim()).filter(Boolean));
+      setHistResults(
+        ((data as Array<Record<string, unknown>>) || []).filter(
+          (h) => h.barcode && !live.has(String(h.barcode).trim())
+        )
+      );
+    }, 300);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [search, orgId, items]);
 
   const boxCounts = useMemo(() => {
     const m: Record<string, number> = {};
@@ -280,6 +370,42 @@ export default function InventoryPage() {
       const { error } = await supabase.from("inventory").update({ [field]: value || null }).eq("id", editItem.id);
       if (error) throw error;
       applyItemChange({ [key]: value || undefined } as Partial<Item>);
+      // Keep the permanent UPC catalog current with the edited details.
+      const bc = (editItem.barcode || editItem.modelId || "").trim();
+      if (orgId && bc) {
+        const next = { ...(editItem as unknown as Record<string, string>), [key]: value };
+        supabase.rpc("catalog_remember", {
+          p_org_id: orgId, p_barcode: bc,
+          p_model_id: next.modelId || null, p_part_number: next.partNumber || null,
+          p_brand: next.brand || null, p_display_name: next.displayName || null,
+        }).then(() => {}, () => {});
+      }
+    } catch { toast("Failed to save", "error"); }
+  };
+
+  const saveReorderPoint = async (raw: string) => {
+    if (!editItem) return;
+    const val = raw.trim() === "" ? null : Math.max(0, parseInt(raw, 10) || 0);
+    if ((editItem.reorderPoint ?? null) === val) return;
+    try {
+      const { error } = await supabase.from("inventory").update({ reorder_point: val }).eq("id", editItem.id);
+      if (error) throw error;
+      applyItemChange({ reorderPoint: val });
+    } catch { toast("Failed to save reorder point", "error"); }
+  };
+
+  const saveTracking = async (
+    field: "expiry_date" | "lot_number" | "serial_number",
+    key: "expiryDate" | "lotNumber" | "serialNumber",
+    value: string
+  ) => {
+    if (!editItem) return;
+    const val = value.trim() === "" ? null : value.trim();
+    if ((editItem[key] ?? null) === val) return;
+    try {
+      const { error } = await supabase.from("inventory").update({ [field]: val }).eq("id", editItem.id);
+      if (error) throw error;
+      applyItemChange({ [key]: val } as Partial<Item>);
     } catch { toast("Failed to save", "error"); }
   };
 
@@ -346,12 +472,10 @@ export default function InventoryPage() {
   const openPanel = (item: Item) => {
     setEditItem(item);
     setEditQty(item.quantity);
-    setPanelOpen(true);
   };
 
   const closePanel = () => {
-    setPanelOpen(false);
-    setTimeout(() => setEditItem(null), 300);
+    setEditItem(null);
   };
 
   if (loading) {
@@ -362,44 +486,45 @@ export default function InventoryPage() {
     );
   }
 
+  const facilityName = (id?: string) => (facilities || []).find((f) => f.id === id)?.name;
+  const boxCode = (id?: string) => (id ? String(boxes.find((b) => b.id === id)?.code || "") : "");
+
   return (
-    <AdminGuard><PageShell title="Inventory" subtitle={`${filtered.length} items`}>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="inline-flex rounded-xl border p-1 bg-muted/40">
-            <button onClick={() => setView("items")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${view === "items" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground"}`}>Items</button>
-            <button onClick={() => setView("boxes")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${view === "boxes" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground"}`}>Boxes</button>
-          </div>
-          {(facilities || []).length > 0 && (
-            <div className="relative">
-              <select
-                value={facilityFilter}
-                onChange={(e) => setFacilityFilter(e.target.value)}
-                className="appearance-none pl-4 pr-9 py-2 rounded-xl border text-sm outline-none cursor-pointer bg-input border-border text-foreground"
-                title="Filter by facility"
-              >
-                <option value="all">All Facilities</option>
-                {(facilities || []).map((f) => (
-                  <option key={f.id} value={f.id}>{f.name}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />
-            </div>
-          )}
-        </div>
+    <AdminGuard><PageShell
+      title="Inventory"
+      subtitle={`${filtered.length} item${filtered.length !== 1 ? "s" : ""}`}
+      actions={
         <div className="flex gap-2">
-          <button onClick={() => setShowImport(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary-dark transition shadow-lg shadow-primary/25">
+          <Button variant="outline" onClick={exportCsv} className="h-10 px-4">
+            <Download className="w-4 h-4" /> Export
+          </Button>
+          <Button variant="brand" onClick={() => setShowImport(true)} className="h-10 px-4">
             <Upload className="w-4 h-4" /> Import CSV
-          </button>
-          <button onClick={exportCsv} className="flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium hover:border-primary transition">
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          </Button>
         </div>
+      }
+    >
+      {/* View toggle */}
+      <div className="inline-flex rounded-xl border border-border p-1 bg-muted/40">
+        {(["items", "boxes"] as const).map((v) => (
+          <button
+            key={v}
+            onClick={() => setView(v)}
+            className={`relative px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors ${
+              view === v ? "text-white" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {view === v && (
+              <motion.span layoutId="inv-view" transition={spring} className="absolute inset-0 rounded-lg bg-brand-gradient shadow-[0_4px_12px_-4px_var(--brand-1)]" />
+            )}
+            <span className="relative">{v}</span>
+          </button>
+        ))}
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
+      {/* Filters — wrap, never overflow */}
+      <div className="flex flex-wrap gap-3">
+        <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             value={search}
@@ -412,7 +537,7 @@ export default function InventoryPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border text-sm outline-none cursor-pointer bg-input border-border text-foreground"
+            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border text-sm outline-none cursor-pointer bg-input border-border text-foreground h-full"
           >
             <option value="all">All Status</option>
             <option value="available">Available</option>
@@ -421,63 +546,143 @@ export default function InventoryPage() {
           </select>
           <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />
         </div>
+        {(facilities || []).length > 0 && (
+          <div className="relative">
+            <select
+              value={facilityFilter}
+              onChange={(e) => setFacilityFilter(e.target.value)}
+              className="appearance-none pl-4 pr-10 py-2.5 rounded-xl border text-sm outline-none cursor-pointer bg-input border-border text-foreground h-full"
+              title="Filter by facility"
+            >
+              <option value="all">All Facilities</option>
+              {(facilities || []).map((f) => (
+                <option key={f.id} value={f.id}>{f.name}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />
+          </div>
+        )}
       </div>
+
+      {/* Bulk-action bar (items view, when rows are selected) */}
+      {view === "items" && selected.size > 0 && (
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-2xl bg-primary/10 border border-primary/25 sticky top-2 z-20 backdrop-blur-xl">
+          <span className="text-sm font-semibold">{selected.size} selected</span>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            {["available", "reserved", "sold"].map((s) => (
+              <button key={s} onClick={() => bulkStatus(s)} className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-border hover:border-primary transition capitalize">
+                {s}
+              </button>
+            ))}
+            <select
+              value={bulkBoxId}
+              onChange={(e) => { const v = e.target.value; if (v === "__loose__") bulkMoveToBox(null); else if (v) bulkMoveToBox(v); }}
+              className="appearance-none px-3 py-1.5 rounded-lg border text-xs bg-input border-border text-foreground cursor-pointer"
+            >
+              <option value="">Move to box…</option>
+              <option value="__loose__">Loose (remove from box)</option>
+              {boxes.map((b) => <option key={String(b.id)} value={String(b.id)}>{String(b.code || "Box")}</option>)}
+            </select>
+            <Button variant="destructive" size="sm" onClick={bulkDelete}><Trash2 className="w-4 h-4" /> Delete</Button>
+            <Button variant="ghost" size="sm" onClick={clearSelection}>Clear</Button>
+          </div>
+        </div>
+      )}
 
       {view === "items" ? (
       <Card className="overflow-hidden"><CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 z-10 bg-muted/60 backdrop-blur">
-              <tr className="border-b-2 border-border">
-                <th className="text-left px-4 py-3.5 font-semibold text-[11px] uppercase tracking-wider text-muted-foreground">Model ID</th>
-                <th className="text-left px-4 py-3.5 font-semibold text-[11px] uppercase tracking-wider hidden sm:table-cell text-muted-foreground">Barcode</th>
-                <th className="text-left px-4 py-3.5 font-semibold text-[11px] uppercase tracking-wider hidden md:table-cell text-muted-foreground">Name</th>
-                <th className="text-left px-4 py-3.5 font-semibold text-[11px] uppercase tracking-wider text-muted-foreground">Status</th>
-                <th className="text-right px-4 py-3.5 font-semibold text-[11px] uppercase tracking-wider text-muted-foreground">Qty</th>
-                <th className="text-left px-4 py-3.5 font-semibold text-[11px] uppercase tracking-wider hidden lg:table-cell text-muted-foreground">Facility / Box</th>
-                <th className="text-right px-4 py-3.5 font-semibold text-[11px] uppercase tracking-wider text-muted-foreground">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((item) => (
-                <tr
-                  key={item.id}
-                  onClick={() => openPanel(item)}
-                  className="group cursor-pointer hover:bg-primary/[0.04] transition-colors border-b border-border last:border-0"
-                >
-                  <td className="px-4 py-3.5 font-semibold">{item.modelId}</td>
-                  <td className="px-4 py-3.5 font-mono text-xs text-muted-foreground hidden sm:table-cell">{item.barcode}</td>
-                  <td className="px-4 py-3.5 hidden md:table-cell">{item.displayName || <span className="text-muted-foreground">-</span>}</td>
-                  <td className="px-4 py-3.5">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statusColor(item.status)}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[item.status] || "bg-gray-400"}`} />
-                      {item.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3.5 text-right font-semibold tabular-nums">{item.quantity}</td>
-                  <td className="px-4 py-3.5 hidden lg:table-cell text-xs text-muted-foreground">
-                    <div>{(facilities || []).find((f) => f.id === item.facilityId)?.name || "-"}</div>
-                    <div className={`inline-flex mt-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${item.boxId ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
-                      {item.boxId ? `Box ${String(boxes.find((b) => b.id === item.boxId)?.code || "")}` : "Loose"}
+        {/* Header (desktop only) */}
+        <div className="hidden md:flex items-center gap-4 px-4 py-3 border-b border-border bg-muted/40 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={selected.size === filtered.length && filtered.length > 0}
+            onChange={(e) => setSelected(e.target.checked ? new Set(filtered.map((i) => i.id)) : new Set())}
+            className="w-4 h-4 shrink-0 accent-[var(--primary)] cursor-pointer"
+            title="Select all"
+          />
+          <div className="flex-1 min-w-0">Item</div>
+          <div className="w-28 shrink-0">Status</div>
+          <div className="w-14 shrink-0 text-right">Qty</div>
+          <div className="w-40 shrink-0">Location</div>
+          <div className="w-9 shrink-0" />
+        </div>
+        {/* Row list — flex, always fits, edit affordance pinned right */}
+        <div>
+          {filtered.map((item) => (
+            <div
+              key={item.id}
+              onClick={() => openPanel(item)}
+              role="button"
+              className={`group w-full flex items-center gap-4 px-4 py-3 text-left border-b border-border/60 last:border-0 cursor-pointer transition-colors ${selected.has(item.id) ? "bg-primary/[0.07]" : "hover:bg-primary/[0.05]"}`}
+            >
+              <input
+                type="checkbox"
+                checked={selected.has(item.id)}
+                onClick={(e) => e.stopPropagation()}
+                onChange={() => toggleSelect(item.id)}
+                className="w-4 h-4 shrink-0 accent-[var(--primary)] cursor-pointer"
+              />
+              {/* Item identity */}
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                {item.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={item.imageUrl} alt="" className="w-9 h-9 rounded-lg object-cover border border-border shrink-0" />
+                ) : (
+                  <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                    <Package className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <div className="font-semibold truncate">{item.displayName || item.modelId}</div>
+                  <div className="text-xs text-muted-foreground font-mono truncate">{item.barcode || item.modelId}</div>
+                </div>
+              </div>
+              {/* Status */}
+              <div className="w-28 shrink-0 hidden md:block">
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statusColor(item.status)}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[item.status] || "bg-gray-400"}`} />
+                  {item.status}
+                </span>
+              </div>
+              {/* Qty */}
+              <div className="w-14 shrink-0 text-right font-semibold tabular-nums hidden md:block">{item.quantity}</div>
+              {/* Location */}
+              <div className="w-40 shrink-0 hidden md:block min-w-0">
+                <div className="text-xs text-muted-foreground truncate">{facilityName(item.facilityId) || "No facility"}</div>
+                <span className={`inline-flex mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium ${item.boxId ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
+                  {item.boxId ? `Box ${boxCode(item.boxId)}` : "Loose"}
+                </span>
+              </div>
+              {/* Edit affordance — always visible, pinned right */}
+              <div className="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center text-muted-foreground bg-secondary group-hover:bg-brand-gradient group-hover:text-white transition-colors">
+                <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+              </div>
+            </div>
+          ))}
+          {filtered.length === 0 && (
+            <EmptyState icon={Package} title="No items found" description="Import a CSV or add items from the mobile app to get started." />
+          )}
+          {histResults.length > 0 && (
+            <div className="mt-6 pt-5 border-t border-amber-500/30">
+              <div className="flex items-center gap-2 mb-3 text-amber-500 text-xs font-bold tracking-wide">
+                <Clock className="w-3.5 h-3.5" />
+                FROM HISTORY · NO LONGER IN INVENTORY ({histResults.length})
+              </div>
+              <div className="space-y-2">
+                {histResults.map((h) => (
+                  <div key={String(h.id)} className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
+                    <div className="font-semibold truncate">
+                      {String(h.display_name || h.model_id || h.part_number || "Known product")}
                     </div>
-                  </td>
-                  <td className="px-4 py-3.5 text-right">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-medium text-foreground/80 group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                      <Pencil className="w-3.5 h-3.5" /> Edit
-                      <ChevronRight className="w-3.5 h-3.5 -mr-1 opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-transform" />
-                    </span>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={7}>
-                    <EmptyState icon={Package} title="No items found" description="Import a CSV or add items from the mobile app to get started." />
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {String(h.brand || "Unknown brand")}{h.category ? ` · ${String(h.category)}` : ""}
+                    </div>
+                    <div className="text-xs font-semibold text-amber-500 mt-1 font-mono">UPC {String(h.barcode)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </CardContent></Card>
       ) : (
@@ -586,19 +791,26 @@ export default function InventoryPage() {
         </div>
       )}
 
-      {/* Item editor - centered modal so it opens in view wherever you clicked */}
+      {/* Item editor — right-side drawer. Stays pinned; edits save on change. */}
+      <AnimatePresence>
       {editItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-          <div
-            className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-200 ${panelOpen ? "opacity-100" : "opacity-0"}`}
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={closePanel}
           />
-          <div
-            className={`relative w-full max-w-lg max-h-[88vh] flex flex-col rounded-2xl border border-border bg-background shadow-2xl transition-all duration-200 ${panelOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-2"}`}
+          <motion.div
+            initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
+            transition={spring}
+            className="relative w-full max-w-md h-full flex flex-col bg-background border-l border-border shadow-2xl"
           >
-              <div className="flex items-center justify-between p-6 border-b border-border">
-                <h3 className="text-lg font-bold">Item Details</h3>
-                <button onClick={closePanel} className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+                <div className="min-w-0">
+                  <h3 className="text-lg font-display font-bold truncate">{editItem.displayName || editItem.modelId}</h3>
+                  <p className="text-xs text-muted-foreground font-mono truncate">{editItem.barcode}</p>
+                </div>
+                <button onClick={closePanel} className="p-2 rounded-lg hover:bg-secondary transition shrink-0">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -627,14 +839,6 @@ export default function InventoryPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium mb-1 text-muted-foreground">Model ID</label>
-                  <div className="text-sm font-semibold">{editItem.modelId}</div>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium mb-1 text-muted-foreground">Barcode</label>
-                  <div className="text-sm font-mono">{editItem.barcode}</div>
-                </div>
-                <div>
                   <label className="block text-xs font-medium mb-1 text-muted-foreground">Name</label>
                   <input
                     key={`name-${editItem.id}`}
@@ -662,6 +866,50 @@ export default function InventoryPage() {
                       defaultValue={editItem.partNumber || ""}
                       onBlur={(e) => saveField("part_number", e.target.value.trim())}
                       placeholder="Model / part #"
+                      className="w-full px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-muted-foreground">Reorder point</label>
+                  <input
+                    key={`reorder-${editItem.id}`}
+                    type="number"
+                    min={0}
+                    defaultValue={editItem.reorderPoint ?? ""}
+                    onBlur={(e) => saveReorderPoint(e.target.value)}
+                    placeholder="Alert when qty drops to this (blank = org default)"
+                    className="w-full px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium mb-1 text-muted-foreground">Expiry date</label>
+                    <input
+                      key={`expiry-${editItem.id}`}
+                      type="date"
+                      defaultValue={editItem.expiryDate ?? ""}
+                      onBlur={(e) => saveTracking("expiry_date", "expiryDate", e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1 text-muted-foreground">Lot / batch</label>
+                    <input
+                      key={`lot-${editItem.id}`}
+                      defaultValue={editItem.lotNumber ?? ""}
+                      onBlur={(e) => saveTracking("lot_number", "lotNumber", e.target.value)}
+                      placeholder="Optional"
+                      className="w-full px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1 text-muted-foreground">Serial #</label>
+                    <input
+                      key={`serial-${editItem.id}`}
+                      defaultValue={editItem.serialNumber ?? ""}
+                      onBlur={(e) => saveTracking("serial_number", "serialNumber", e.target.value)}
+                      placeholder="Optional"
                       className="w-full px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
                     />
                   </div>
@@ -746,8 +994,8 @@ export default function InventoryPage() {
                       <button
                         key={s}
                         onClick={() => updateStatus(editItem, s)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
-                          editItem.status === s ? "bg-primary text-primary-foreground border-primary" : "hover:border-primary"
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition capitalize ${
+                          editItem.status === s ? "bg-brand-gradient text-white border-transparent" : "hover:border-primary"
                         }`}
                         style={editItem.status !== s ? { borderColor: "var(--border)" } : undefined}
                       >
@@ -758,25 +1006,24 @@ export default function InventoryPage() {
                   </div>
                 </div>
               </div>
-              <div className="p-6 border-t border-border space-y-2">
+              <div className="px-6 py-4 border-t border-border flex items-center gap-2 shrink-0">
                 {canDelete && (
                   <button
                     onClick={deleteItem}
-                    className="w-full py-2.5 rounded-xl border border-danger/40 text-danger text-sm font-medium hover:bg-danger/10 transition"
+                    title="Delete item"
+                    className="w-11 h-11 shrink-0 rounded-xl border border-destructive/40 text-destructive flex items-center justify-center hover:bg-destructive/10 transition"
                   >
-                    Delete item
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 )}
-                <button
-                  onClick={closePanel}
-                  className="w-full py-2.5 rounded-xl border text-sm font-medium hover:border-primary transition"
-                >
-                  Close
-                </button>
+                <Button variant="brand" onClick={closePanel} className="flex-1 h-11">
+                  Done
+                </Button>
               </div>
-            </div>
+            </motion.div>
           </div>
       )}
+      </AnimatePresence>
     </PageShell></AdminGuard>
   );
 }

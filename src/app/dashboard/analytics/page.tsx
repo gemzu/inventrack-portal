@@ -8,6 +8,7 @@ import {
   Building2, Activity,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import PageShell from "@/components/page-shell";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -163,14 +164,7 @@ export default function PlatformAnalyticsPage() {
   ];
 
   return (
-    <div className="animate-page-enter space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Platform Analytics</h1>
-        <p className="text-sm text-muted-foreground">
-          Cross-organization metrics and growth insights
-        </p>
-      </div>
-
+    <PageShell title="Platform Analytics" subtitle="Cross-organization metrics and growth insights">
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi) => (
@@ -222,33 +216,19 @@ export default function PlatformAnalyticsPage() {
           <h3 className="font-semibold">Top Organizations by Inventory</h3>
         </div>
         {topOrgs.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-2 font-semibold text-muted-foreground">#</th>
-                  <th className="text-left py-2 font-semibold text-muted-foreground">Organization</th>
-                  <th className="text-right py-2 font-semibold text-muted-foreground">Items</th>
-                  <th className="text-right py-2 font-semibold text-muted-foreground">Created</th>
-                </tr>
-              </thead>
-              <tbody>
-                {topOrgs.map((org, i) => (
-                  <tr key={org.id} className="border-b last:border-0">
-                    <td className="py-2.5 font-medium text-muted-foreground">{i + 1}</td>
-                    <td className="py-2.5 font-semibold">{org.name}</td>
-                    <td className="py-2.5 text-right">
-                      <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary">
-                        {org.itemCount}
-                      </span>
-                    </td>
-                    <td className="py-2.5 text-right text-xs text-muted-foreground">
-                      {new Date(org.createdAt).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div>
+            {topOrgs.map((org, i) => (
+              <div key={org.id} className="flex items-center gap-4 py-2.5 border-b border-border/60 last:border-0">
+                <div className="w-6 shrink-0 font-bold text-muted-foreground tabular-nums">{i + 1}</div>
+                <div className="flex-1 min-w-0 font-semibold truncate">{org.name}</div>
+                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary shrink-0">
+                  {org.itemCount} items
+                </span>
+                <div className="text-xs text-muted-foreground shrink-0 hidden sm:block whitespace-nowrap">
+                  {new Date(org.createdAt).toLocaleDateString()}
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">No organizations found</p>
@@ -290,6 +270,6 @@ export default function PlatformAnalyticsPage() {
           <p className="text-sm text-muted-foreground">No active users in the last 7 days</p>
         )}
       </CardContent></Card>
-    </div>
+    </PageShell>
   );
 }
