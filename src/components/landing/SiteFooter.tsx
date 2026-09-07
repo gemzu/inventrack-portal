@@ -16,7 +16,6 @@ export default function SiteFooter() {
           </span>
         </div>
         <div className="flex items-center gap-6 text-sm text-muted-foreground">
-          <Link href="/pricing" className="transition-colors hover:text-foreground">Pricing</Link>
           <Link href="/terms" className="transition-colors hover:text-foreground">Terms</Link>
           <Link href="/privacy" className="transition-colors hover:text-foreground">Privacy</Link>
         </div>

@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * The public-site nav. One component so the landing, pricing and legal pages
- * cannot drift apart again.
+ * The public-site nav. One component so the landing and legal pages cannot
+ * drift apart again.
  *
  * Signed-out is the default render while auth is still resolving, so the bar
  * never paints empty on first load (a marketing page must show its CTA
@@ -29,13 +29,6 @@ export default function SiteNav() {
         </Link>
 
         <div className="flex items-center gap-5">
-          <Link
-            href="/pricing"
-            className="hidden text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:block"
-          >
-            Pricing
-          </Link>
-
           {isLoggedIn ? (
             <>
               <span className="hidden rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground sm:block">

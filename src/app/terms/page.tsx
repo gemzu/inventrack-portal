@@ -32,7 +32,7 @@ export default function TermsPage() {
             Please read these terms carefully before using Invems. By accessing our service, you agree to be bound by these terms.
           </p>
           <p className="text-sm text-muted-foreground mt-6">
-            Last updated: April 23, 2026
+            Last updated: September 7, 2026
           </p>
         </div>
       </div>
@@ -93,9 +93,9 @@ export default function TermsPage() {
                   <CreditCard className="w-6 h-6 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors">4. Payment Terms</h2>
+                  <h2 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors">4. Fees</h2>
                   <p className="text-muted-foreground leading-relaxed">
-                    Certain features of the Service require payment of fees. All fees are quoted in U.S. dollars unless otherwise stated. You agree to pay all applicable fees in accordance with the pricing plan you select. Fees are billed on a per-user, per-month basis and are non-refundable except as required by law. We reserve the right to change our pricing with 30 days advance notice. Failure to pay may result in suspension or termination of your account.
+                    The Service is currently provided free of charge. There is no subscription, and we do not ask for payment details to create or keep an account. We may introduce paid features in the future. If we do, we will give you at least 30 days notice by email before any charge applies to your account, and no fee will ever be charged without your agreement first. You will always be able to keep using the Service without paying, decline the change, or close your account.
                   </p>
                 </div>
               </div>
