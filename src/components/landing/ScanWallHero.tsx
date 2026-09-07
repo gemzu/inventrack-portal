@@ -79,7 +79,7 @@ function Wall({ lit }: { lit: boolean }) {
             />
             <div className="relative leading-tight">
               <div
-                className="mono truncate text-[10px]"
+                className="mono truncate text-[11px]"
                 style={{
                   color: lit
                     ? low
@@ -91,7 +91,7 @@ function Wall({ lit }: { lit: boolean }) {
                 {c.sku}
               </div>
               <div
-                className="mono text-[9px]"
+                className="mono text-[10px]"
                 style={{
                   color: lit
                     ? "var(--muted-foreground)"

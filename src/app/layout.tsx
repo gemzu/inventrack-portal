@@ -1,30 +1,33 @@
 import type { Metadata } from "next";
-import { Hanken_Grotesk, JetBrains_Mono, Saira_Condensed } from "next/font/google";
+import { Public_Sans, IBM_Plex_Mono, Unbounded } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { ToastProvider } from "@/components/Toast";
 import "./globals.css";
 
-/* Quiet body face. Deliberately not Geist: that is the create-next-app default
-   and it is the single loudest signal that nobody chose a typeface. */
-const body = Hanken_Grotesk({ variable: "--font-body", subsets: ["latin"] });
-
-/* Terminal face. This design is largely data labels, so the mono carries more
-   of the personality than the body copy does. */
-const mono = JetBrains_Mono({
-  variable: "--font-mono-face",
+/* Quiet body face. Neutral by design and largely absent from generated sites,
+   which is the point: the display face should do the talking. */
+const body = Public_Sans({
+  variable: "--font-body",
   subsets: ["latin"],
-  weight: ["400", "500", "700"],
+  weight: ["400", "500", "600", "700"],
 });
 
-/* Display. Condensed industrial signage: the register of stencilling on a
-   shipping container, not another rounded startup grotesque. Narrow enough
-   that a long headline still holds its line at display size. */
-const display = Saira_Condensed({
+/* Data face. Plex has industrial drafting heritage rather than code-editor
+   heritage, which suits bay numbers and part codes. */
+const mono = IBM_Plex_Mono({
+  variable: "--font-mono-face",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
+
+/* Display. Wide, geometric and heavy: the opposite move from the condensed
+   pass, so headlines read as machined rather than as signage. */
+const display = Unbounded({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["500", "600", "700", "800", "900"],
+  weight: ["500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {

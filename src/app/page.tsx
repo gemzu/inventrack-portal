@@ -10,8 +10,6 @@ import SiteNav from "@/components/landing/SiteNav";
 import SiteFooter from "@/components/landing/SiteFooter";
 import ScrollReveals from "@/components/motion/ScrollReveals";
 import ScanText from "@/components/motion/ScanText";
-import EventTicker from "@/components/landing/EventTicker";
-import LiveCount from "@/components/motion/LiveCount";
 
 export default function LandingPage() {
   const { user, loading } = useAuth();
@@ -24,13 +22,10 @@ export default function LandingPage() {
 
       {/* ── Hero: the wall is the page ────────────────────────── */}
       <ScanWallHero>
-        <p className="fade-up mono mb-6 flex items-center gap-2 text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
-          <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-[var(--brand-1)]" />
-          Bay A to F · <LiveCount /> units · live
-        </p>
-
         {/* The boot beam sweeps and the headline resolves in its wake. */}
-        <h1 className="max-w-3xl font-display text-[2.9rem] font-extrabold leading-[0.98] tracking-[-0.04em] sm:text-6xl lg:text-[4.6rem]">
+        {/* Unbounded is a wide face, so it needs far less size than a condensed
+            one to carry the same weight. Sized down from the previous pass. */}
+        <h1 className="max-w-4xl font-display text-[1.9rem] font-bold leading-[1.12] tracking-[-0.02em] sm:text-[2.5rem] lg:text-[3.1rem]">
           <ScanText
             as="span"
             text="Warehouse stock,"
@@ -62,14 +57,11 @@ export default function LandingPage() {
           >
             Sign in
           </Link>
-          <span className="mono ml-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-            iOS · Android · Web · Free
+          <span className="ml-1 text-sm font-medium text-muted-foreground">
+            iOS, Android and the web. Free.
           </span>
         </div>
       </ScanWallHero>
-
-      {/* Ambient floor feed. Something is always moving. */}
-      <EventTicker />
 
       {/* ── Real surfaces ─────────────────────────────────────── */}
       <ProductRail />
@@ -92,7 +84,7 @@ export default function LandingPage() {
             <ScanText
               as="h2"
               text="Start with one shelf."
-              className="block font-display text-3xl font-extrabold tracking-[-0.03em] sm:text-4xl"
+              className="block font-display text-[1.7rem] font-bold tracking-[-0.015em] sm:text-[2.2rem]"
             />
             <Link
               href={isLoggedIn ? "/dashboard" : "/signup"}

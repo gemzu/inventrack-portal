@@ -817,6 +817,18 @@ button:hover > svg {
   .index-link__inner { animation: none; transform: none; opacity: 1; }
 }
 
+/* Conveyor: panels turn away from the viewer as they leave centre. The
+   transform is written per frame from JS, so only the shared setup lives here. */
+.conveyor { transform-style: preserve-3d; }
+.conveyor-panel {
+  transform-origin: 50% 50%;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+}
+@media (prefers-reduced-motion: reduce) {
+  .conveyor-panel { transform: none !important; opacity: 1 !important; }
+}
+
 /* Chart bars keep breathing so a static panel still reads as live data. */
 .bar-breathe {
   transform-origin: bottom;
@@ -828,24 +840,6 @@ button:hover > svg {
 }
 @media (prefers-reduced-motion: reduce) {
   .bar-breathe { animation: none; }
-}
-
-/* Floor-event strip. Track holds two identical runs and shifts by exactly
-   half its width, so the loop is seamless. */
-.ticker-track {
-  animation: ticker 46s linear infinite;
-  will-change: transform;
-}
-@keyframes ticker {
-  from { transform: translate3d(0, 0, 0); }
-  to   { transform: translate3d(-50%, 0, 0); }
-}
-.ticker-strip:hover .ticker-track { animation-play-state: paused; }
-.ticker-strip {
-  mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
-}
-@media (prefers-reduced-motion: reduce) {
-  .ticker-track { animation: none; }
 }
 
 /* A scan landing on a bay while the page is idle. */

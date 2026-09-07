@@ -66,13 +66,13 @@ function LiveFeed() {
       <span className="feed-window relative h-4 w-[18rem] overflow-hidden">
         <span key={i} className="feed-line absolute inset-0 flex items-center gap-2">
           <span
-            className={`mono text-[10px] font-bold tracking-[0.16em] ${
+            className={`mono text-[12px] font-bold tracking-[0.14em] ${
               item.warn ? "text-warning" : "text-[var(--brand-2)]"
             }`}
           >
             {item.tag}
           </span>
-          <span className="mono truncate text-[10px] tracking-[0.12em] text-muted-foreground">
+          <span className="mono truncate text-[12px] tracking-[0.1em] text-muted-foreground">
             {item.body}
           </span>
         </span>
@@ -140,10 +140,10 @@ export default function SiteNav() {
             {/* Two labels stacked; the pair slides to swap on state. */}
             <span className="relative block h-4 w-14 overflow-hidden">
               <span className="index-toggle__labels block" data-open={open}>
-                <span className="mono block h-4 text-[11px] font-bold uppercase tracking-[0.22em]">
+                <span className="mono block h-4 text-[13px] font-bold uppercase tracking-[0.18em]">
                   Index
                 </span>
-                <span className="mono block h-4 text-[11px] font-bold uppercase tracking-[0.22em]">
+                <span className="mono block h-4 text-[13px] font-bold uppercase tracking-[0.18em]">
                   Close
                 </span>
               </span>
@@ -195,10 +195,10 @@ export default function SiteNav() {
                       style={{ ["--d" as string]: `${0.28 + i * 0.055}s` }}
                     >
                       <span className="index-link__inner flex items-baseline gap-4">
-                        <span className="mono text-[11px] text-muted-foreground">
+                        <span className="mono text-[13px] text-muted-foreground">
                           0{i + 1}
                         </span>
-                        <span className="font-display text-[2.4rem] font-extrabold uppercase leading-[1.02] tracking-[0.01em] transition-colors duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:text-[var(--brand-2)] sm:text-[3.4rem] lg:text-[4rem]">
+                        <span className="font-display text-[1.6rem] font-bold uppercase leading-[1.15] tracking-[-0.01em] transition-colors duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:text-[var(--brand-2)] sm:text-[2.2rem] lg:text-[2.6rem]">
                           {e.label}
                         </span>
                       </span>
@@ -210,7 +210,7 @@ export default function SiteNav() {
 
             {/* Readout for the focused destination. Figures, not shapes. */}
             <aside className="index-readout w-full max-w-xs shrink-0" data-open={open}>
-              <p className="mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
+              <p className="text-sm font-semibold text-muted-foreground">
                 Readout
               </p>
               <p
@@ -221,7 +221,7 @@ export default function SiteNav() {
               </p>
               <div className="mt-8 border-t border-border pt-5">
                 {isLoggedIn ? (
-                  <p className="mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     Signed in · {userName || user?.email?.split("@")[0] || "you"}
                   </p>
                 ) : (
