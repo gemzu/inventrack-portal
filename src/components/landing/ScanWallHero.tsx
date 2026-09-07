@@ -27,6 +27,9 @@ const CODES = [
 
 const BAYS = ["A", "B", "C", "D", "E", "F"];
 
+/* Bays that keep receiving scans while the page sits idle. */
+const PING_AT = [4, 11, 19, 26, 31, 34];
+
 const CELLS = CODES.map((sku, i) => ({
   sku,
   bay: `${BAYS[Math.floor(i / 6) % BAYS.length]}${(i % 6) + 1}`,
@@ -43,10 +46,24 @@ function Wall({ lit }: { lit: boolean }) {
       }}
       aria-hidden
     >
-      {CELLS.map((c) => {
+      {CELLS.map((c, i) => {
         const low = c.qty <= 3;
+        /* A handful of bays keep pinging, as if scans are landing while you
+           read. Indices and timings are fixed so SSR and client agree. */
+        const ping = !lit && PING_AT.includes(i);
         return (
-          <div key={c.sku} className="relative flex flex-col justify-end p-2.5">
+          <div
+            key={c.sku}
+            className={`relative flex flex-col justify-end p-2.5 ${ping ? "cell-ping" : ""}`}
+            style={
+              ping
+                ? ({
+                    "--dur": `${5.5 + (i % 4) * 1.3}s`,
+                    "--delay": `${(i % 7) * 0.9}s`,
+                  } as React.CSSProperties)
+                : undefined
+            }
+          >
             <div
               className="absolute inset-2 rounded-md border"
               /* Kept restrained: 36 cells stay lit for most of the cycle, so a
@@ -102,6 +119,8 @@ export default function ScanWallHero({ children }: { children: React.ReactNode }
           <Wall lit />
         </div>
         <div className="scanwall-sweep" aria-hidden />
+        {/* One fast pass on load, in step with the headline resolving. */}
+        <div className="boot-beam" aria-hidden />
       </div>
 
       {/* Scrim: keeps the headline readable and lets the wall fade upward. */}

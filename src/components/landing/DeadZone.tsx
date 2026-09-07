@@ -15,6 +15,7 @@
 import { useCallback, useRef, useState } from "react";
 import { Wifi, WifiOff, RefreshCw, Check } from "lucide-react";
 import { useScrollScrub } from "@/components/motion/useScrollScrub";
+import ScanText from "@/components/motion/ScanText";
 
 const QUEUE = [
   "PGD1668M", "MX1473", "Z619", "TRN0442", "KLM8891",
@@ -77,9 +78,8 @@ export default function DeadZone() {
                 id="deadzone-heading"
                 className="mt-3 font-display text-3xl font-extrabold leading-[1.08] tracking-[-0.03em] sm:text-4xl lg:text-[3rem]"
               >
-                No signal,
-                <br />
-                <span className="text-brand-gradient">no problem.</span>
+                <ScanText as="span" text="No signal," className="block" />
+                <ScanText as="span" text="no problem." gradient delay={0.18} className="block" />
               </h2>
             </div>
 

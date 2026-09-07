@@ -9,6 +9,9 @@ import DeadZone from "@/components/landing/DeadZone";
 import SiteNav from "@/components/landing/SiteNav";
 import SiteFooter from "@/components/landing/SiteFooter";
 import ScrollReveals from "@/components/motion/ScrollReveals";
+import ScanText from "@/components/motion/ScanText";
+import EventTicker from "@/components/landing/EventTicker";
+import LiveCount from "@/components/motion/LiveCount";
 
 export default function LandingPage() {
   const { user, loading } = useAuth();
@@ -21,24 +24,28 @@ export default function LandingPage() {
 
       {/* ── Hero: the wall is the page ────────────────────────── */}
       <ScanWallHero>
-        <p className="fade-up mono mb-6 text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
-          Bay A to F · 1,284 units · live
+        <p className="fade-up mono mb-6 flex items-center gap-2 text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
+          <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-[var(--brand-1)]" />
+          Bay A to F · <LiveCount /> units · live
         </p>
 
+        {/* The boot beam sweeps and the headline resolves in its wake. */}
         <h1 className="max-w-3xl font-display text-[2.9rem] font-extrabold leading-[0.98] tracking-[-0.04em] sm:text-6xl lg:text-[4.6rem]">
-          <span className="word-line">
-            <span className="word-rise" style={{ animationDelay: "0.05s" }}>
-              Warehouse stock,
-            </span>
-          </span>
-          <span className="word-line">
-            <span
-              className="word-rise text-brand-gradient"
-              style={{ animationDelay: "0.19s" }}
-            >
-              live from the floor.
-            </span>
-          </span>
+          <ScanText
+            as="span"
+            text="Warehouse stock,"
+            immediate
+            delay={0.24}
+            className="block"
+          />
+          <ScanText
+            as="span"
+            text="live from the floor."
+            immediate
+            gradient
+            delay={0.52}
+            className="block"
+          />
         </h1>
 
         <div className="fade-up fade-up-3 mt-9 flex flex-wrap items-center gap-4">
@@ -61,6 +68,9 @@ export default function LandingPage() {
         </div>
       </ScanWallHero>
 
+      {/* Ambient floor feed. Something is always moving. */}
+      <EventTicker />
+
       {/* ── Real surfaces ─────────────────────────────────────── */}
       <ProductRail />
 
@@ -79,9 +89,11 @@ export default function LandingPage() {
             }}
           />
           <div className="relative">
-            <h2 className="font-display text-3xl font-extrabold tracking-[-0.03em] sm:text-4xl">
-              Start with one shelf.
-            </h2>
+            <ScanText
+              as="h2"
+              text="Start with one shelf."
+              className="block font-display text-3xl font-extrabold tracking-[-0.03em] sm:text-4xl"
+            />
             <Link
               href={isLoggedIn ? "/dashboard" : "/signup"}
               className="press mt-8 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--btn-shadow)] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:bg-primary-dark"

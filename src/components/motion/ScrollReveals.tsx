@@ -11,7 +11,8 @@
 
 import { useEffect } from "react";
 
-const SELECTOR = ".reveal, .reveal-left, .reveal-right, .reveal-img";
+const SELECTOR =
+  ".reveal, .reveal-left, .reveal-right, .reveal-img, .scan-text:not(.visible)";
 
 export default function ScrollReveals() {
   useEffect(() => {

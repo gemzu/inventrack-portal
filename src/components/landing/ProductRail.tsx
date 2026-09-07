@@ -103,7 +103,11 @@ export default function ProductRail() {
             <Panel label="Approvals">
               <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
                 <span className="text-xs font-semibold">Waiting on you</span>
-                <span className="rounded-full bg-[var(--brand-2)]/15 px-2 py-0.5 text-[10px] font-semibold text-[var(--brand-2)]">
+                <span className="flex items-center gap-1.5 rounded-full bg-[var(--brand-2)]/15 px-2 py-0.5 text-[10px] font-semibold text-[var(--brand-2)]">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--brand-2)] opacity-75" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--brand-2)]" />
+                  </span>
                   3
                 </span>
               </div>
@@ -155,8 +159,8 @@ export default function ProductRail() {
                   {BARS.map((h, i) => (
                     <span
                       key={i}
-                      className="flex-1 rounded-t-sm bg-brand-gradient"
-                      style={{ height: `${h}%` }}
+                      className="bar-breathe flex-1 rounded-t-sm bg-brand-gradient"
+                      style={{ height: `${h}%`, "--delay": `${i * 0.19}s` } as React.CSSProperties}
                     />
                   ))}
                 </div>

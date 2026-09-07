@@ -17,9 +17,9 @@
   --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   --ease-in-out-q: cubic-bezier(0.83, 0, 0.17, 1);
 
-  --font-sans: var(--font-geist-sans, ui-sans-serif, system-ui, sans-serif);
-  --font-mono: var(--font-geist-mono, 'JetBrains Mono', 'Fira Code', monospace);
-  --font-heading: var(--font-display, var(--font-geist-sans), ui-sans-serif, sans-serif);
+  --font-sans: var(--font-body, ui-sans-serif, system-ui, sans-serif);
+  --font-mono: var(--font-mono-face, 'JetBrains Mono', 'Fira Code', monospace);
+  --font-heading: var(--font-display, var(--font-body), ui-sans-serif, sans-serif);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -714,6 +714,120 @@ button:hover > svg {
   animation: word-rise 1s var(--ease-out-soft) forwards;
 }
 @keyframes word-rise { to { transform: translateY(0); } }
+
+/* Scan-in text: characters resolve out of a blur, left to right, the same way
+   a bay resolves when the beam reaches it. */
+.scan-ch {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(9px);
+  transform: translateY(0.28em);
+  white-space: pre;
+}
+.scan-text.visible .scan-ch {
+  animation: scan-in 0.66s var(--ease-out-soft) both;
+}
+@keyframes scan-in {
+  from { opacity: 0; filter: blur(9px); transform: translateY(0.28em); }
+  to   { opacity: 1; filter: blur(0);   transform: none; }
+}
+
+/* Chart bars keep breathing so a static panel still reads as live data. */
+.bar-breathe {
+  transform-origin: bottom;
+  animation: bar-breathe 4.8s var(--ease-out-soft) var(--delay, 0s) infinite;
+}
+@keyframes bar-breathe {
+  0%, 100% { transform: scaleY(1); }
+  50%      { transform: scaleY(0.88); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar-breathe { animation: none; }
+}
+
+/* Floor-event strip. Track holds two identical runs and shifts by exactly
+   half its width, so the loop is seamless. */
+.ticker-track {
+  animation: ticker 46s linear infinite;
+  will-change: transform;
+}
+@keyframes ticker {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+.ticker-strip:hover .ticker-track { animation-play-state: paused; }
+.ticker-strip {
+  mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track { animation: none; }
+}
+
+/* A scan landing on a bay while the page is idle. */
+.cell-ping::after {
+  content: "";
+  position: absolute;
+  inset: 0.5rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--brand-3);
+  opacity: 0;
+  pointer-events: none;
+  animation: cell-ping var(--dur, 6s) var(--ease-out-expo) var(--delay, 0s) infinite;
+}
+@keyframes cell-ping {
+  0%        { opacity: 0.85; transform: scale(0.9); }
+  40%, 100% { opacity: 0; transform: scale(1.14); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cell-ping::after { animation: none; }
+}
+
+/* Header feed: each entry rises in and the previous one is replaced outright
+   (React remounts on key change), so no exit animation is needed. */
+.feed-line {
+  animation: feed-in 0.5s var(--ease-out-expo) both;
+}
+@keyframes feed-in {
+  from { opacity: 0; transform: translateY(0.8em); filter: blur(3px); }
+  to   { opacity: 1; transform: none; filter: blur(0); }
+}
+.feed-window {
+  mask-image: linear-gradient(to right, #000 88%, transparent 100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .feed-line { animation: none; }
+}
+
+/* One fast pass across the fold on load, timed with the headline resolving. */
+.boot-beam {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  z-index: 5;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--brand-2) 30%,
+    var(--brand-3) 70%,
+    transparent
+  );
+  box-shadow: 0 0 22px 6px color-mix(in oklab, var(--brand-2) 55%, transparent);
+  animation: boot-sweep 1.6s cubic-bezier(0.5, 0, 0.2, 1) both;
+}
+@keyframes boot-sweep {
+  0%   { transform: translateX(-2vw); opacity: 0; }
+  12%  { opacity: 1; }
+  86%  { opacity: 1; }
+  100% { transform: translateX(101vw); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scan-ch { opacity: 1 !important; filter: none !important; transform: none !important; animation: none !important; }
+  .boot-beam { display: none; }
+}
 
 /* Film grain. Keeps large flat panels from reading unfinished. */
 .grain::after {
