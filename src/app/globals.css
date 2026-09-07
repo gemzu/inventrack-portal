@@ -732,6 +732,91 @@ button:hover > svg {
   to   { opacity: 1; filter: blur(0);   transform: none; }
 }
 
+/* ════════════════════════════════════════════════════════════
+   THE INDEX — full-screen navigation that opens like a bay door.
+   Three slats drop in sequence, then the destinations rise.
+   ════════════════════════════════════════════════════════════ */
+.index-toggle__labels {
+  transition: transform 0.45s var(--ease-out-expo);
+}
+.index-toggle__labels[data-open="true"] { transform: translateY(-1rem); }
+
+.index-toggle__glyph {
+  position: relative;
+  transition: transform 0.5s var(--ease-out-expo), border-color 0.3s ease;
+}
+.index-toggle:hover .index-toggle__glyph { border-color: var(--brand-2); }
+/* Closed: a plus. Open: rotated into a cross. */
+.index-toggle__glyph > span:last-child { transform: rotate(90deg); }
+.index-toggle__glyph[data-open="true"] { transform: rotate(135deg); }
+
+.site-index {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+.site-index[data-open="true"] { pointer-events: auto; }
+
+.site-index__backdrop {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in oklab, var(--background) 70%, transparent);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  transition: opacity 0.5s var(--ease-out-expo);
+}
+.site-index[data-open="true"] .site-index__backdrop { opacity: 1; }
+
+.site-index__panel {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* The door itself. Each slat is a full-height panel dropping from above. */
+.site-index__slat {
+  position: absolute;
+  inset: 0;
+  transform: translateY(-101%);
+  transition: transform 0.62s var(--ease-in-out-q);
+  background: var(--card);
+}
+.site-index__slat:nth-child(1) { background: color-mix(in oklab, var(--brand-1) 22%, var(--background)); }
+.site-index__slat:nth-child(2) { background: color-mix(in oklab, var(--brand-2) 12%, var(--background)); }
+.site-index__slat:nth-child(3) { background: var(--background); }
+.site-index[data-open="true"] .site-index__slat { transform: translateY(0); }
+
+/* Destinations rise once the door has landed. */
+.index-link__inner {
+  display: flex;
+  transform: translateY(140%) rotate(6deg);
+  opacity: 0;
+}
+.site-index[data-open="true"] .index-link__inner {
+  animation: index-rise 0.75s var(--ease-out-expo) var(--d, 0.3s) both;
+}
+@keyframes index-rise {
+  from { transform: translateY(140%) rotate(6deg); opacity: 0; }
+  to   { transform: translateY(0) rotate(0); opacity: 1; }
+}
+
+.index-readout {
+  opacity: 0;
+  transform: translateY(1rem);
+  transition: opacity 0.5s var(--ease-out-expo) 0.5s, transform 0.5s var(--ease-out-expo) 0.5s;
+}
+.index-readout[data-open="true"] { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .site-index__slat,
+  .site-index__backdrop,
+  .index-readout,
+  .index-toggle__labels,
+  .index-toggle__glyph { transition: none; }
+  .index-link__inner { animation: none; transform: none; opacity: 1; }
+}
+
 /* Chart bars keep breathing so a static panel still reads as live data. */
 .bar-breathe {
   transform-origin: bottom;

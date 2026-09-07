@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, JetBrains_Mono, Archivo } from "next/font/google";
+import { Hanken_Grotesk, JetBrains_Mono, Saira_Condensed } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { ToastProvider } from "@/components/Toast";
 import "./globals.css";
 
-/* Quiet body face. Does no shouting, on purpose. */
-const body = Geist({ variable: "--font-body", subsets: ["latin"] });
+/* Quiet body face. Deliberately not Geist: that is the create-next-app default
+   and it is the single loudest signal that nobody chose a typeface. */
+const body = Hanken_Grotesk({ variable: "--font-body", subsets: ["latin"] });
 
 /* Terminal face. This design is largely data labels, so the mono carries more
    of the personality than the body copy does. */
@@ -17,9 +18,10 @@ const mono = JetBrains_Mono({
   weight: ["400", "500", "700"],
 });
 
-/* Display. An industrial grotesque with signage roots: reads like something
-   stencilled on a bay door rather than another startup wordmark. */
-const display = Archivo({
+/* Display. Condensed industrial signage: the register of stencilling on a
+   shipping container, not another rounded startup grotesque. Narrow enough
+   that a long headline still holds its line at display size. */
+const display = Saira_Condensed({
   variable: "--font-display",
   subsets: ["latin"],
   weight: ["500", "600", "700", "800", "900"],
