@@ -737,119 +737,51 @@ button:hover > svg {
 }
 
 /* ════════════════════════════════════════════════════════════
-   THE SCAN LINE — landing hero set-piece.
-   A beam sweeps a wall of boxes; each box resolves as it passes.
-   Beam and boxes share one 7s period, so a per-column positive
-   delay keeps them locked in phase on every loop.
+   THE STOCK WALL — full-bleed hero sweep.
+   One clip-path reveal over a stacked lit copy of the wall, plus a
+   beam travelling in step with it. Independent of cell count, so the
+   grid can reflow at any breakpoint.
    ════════════════════════════════════════════════════════════ */
-
-/* Racking / floor grid. Texture, and it reads as a warehouse. */
-.scanwall-grid {
-  /* Kept faint on purpose: it sits behind 9px readouts and must never read as
-     a strikethrough across them. */
-  background-image:
-    linear-gradient(to right, color-mix(in oklab, var(--foreground) 4%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in oklab, var(--foreground) 4%, transparent) 1px, transparent 1px);
-  background-size: 34px 34px;
-  mask-image: radial-gradient(115% 80% at 50% 0%, #000 20%, transparent 95%);
-  pointer-events: none;
+.scanwall-lit {
+  clip-path: inset(0 100% 0 0);
+  animation: wall-reveal 9s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  will-change: clip-path;
 }
 
-/* Establishes the coordinate space the beam travels across (100cqw). */
-.scanwall-track {
-  container-type: inline-size;
+@keyframes wall-reveal {
+  0%        { clip-path: inset(0 100% 0 0); }
+  86%, 100% { clip-path: inset(0 0 0 0); }
 }
 
-/* Dim, unresolved box. */
-.scanwall-box {
-  border-color: color-mix(in oklab, var(--foreground) 16%, transparent);
-  transition: none;
-}
-
-/* The lit overlay. Opacity is animated (cheap, universally supported). */
-.scanwall-box::after {
-  content: "";
+.scanwall-sweep {
   position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  border: 1px solid var(--brand-1);
-  background: color-mix(in oklab, var(--brand-1) 14%, transparent);
-  box-shadow: 0 0 0 1px color-mix(in oklab, var(--brand-1) 22%, transparent),
-              0 10px 28px -10px color-mix(in oklab, var(--brand-1) 65%, transparent);
-  pointer-events: none;
-}
-
-/* A box has no record until the beam reaches it, so the readout is absent
-   rather than dim. That is the product story, not just a visual state. */
-.scanwall-box::after,
-.scanwall-unit .mono {
-  opacity: 0;
-  animation-duration: 7s;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-  animation-fill-mode: both;
-}
-
-/* Each column lights when the beam crosses it and stays lit until the sweep
-   restarts. The lit span therefore differs per column, which one shared
-   keyframe set plus a delay cannot express. Hence one set per column, all
-   running on the same 7s clock as the beam and in phase with it. */
-.scanwall-unit[data-col="0"] .scanwall-box::after,
-.scanwall-unit[data-col="0"] .mono { animation-name: scan-lit-0; }
-.scanwall-unit[data-col="1"] .scanwall-box::after,
-.scanwall-unit[data-col="1"] .mono { animation-name: scan-lit-1; }
-.scanwall-unit[data-col="2"] .scanwall-box::after,
-.scanwall-unit[data-col="2"] .mono { animation-name: scan-lit-2; }
-.scanwall-unit[data-col="3"] .scanwall-box::after,
-.scanwall-unit[data-col="3"] .mono { animation-name: scan-lit-3; }
-
-/* Thresholds are the column centres: (col + 0.5) / 4. */
-@keyframes scan-lit-0 { 0%, 12.5% { opacity: 0; } 15.5%, 100% { opacity: 1; } }
-@keyframes scan-lit-1 { 0%, 37.5% { opacity: 0; } 40.5%, 100% { opacity: 1; } }
-@keyframes scan-lit-2 { 0%, 62.5% { opacity: 0; } 65.5%, 100% { opacity: 1; } }
-@keyframes scan-lit-3 { 0%, 87.5% { opacity: 0; } 90.5%, 100% { opacity: 1; } }
-
-/* The beam itself. Violet core, cyan bloom, travelling one container width. */
-.scanwall-beam {
-  position: absolute;
-  top: -10%;
-  bottom: -10%;
+  top: 0;
+  bottom: 0;
   left: 0;
   width: 2px;
-  border-radius: 2px;
+  pointer-events: none;
   background: linear-gradient(
     to bottom,
     transparent,
-    var(--brand-1) 12%,
+    var(--brand-1) 14%,
     var(--brand-2) 50%,
-    var(--brand-3) 88%,
+    var(--brand-3) 86%,
     transparent
   );
-  box-shadow: 0 0 14px 3px color-mix(in oklab, var(--brand-2) 55%, transparent),
-              0 0 44px 12px color-mix(in oklab, var(--brand-3) 22%, transparent);
-  animation: scan-sweep 7s linear infinite;
+  box-shadow: 0 0 16px 4px color-mix(in oklab, var(--brand-2) 50%, transparent),
+              0 0 48px 14px color-mix(in oklab, var(--brand-3) 18%, transparent);
+  animation: wall-sweep 9s cubic-bezier(0.65, 0, 0.35, 1) infinite;
   will-change: transform;
-  pointer-events: none;
 }
 
-@keyframes scan-sweep {
-  from { transform: translateX(0); opacity: 0; }
-  6%   { opacity: 1; }
-  94%  { opacity: 1; }
-  to   { transform: translateX(100cqw); opacity: 0; }
+@keyframes wall-sweep {
+  0%        { transform: translateX(0); opacity: 0; }
+  6%        { opacity: 1; }
+  80%       { opacity: 1; }
+  86%, 100% { transform: translateX(100vw); opacity: 0; }
 }
 
-.scanwall-live {
-  animation: pulse-dot 2s ease-in-out infinite;
-}
-
-/* Reduced motion: no sweep. Show the finished, fully resolved wall.
-   Must come after the global reduce block so it wins. */
 @media (prefers-reduced-motion: reduce) {
-  .scanwall-beam { display: none; }
-  .scanwall-box::after,
-  .scanwall-unit .mono {
-    animation: none !important;
-    opacity: 1;
-  }
+  .scanwall-lit { clip-path: none; animation: none; }
+  .scanwall-sweep { display: none; }
 }

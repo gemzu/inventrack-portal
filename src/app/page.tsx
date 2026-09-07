@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import ScanLineHero from "@/components/landing/ScanLineHero";
+import ScanWallHero from "@/components/landing/ScanWallHero";
 import ProductRail from "@/components/landing/ProductRail";
 import DeadZone from "@/components/landing/DeadZone";
 import SiteNav from "@/components/landing/SiteNav";
@@ -19,52 +19,47 @@ export default function LandingPage() {
       <ScrollReveals />
       <SiteNav />
 
-      {/* ── Hero ──────────────────────────────────────────────── */}
-      <section className="pt-14">
-        <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 pb-24 pt-20 lg:grid-cols-[1fr_1.05fr] lg:gap-16 lg:pt-24">
-          <div>
-            <h1 className="font-display text-[2.7rem] font-extrabold leading-[1.03] tracking-[-0.035em] sm:text-5xl lg:text-[3.7rem]">
-              <span className="word-line">
-                <span className="word-rise" style={{ animationDelay: "0.05s" }}>
-                  Warehouse stock,
-                </span>
-              </span>
-              <span className="word-line">
-                <span
-                  className="word-rise text-brand-gradient"
-                  style={{ animationDelay: "0.19s" }}
-                >
-                  live from the floor.
-                </span>
-              </span>
-            </h1>
+      {/* ── Hero: the wall is the page ────────────────────────── */}
+      <ScanWallHero>
+        <p className="fade-up mono mb-6 text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
+          Bay A to F · 1,284 units · live
+        </p>
 
-            <div className="fade-up fade-up-3 mt-9 flex flex-wrap items-center gap-4">
-              <Link
-                href={isLoggedIn ? "/dashboard" : "/signup"}
-                className="press inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--btn-shadow)] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:bg-primary-dark"
-              >
-                {isLoggedIn ? "Open dashboard" : "Create account"}
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="/login"
-                className="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Sign in
-              </Link>
-            </div>
+        <h1 className="max-w-3xl font-display text-[2.9rem] font-extrabold leading-[0.98] tracking-[-0.04em] sm:text-6xl lg:text-[4.6rem]">
+          <span className="word-line">
+            <span className="word-rise" style={{ animationDelay: "0.05s" }}>
+              Warehouse stock,
+            </span>
+          </span>
+          <span className="word-line">
+            <span
+              className="word-rise text-brand-gradient"
+              style={{ animationDelay: "0.19s" }}
+            >
+              live from the floor.
+            </span>
+          </span>
+        </h1>
 
-            <p className="fade-up fade-up-4 mono mt-8 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-              iOS · Android · Web · Free
-            </p>
-          </div>
-
-          <div className="fade-up fade-up-4">
-            <ScanLineHero />
-          </div>
+        <div className="fade-up fade-up-3 mt-9 flex flex-wrap items-center gap-4">
+          <Link
+            href={isLoggedIn ? "/dashboard" : "/signup"}
+            className="press inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--btn-shadow)] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:bg-primary-dark"
+          >
+            {isLoggedIn ? "Open dashboard" : "Create account"}
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link
+            href="/login"
+            className="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Sign in
+          </Link>
+          <span className="mono ml-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            iOS · Android · Web · Free
+          </span>
         </div>
-      </section>
+      </ScanWallHero>
 
       {/* ── Real surfaces ─────────────────────────────────────── */}
       <ProductRail />
