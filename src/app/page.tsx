@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import AisleHero from "@/components/landing/AisleHero";
+import BarcodeHero from "@/components/landing/BarcodeHero";
 import AppLinks from "@/components/landing/AppLinks";
 import ProductRail from "@/components/landing/ProductRail";
 import DeadZone from "@/components/landing/DeadZone";
@@ -21,11 +21,10 @@ export default function LandingPage() {
       <ScrollReveals />
       <SiteNav />
 
-      {/* ── Hero: depth, not breadth ──────────────────────────── */}
-      <AisleHero>
-        {/* The boot beam sweeps and the headline resolves in its wake. */}
+      {/* ── Hero: the barcode is the building ─────────────────── */}
+      <BarcodeHero>
         {/* Unbounded is a wide face, so it needs far less size than a condensed
-            one to carry the same weight. Sized down from the previous pass. */}
+            one to carry the same weight. Sized down from the earlier pass. */}
         <h1 className="max-w-4xl font-display text-[1.9rem] font-bold leading-[1.12] tracking-[-0.02em] sm:text-[2.5rem] lg:text-[3.1rem]">
           <ScanText
             as="span"
@@ -62,7 +61,7 @@ export default function LandingPage() {
             iOS, Android and the web. Free.
           </span>
         </div>
-      </AisleHero>
+      </BarcodeHero>
 
       {/* ── Real surfaces ─────────────────────────────────────── */}
       <ProductRail />
