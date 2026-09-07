@@ -20,15 +20,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
-const FEED = [
-  { tag: "SCAN", body: "PGD1668M · BAY A1 · +24" },
-  { tag: "APPROVED", body: "MX1473 · +8 · M. HADDAD" },
-  { tag: "LOW", body: "Z619 · 2 REMAINING", warn: true },
-  { tag: "SCAN", body: "KLM8891 · BAY B1 · +40" },
-  { tag: "ORDER", body: "PO-1044 · IN TRANSIT" },
-  { tag: "SYNCED", body: "10 QUEUED SCANS" },
-];
-
 type Entry = { label: string; href: string; meta: string };
 
 const SIGNED_OUT: Entry[] = [
@@ -45,41 +36,6 @@ const SIGNED_IN: Entry[] = [
   { label: "Terms", href: "/terms", meta: "Updated 7 September 2026" },
   { label: "Privacy", href: "/privacy", meta: "Your data stays in your org" },
 ];
-
-function LiveFeed() {
-  const [i, setI] = useState(0);
-
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const id = setInterval(() => setI((n) => (n + 1) % FEED.length), 2600);
-    return () => clearInterval(id);
-  }, []);
-
-  const item = FEED[i];
-
-  return (
-    <div className="hidden items-center gap-2.5 md:flex" aria-hidden>
-      <span className="relative flex h-1.5 w-1.5">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--brand-2)] opacity-70" />
-        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--brand-1)]" />
-      </span>
-      <span className="feed-window relative h-4 w-[18rem] overflow-hidden">
-        <span key={i} className="feed-line absolute inset-0 flex items-center gap-2">
-          <span
-            className={`mono text-[12px] font-bold tracking-[0.14em] ${
-              item.warn ? "text-warning" : "text-[var(--brand-2)]"
-            }`}
-          >
-            {item.tag}
-          </span>
-          <span className="mono truncate text-[12px] tracking-[0.1em] text-muted-foreground">
-            {item.body}
-          </span>
-        </span>
-      </span>
-    </div>
-  );
-}
 
 export default function SiteNav() {
   const { user, userName, loading } = useAuth();
@@ -126,7 +82,6 @@ export default function SiteNav() {
                 Invems
               </span>
             </Link>
-            <LiveFeed />
           </div>
 
           <button

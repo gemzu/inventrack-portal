@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import ScanWallHero from "@/components/landing/ScanWallHero";
+import AisleHero from "@/components/landing/AisleHero";
+import AppLinks from "@/components/landing/AppLinks";
 import ProductRail from "@/components/landing/ProductRail";
 import DeadZone from "@/components/landing/DeadZone";
 import SiteNav from "@/components/landing/SiteNav";
@@ -20,8 +21,8 @@ export default function LandingPage() {
       <ScrollReveals />
       <SiteNav />
 
-      {/* ── Hero: the wall is the page ────────────────────────── */}
-      <ScanWallHero>
+      {/* ── Hero: depth, not breadth ──────────────────────────── */}
+      <AisleHero>
         {/* The boot beam sweeps and the headline resolves in its wake. */}
         {/* Unbounded is a wide face, so it needs far less size than a condensed
             one to carry the same weight. Sized down from the previous pass. */}
@@ -61,7 +62,7 @@ export default function LandingPage() {
             iOS, Android and the web. Free.
           </span>
         </div>
-      </ScanWallHero>
+      </AisleHero>
 
       {/* ── Real surfaces ─────────────────────────────────────── */}
       <ProductRail />
@@ -93,6 +94,14 @@ export default function LandingPage() {
               {isLoggedIn ? "Open dashboard" : "Create account"}
               <ArrowRight className="h-4 w-4" />
             </Link>
+
+            {/* The app, as two shelf tags waiting to be scanned. */}
+            <div className="mx-auto mt-14 max-w-2xl text-left">
+              <p className="mb-4 text-center text-sm font-medium text-muted-foreground">
+                Or take it onto the floor
+              </p>
+              <AppLinks />
+            </div>
           </div>
         </div>
       </section>
