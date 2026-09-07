@@ -5,7 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { useTheme } from "@/context/ThemeContext";
+
+/* Shared field styling. Focus ring comes from globals (input:focus). */
+const FIELD =
+  "w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -15,7 +18,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const { user, login, resetPassword, loading: authLoading } = useAuth();
-  const { theme } = useTheme();
   const router = useRouter();
 
   if (!authLoading && user) {
@@ -32,107 +34,130 @@ export default function LoginPage() {
       router.push("/dashboard");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Login failed";
-      if (msg.includes("invalid") || msg.includes("Invalid")) setError("Invalid email or password.");
-      else if (msg.includes("many")) setError("Too many attempts. Try again later.");
-      else setError("Login failed. Please try again.");
+      if (msg.includes("invalid") || msg.includes("Invalid")) setError("That email and password do not match.");
+      else if (msg.includes("many")) setError("Too many tries. Wait a minute, then try again.");
+      else setError("That did not go through. Try again.");
     } finally { setLoading(false); }
   };
 
   const handleReset = async () => {
-    if (!email) { setError("Enter your email first."); return; }
+    if (!email) { setError("Type your email above first, then tap this again."); return; }
     try {
       await resetPassword(email);
       setResetSent(true);
       setError("");
-    } catch { setError("Could not send reset email."); }
+    } catch { setError("The reset email would not send. Try again in a moment."); }
   };
 
-  const isDark = theme === "dark";
-  const inputClass = `w-full px-4 py-3 rounded-lg border text-sm transition-all outline-none focus:border-foreground ${
-    isDark 
-      ? "bg-card border-border text-foreground placeholder:text-muted-foreground" 
-      : "bg-background border-border text-foreground placeholder:text-muted-foreground"
-  }`;
-
   return (
-    <div className={`min-h-screen flex flex-col ${isDark ? "bg-background" : "bg-background"}`}>
-      <div className={`border-b ${isDark ? "border-border" : "border-border"}`}>
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center">
-          <Link href="/" className={`flex items-center gap-2 text-sm font-medium transition-colors ${isDark ? "text-muted-foreground hover:text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-            <ArrowLeft className="w-3.5 h-3.5" />
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <div className="border-b border-border">
+        <div className="mx-auto flex h-14 max-w-6xl items-center px-6">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
             Back
           </Link>
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
+      <div className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
-          <div className="flex items-center gap-2.5 mb-10">
-            <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center">
+          <div className="mb-9 flex items-center gap-2.5">
+            <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-lg">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo.svg" alt="Invems" className="w-full h-full object-contain" />
-            </div>
-            <span className={`text-sm font-semibold tracking-wide ${isDark ? "text-foreground" : "text-foreground"}`}>Invems</span>
+              <img src="/logo.svg" alt="" className="h-full w-full object-contain" />
+            </span>
+            <span className="font-display text-sm font-bold tracking-tight">Invems</span>
           </div>
 
-          <h1 className={`text-2xl font-bold mb-1 ${isDark ? "text-foreground" : "text-foreground"}`}>Welcome back</h1>
-          <p className={`text-sm mb-8 ${isDark ? "text-muted-foreground" : "text-muted-foreground"}`}>Sign in to your account.</p>
+          <h1 className="font-display text-3xl font-extrabold tracking-[-0.03em]">
+            Welcome back.
+          </h1>
+          <p className="mb-8 mt-2 text-sm text-muted-foreground">
+            Sign in and pick up where the floor left off.
+          </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className={`px-3 py-2.5 rounded-lg text-xs ${isDark ? "bg-red-950/50 border border-red-800 text-red-400" : "bg-red-50 border border-red-200 text-red-600"}`}>
+              <div
+                role="alert"
+                className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-xs text-destructive"
+              >
                 {error}
               </div>
             )}
             {resetSent && (
-              <div className={`px-3 py-2.5 rounded-lg text-xs ${isDark ? "bg-green-950/50 border border-green-800 text-green-400" : "bg-green-50 border border-green-200 text-green-600"}`}>
-                Password reset email sent. Check your inbox.
+              <div
+                role="status"
+                className="rounded-lg border border-success/30 bg-success/10 px-3 py-2.5 text-xs text-success"
+              >
+                Reset email sent. Check your inbox.
               </div>
             )}
 
             <div>
-              <label className={`block text-xs font-medium mb-2 ${isDark ? "text-muted-foreground" : "text-muted-foreground"}`}>Email</label>
+              <label htmlFor="email" className="mb-2 block text-xs font-semibold text-muted-foreground">
+                Email
+              </label>
               <input
+                id="email"
                 type="email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setError(""); }}
                 required
                 placeholder="you@company.com"
-                className={inputClass}
+                className={FIELD}
               />
             </div>
 
             <div>
-              <label className={`block text-xs font-medium mb-2 ${isDark ? "text-muted-foreground" : "text-muted-foreground"}`}>Password</label>
+              <label htmlFor="password" className="mb-2 block text-xs font-semibold text-muted-foreground">
+                Password
+              </label>
               <div className="relative">
                 <input
+                  id="password"
                   type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); setError(""); }}
                   required
-                  placeholder="Enter your password"
-                  className={`${inputClass} pr-10`}
+                  placeholder="Your password"
+                  className={`${FIELD} pr-10`}
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isDark ? "text-muted-foreground hover:text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
 
             <div className="flex justify-end">
-              <button type="button" onClick={handleReset} className={`text-xs transition-colors ${isDark ? "text-muted-foreground hover:text-foreground" : "text-foreground hover:underline"}`}>
-                Forgot password?
+              <button
+                type="button"
+                onClick={handleReset}
+                className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Forgot your password?
               </button>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full font-semibold text-sm py-3 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-brand-gradient text-white hover:brightness-110 shadow-[0_8px_24px_-8px_var(--brand-1)]"
+              className="press w-full rounded-lg bg-brand-gradient py-3 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--brand-1)] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" /> Signing in...
+                  <Loader2 className="h-4 w-4 animate-spin" /> Signing in
                 </span>
               ) : (
                 "Sign in"
@@ -140,9 +165,11 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className={`text-center mt-8 text-sm ${isDark ? "text-muted-foreground" : "text-muted-foreground"}`}>
-            Don&apos;t have an account?{" "}
-            <Link href="/signup" className={`transition-colors ${isDark ? "text-foreground hover:underline" : "text-foreground hover:underline"}`}>Create account</Link>
+          <p className="mt-8 text-center text-sm text-muted-foreground">
+            No account yet?{" "}
+            <Link href="/signup" className="font-medium text-foreground underline underline-offset-4 transition-colors hover:text-[var(--brand-1)]">
+              Create one
+            </Link>
           </p>
         </div>
       </div>

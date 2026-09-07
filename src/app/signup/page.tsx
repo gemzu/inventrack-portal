@@ -3,9 +3,16 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Boxes, Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { useTheme } from "@/context/ThemeContext";
+
+const FIELD =
+  "w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground";
+
+const ROLES = [
+  { value: "admin", label: "Business owner" },
+  { value: "buyer", label: "Buyer" },
+];
 
 export default function SignupPage() {
   const [name, setName] = useState("");
@@ -17,7 +24,6 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { user, signup, loading: authLoading } = useAuth();
-  const { theme } = useTheme();
   const router = useRouter();
 
   if (!authLoading && user) {
@@ -28,7 +34,7 @@ export default function SignupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
+    if (password.length < 6) { setError("Passwords need at least 6 characters."); return; }
     setLoading(true);
     try {
       await signup(name, email, password, "", role);
@@ -36,64 +42,66 @@ export default function SignupPage() {
       else router.push("/dashboard");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Signup failed";
-      if (msg.includes("already")) setError("An account with this email already exists.");
-      else if (msg.includes("weak") || msg.includes("password")) setError("Password too weak. Use at least 6 characters.");
-      else setError("Signup failed. Please try again.");
+      if (msg.includes("already")) setError("There is already an account on this email. Try signing in.");
+      else if (msg.includes("weak") || msg.includes("password")) setError("That password is too easy to guess. Use at least 6 characters.");
+      else setError("That did not go through. Try again.");
     } finally { setLoading(false); }
   };
 
-  const isDark = theme === "dark";
-  const inputClass = `w-full px-4 py-3 rounded-lg border text-sm transition-all outline-none focus:border-foreground ${
-    isDark 
-      ? "bg-card border-border text-foreground placeholder:text-muted-foreground" 
-      : "bg-background border-border text-foreground placeholder:text-muted-foreground"
-  }`;
-
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
       <div className="border-b border-border">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center">
-          <Link href="/" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="w-3.5 h-3.5" />
+        <div className="mx-auto flex h-14 max-w-6xl items-center px-6">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
             Back
           </Link>
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
+      <div className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
-          <div className="flex items-center gap-2.5 mb-10">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-foreground">
-              <Boxes className="w-3.5 h-3.5 text-background" />
-            </div>
-            <span className="text-sm font-semibold text-foreground tracking-wide">Invems</span>
+          <div className="mb-9 flex items-center gap-2.5">
+            <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-lg">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.svg" alt="" className="h-full w-full object-contain" />
+            </span>
+            <span className="font-display text-sm font-bold tracking-tight">Invems</span>
           </div>
 
-          <h1 className="text-2xl font-bold text-foreground mb-1">Create your account</h1>
-          <p className="text-sm text-muted-foreground mb-8">Start managing your warehouse operations.</p>
+          <h1 className="font-display text-3xl font-extrabold tracking-[-0.03em]">
+            Set up your warehouse.
+          </h1>
+          <p className="mb-8 mt-2 text-sm text-muted-foreground">
+            Takes about a minute. You can add your team afterwards.
+          </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className={`px-3 py-2.5 rounded-lg text-xs ${isDark ? "bg-red-950/50 border border-red-800 text-red-400" : "bg-red-50 border border-red-200 text-red-600"}`}>
+              <div
+                role="alert"
+                className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-xs text-destructive"
+              >
                 {error}
               </div>
             )}
 
             <div>
-              <label className="block text-xs font-medium mb-2 text-muted-foreground">I am a</label>
+              <span className="mb-2 block text-xs font-semibold text-muted-foreground">I am a</span>
               <div className="grid grid-cols-2 gap-2">
-                {[
-                  { value: "admin", label: "Business Owner" },
-                  { value: "buyer", label: "Buyer" },
-                ].map((r) => (
+                {ROLES.map((r) => (
                   <button
                     key={r.value}
                     type="button"
+                    aria-pressed={role === r.value}
                     onClick={() => setRole(r.value)}
-                    className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
                       role === r.value
                         ? "bg-brand-gradient text-white shadow-[0_4px_12px_-4px_var(--brand-1)]"
-                        : `border border-border hover:bg-secondary ${isDark ? "text-muted-foreground" : "text-foreground"}`
+                        : "border border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
                     }`}
                   >
                     {r.label}
@@ -103,29 +111,59 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium mb-2 text-muted-foreground">Full name</label>
-              <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="John Doe" className={inputClass} />
+              <label htmlFor="name" className="mb-2 block text-xs font-semibold text-muted-foreground">
+                Full name
+              </label>
+              <input
+                id="name"
+                autoComplete="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                placeholder="Sam Okafor"
+                className={FIELD}
+              />
             </div>
 
             <div>
-              <label className="block text-xs font-medium mb-2 text-muted-foreground">Email</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@company.com" className={inputClass} />
+              <label htmlFor="email" className="mb-2 block text-xs font-semibold text-muted-foreground">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="you@company.com"
+                className={FIELD}
+              />
             </div>
 
             <div>
-              <label className="block text-xs font-medium mb-2 text-muted-foreground">Password</label>
+              <label htmlFor="password" className="mb-2 block text-xs font-semibold text-muted-foreground">
+                Password
+              </label>
               <div className="relative">
                 <input
+                  id="password"
                   type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
-                  placeholder="Min. 6 characters"
-                  className={`${inputClass} pr-10`}
+                  placeholder="At least 6 characters"
+                  className={`${FIELD} pr-10`}
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
@@ -136,24 +174,24 @@ export default function SignupPage() {
                 id="terms"
                 checked={agreedToTerms}
                 onChange={(e) => setAgreedToTerms(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded border-border bg-background accent-foreground cursor-pointer"
+                className="mt-0.5 h-4 w-4 cursor-pointer rounded border-border bg-background accent-[var(--brand-1)]"
               />
-              <label htmlFor="terms" className="text-xs text-muted-foreground cursor-pointer leading-relaxed">
+              <label htmlFor="terms" className="cursor-pointer text-xs leading-relaxed text-muted-foreground">
                 I agree to the{" "}
-                <a href="/terms" target="_blank" className="text-foreground hover:underline">Terms of Service</a>
+                <a href="/terms" target="_blank" className="text-foreground underline underline-offset-4 hover:text-[var(--brand-1)]">Terms of Service</a>
                 {" "}and{" "}
-                <a href="/privacy" target="_blank" className="text-foreground hover:underline">Privacy Policy</a>
+                <a href="/privacy" target="_blank" className="text-foreground underline underline-offset-4 hover:text-[var(--brand-1)]">Privacy Policy</a>
               </label>
             </div>
 
             <button
               type="submit"
               disabled={loading || !agreedToTerms}
-              className="w-full bg-brand-gradient text-white font-semibold text-sm py-3 rounded-lg hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all mt-2 shadow-[0_8px_24px_-8px_var(--brand-1)]"
+              className="press mt-2 w-full rounded-lg bg-brand-gradient py-3 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--brand-1)] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" /> Creating account...
+                  <Loader2 className="h-4 w-4 animate-spin" /> Creating your account
                 </span>
               ) : (
                 "Create account"
@@ -161,9 +199,11 @@ export default function SignupPage() {
             </button>
           </form>
 
-          <p className="text-center mt-8 text-sm text-muted-foreground">
-            Already have an account?{" "}
-            <Link href="/login" className="text-foreground hover:underline">Sign in</Link>
+          <p className="mt-8 text-center text-sm text-muted-foreground">
+            Already set up?{" "}
+            <Link href="/login" className="font-medium text-foreground underline underline-offset-4 transition-colors hover:text-[var(--brand-1)]">
+              Sign in
+            </Link>
           </p>
         </div>
       </div>

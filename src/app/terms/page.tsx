@@ -1,14 +1,10 @@
 "use client";
 
-import Link from "next/link";
-import { Boxes, Sun, Moon, Menu, X, ChevronRight, FileText, AlertTriangle, CreditCard, Copyright } from "lucide-react";
-import { useState } from "react";
-import { useTheme } from "@/context/ThemeContext";
+import { X, ChevronRight, FileText, AlertTriangle, CreditCard, Copyright } from "lucide-react";
+import SiteNav from "@/components/landing/SiteNav";
+import SiteFooter from "@/components/landing/SiteFooter";
 
 export default function TermsPage() {
-  const [mobileMenu, setMobileMenu] = useState(false);
-  const { theme, toggleTheme } = useTheme();
-
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Hero Section */}
@@ -18,35 +14,7 @@ export default function TermsPage() {
           backgroundImage: `radial-gradient(circle at 100% 0%, var(--primary) 0%, transparent 50%)`,
         }} />
         
-        <nav className="relative z-10 glass fixed top-0 left-0 right-0">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <Link href="/" className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-xl bg-foreground flex items-center justify-center">
-                  <Boxes className="w-5 h-5 text-background" />
-                </div>
-                <span className="text-xl font-bold tracking-tight">Invems</span>
-              </Link>
-
-              <div className="hidden md:flex items-center gap-6">
-                <Link href="/#features" className="text-sm hover:text-primary transition">Features</Link>
-                <button onClick={toggleTheme} className="p-2 rounded-lg hover:bg-secondary transition">
-                  {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                </button>
-              </div>
-
-              <button className="md:hidden p-2" onClick={() => setMobileMenu(!mobileMenu)}>
-                {mobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </button>
-            </div>
-          </div>
-
-          {mobileMenu && (
-            <div className="md:hidden border-t border-border px-4 py-4 space-y-3">
-              <Link href="/#features" className="block text-sm" onClick={() => setMobileMenu(false)}>Features</Link>
-            </div>
-          )}
-        </nav>
+        <SiteNav />
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 pt-32 pb-16">
           <div className="flex items-center gap-3 mb-4">
@@ -182,21 +150,7 @@ export default function TermsPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-4 border-t border-border">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center">
-              <Boxes className="w-4 h-4 text-background" />
-            </div>
-            <span className="font-bold">Invems</span>
-          </div>
-          <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link href="/terms" className="hover:text-foreground transition">Terms</Link>
-            <Link href="/privacy" className="hover:text-foreground transition">Privacy</Link>
-          </div>
-          <p className="text-xs text-muted-foreground">&copy; 2026 Invems. All rights reserved.</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

@@ -2,204 +2,204 @@
 
 import Link from "next/link";
 import {
-  ScanLine, ShoppingBag, ArrowRight, ArrowUpRight,
-  Boxes, Barcode, Building2, Clock, ClipboardCheck,
-  BarChart3, MessageCircle, Upload, ShieldCheck,
+  ArrowRight, Barcode, ClipboardCheck,
+  ShoppingBag, WifiOff, Users, ScanLine,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { useTheme } from "@/context/ThemeContext";
-import { cn } from "@/lib/utils";
-import FadeIn from "@/components/FadeIn";
-import { Button } from "@/components/ui/button";
+import { Reveal } from "@/components/motion/primitives";
+import ScanLineHero from "@/components/landing/ScanLineHero";
+import SiteNav from "@/components/landing/SiteNav";
+import SiteFooter from "@/components/landing/SiteFooter";
 
-const TERMINAL_LINES = [
-  { time: "09:41:22", action: "SCAN", detail: "PGD1668M", status: "ok" },
-  { time: "09:41:23", action: "LOOKUP", detail: "inventory → found", status: "ok" },
-  { time: "09:41:24", action: "APPROVE", detail: "Order #047 confirmed", status: "ok" },
-  { time: "09:42:01", action: "ALERT", detail: "Low stock: Z619 (qty: 2)", status: "warn" },
-  { time: "09:42:15", action: "SCAN", detail: "MX1473", status: "ok" },
-  { time: "09:42:16", action: "ADD", detail: "→ inventory (qty: 8)", status: "ok" },
+/* Every claim here is one the product actually makes good on. */
+const CAPABILITIES = [
+  {
+    icon: WifiOff,
+    title: "Works without signal",
+    body: "Scans queue on the floor and sync the moment the connection comes back.",
+  },
+  {
+    icon: Users,
+    title: "Three roles, one app",
+    body: "Workers, admins and buyers each get their own view of the same stock.",
+  },
+  {
+    icon: ScanLine,
+    title: "Barcode or label",
+    body: "Scan the code. When there is no code, read the printed label instead.",
+  },
+  {
+    icon: ClipboardCheck,
+    title: "Nothing slips in",
+    body: "What a worker submits waits for an admin to approve it before it counts.",
+  },
+];
+
+const STEPS = [
+  {
+    icon: Barcode,
+    title: "Scan it in",
+    body: "Scan a barcode on the floor, or upload a CSV to load a whole facility at once.",
+  },
+  {
+    icon: ShoppingBag,
+    title: "Buyers order",
+    body: "Buyers join with a storefront code, browse your catalog and place orders.",
+  },
+  {
+    icon: ClipboardCheck,
+    title: "Approve and ship",
+    body: "Review what came in, approve it, then track the order out the door.",
+  },
 ];
 
 export default function LandingPage() {
-  const { user, userName, loading } = useAuth();
-  const { theme } = useTheme();
+  const { user, loading } = useAuth();
   const isLoggedIn = !loading && !!user;
-  const isDark = theme === "dark";
 
   return (
-    <div className={`min-h-screen ${isDark ? "bg-background text-foreground" : "bg-background text-foreground"}`}>
-      <nav className={`fixed top-0 left-0 right-0 z-50 border-b ${isDark ? "border-border bg-background/80" : "border-border bg-background/80"} backdrop-blur-sm`}>
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center transition-transform group-hover:scale-105">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo.svg" alt="Invems" className="w-full h-full object-contain" />
-            </div>
-            <span className="text-sm font-semibold tracking-wide">Invems</span>
-          </Link>
+    <div className="min-h-screen bg-background text-foreground">
+      <SiteNav />
 
-          <div className="flex items-center gap-5">
-            {loading ? (
-              <div className="w-20 h-8" />
-            ) : isLoggedIn ? (
-              <>
-                <div className={`hidden sm:flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border ${isDark ? "border-border text-muted-foreground" : "border-border text-muted-foreground"}`}>
-                  Signed in as {userName || user?.email?.split("@")[0] || "User"}
-                </div>
-                <Link href="/dashboard" className="inline-flex">
-                  <Button size="sm" className="h-8 text-xs">
-                    Go to Dashboard <ArrowUpRight className="w-3 h-3" />
-                  </Button>
-                </Link>
-                <Link href="/dashboard" className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${isDark ? "bg-secondary border border-border" : "bg-secondary border border-border"}`}>
-                  {userName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "U"}
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                  Sign in
-                </Link>
-                <Link href="/signup" className="text-sm font-medium bg-foreground text-background px-4 py-2 rounded-lg hover:opacity-90 transition-colors">
-                  Get started
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </nav>
-
+      {/* ── Hero ──────────────────────────────────────────────── */}
       <section className="pt-14">
-        <div className="max-w-6xl mx-auto px-6 pt-24 pb-20 grid lg:grid-cols-2 gap-16 items-start">
-          <div className="pt-4">
-            <div className={`fade-up inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-medium uppercase tracking-widest mb-8 ${isDark ? "border-border text-muted-foreground" : "border-border text-muted-foreground"}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${isDark ? "bg-foreground" : "bg-foreground"} pulse-dot`} />
-              Warehouse Management
+        <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 pb-20 pt-20 lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:pt-24">
+          <div>
+            <div className="fade-up mb-7 inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-[var(--brand-1)]" />
+              Warehouse management
             </div>
 
-            <h1 className={`fade-up fade-up-1 text-[2.75rem] sm:text-5xl lg:text-[3.5rem] font-bold tracking-tight leading-[1.1] ${isDark ? "text-foreground" : "text-foreground"}`}>
-              Stop guessing.
+            <h1 className="fade-up fade-up-1 font-display text-[2.6rem] font-extrabold leading-[1.05] tracking-[-0.035em] sm:text-5xl lg:text-[3.6rem]">
+              Point a phone at a box.
               <br />
-              <span className={isDark ? "text-muted-foreground" : "text-muted-foreground"}>Start managing.</span>
+              <span className="text-brand-gradient">It becomes inventory.</span>
             </h1>
 
-            <p className={`fade-up fade-up-2 mt-6 text-base leading-relaxed max-w-md ${isDark ? "text-muted-foreground" : "text-muted-foreground"}`}>
-              Real-time visibility into every box, every order, every scan.
-              Built for teams that run warehouses, not spreadsheets.
+            <p className="fade-up fade-up-2 mt-6 max-w-lg text-base leading-relaxed text-muted-foreground">
+              Invems turns a scan into a record the whole team works from.
+              Workers scan on the floor and submit. Admins approve. Buyers
+              order from what is actually on the shelf.
             </p>
 
-            <div className="fade-up fade-up-3 mt-10 flex items-center gap-4">
-              <Link href={isLoggedIn ? "/dashboard" : "/signup"} className="text-sm font-medium bg-foreground text-background px-5 py-2.5 rounded-lg hover:opacity-90 press">
-                {isLoggedIn ? "Continue to dashboard" : "Start managing your warehouse"}
+            <div className="fade-up fade-up-3 mt-9 flex flex-wrap items-center gap-4">
+              <Link
+                href={isLoggedIn ? "/dashboard" : "/signup"}
+                className="press inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--btn-shadow)] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-dark"
+              >
+                {isLoggedIn ? "Open your dashboard" : "Create your account"}
+                <ArrowRight className="h-4 w-4" />
               </Link>
-              <a href="#how" className={`text-sm font-medium ${isDark ? "text-muted-foreground hover:text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-                How it works →
+              <a
+                href="#how"
+                className="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+              >
+                See how a scan works
               </a>
             </div>
+
+            <p className="fade-up fade-up-4 mono mt-8 text-[11px] tracking-wide text-muted-foreground">
+              iPhone, Android and the web. Free while you set up.
+            </p>
           </div>
 
-          <div className={`fade-up fade-up-4 rounded-xl border overflow-hidden lg:mt-8 ${isDark ? "bg-card border-border" : "bg-card border-border"}`}>
-            <div className={`flex items-center gap-2 px-4 py-3 border-b ${isDark ? "border-border bg-card" : "border-border bg-card"}`}>
-              <div className="flex gap-1.5">
-                <div className={`w-2.5 h-2.5 rounded-full ${isDark ? "bg-muted-foreground" : "bg-muted-foreground"}`} />
-                <div className={`w-2.5 h-2.5 rounded-full ${isDark ? "bg-muted-foreground" : "bg-muted-foreground"}`} />
-                <div className={`w-2.5 h-2.5 rounded-full ${isDark ? "bg-muted-foreground" : "bg-muted-foreground"}`} />
-              </div>
-              <span className={`text-[10px] font-mono ml-2 ${isDark ? "text-muted-foreground" : "text-muted-foreground"}`}>scan.log — live</span>
-            </div>
-            <div className={`p-4 font-mono text-xs space-y-1.5 ${isDark ? "bg-card" : "bg-card"}`}>
-              {TERMINAL_LINES.map((line, i) => (
-                <div key={i} className="type-line flex items-center gap-3">
-                  <span className={isDark ? "text-muted-foreground shrink-0" : "text-muted-foreground shrink-0"}>{line.time}</span>
-                  <span className={cn(
-                    "w-16 shrink-0 font-medium",
-                    line.status === "warn" ? "text-foreground" : isDark ? "text-muted-foreground" : "text-muted-foreground"
-                  )}>
-                    {line.action}
-                  </span>
-                  <span className={cn(
-                    isDark ? "text-foreground/70" : "text-foreground/70"
-                  )}>
-                    {line.detail}
-                  </span>
-                </div>
-              ))}
-              <div className="type-line flex items-center gap-3 mt-1">
-                <span className={isDark ? "text-muted-foreground" : "text-muted-foreground"}>09:42:30</span>
-                <span className={isDark ? "text-muted-foreground/50" : "text-muted-foreground/50"}>_</span>
-                <div className={`w-2 h-3.5 ${isDark ? "bg-foreground/60" : "bg-foreground/60"} animate-blink`} />
-              </div>
-            </div>
+          <div className="fade-up fade-up-4">
+            <ScanLineHero />
           </div>
         </div>
       </section>
 
-      <section className={`border-y ${isDark ? "border-border" : "border-border"}`}>
-        <FadeIn direction="up">
-        <div className="max-w-6xl mx-auto px-6 py-8 grid grid-cols-2 sm:grid-cols-4 gap-6">
-          {[
-            { label: "Barcodes scanned", value: "14,200+" },
-            { label: "Orders processed", value: "2,400+" },
-            { label: "Facilities active", value: "38" },
-            { label: "Uptime", value: "99.9%" },
-          ].map((stat, i) => (
-            <div key={i} className="text-center">
-              <div className={`text-2xl font-bold ${isDark ? "text-foreground" : "text-foreground"}`}>{stat.value}</div>
-              <div className={`text-sm ${isDark ? "text-muted-foreground" : "text-muted-foreground"}`}>{stat.label}</div>
-            </div>
+      {/* ── What it actually does ─────────────────────────────── */}
+      <section className="border-y border-border bg-card/30">
+        <div className="mx-auto grid max-w-6xl gap-x-8 gap-y-9 px-6 py-14 sm:grid-cols-2 lg:grid-cols-4">
+          {CAPABILITIES.map((cap, i) => (
+            <Reveal key={cap.title} delay={i * 0.07}>
+              <div>
+                <cap.icon className="mb-3 h-5 w-5 text-[var(--brand-1)]" strokeWidth={2} />
+                <h3 className="font-display text-[0.95rem] font-bold tracking-tight">
+                  {cap.title}
+                </h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                  {cap.body}
+                </p>
+              </div>
+            </Reveal>
           ))}
         </div>
-        </FadeIn>
       </section>
 
-      <section id="how" className="py-24">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className={`text-3xl font-bold ${isDark ? "text-foreground" : "text-foreground"}`}>How it works</h2>
-            <p className={`mt-4 ${isDark ? "text-muted-foreground" : "text-muted-foreground"}`}>Three simple steps to get started</p>
-          </div>
+      {/* ── How it works ──────────────────────────────────────── */}
+      <section id="how" className="py-24 scroll-mt-14">
+        <div className="mx-auto max-w-6xl px-6">
+          <Reveal>
+            <div className="max-w-xl">
+              <h2 className="font-display text-3xl font-extrabold tracking-[-0.03em] sm:text-4xl">
+                From the shelf to the order.
+              </h2>
+              <p className="mt-4 text-muted-foreground">
+                Three steps, and no spreadsheet in the middle of them.
+              </p>
+            </div>
+          </Reveal>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { icon: Barcode, title: "Scan or import", desc: "Use barcode scanner or upload CSV to add inventory in bulk" },
-              { icon: ShoppingBag, title: "Buyers order", desc: "Buyers browse your catalog and place orders through storefronts" },
-              { icon: ClipboardCheck, title: "Approve & fulfill", desc: "Review orders, approve, and manage fulfillment in one place" },
-            ].map((step, i) => (
-              <div key={i} className={`card-luxury p-8 text-center`}>
-                <div className={`w-14 h-14 rounded-xl mx-auto mb-4 flex items-center justify-center ${isDark ? "bg-secondary" : "bg-secondary"}`}>
-                  <step.icon className="w-6 h-6" />
+          <div className="mt-14 grid gap-6 md:grid-cols-3">
+            {STEPS.map((step, i) => (
+              <Reveal key={step.title} delay={i * 0.09}>
+                <div className="card-luxury hover-lift group h-full p-7">
+                  <div className="mb-5 flex items-center gap-3">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-gradient text-white shadow-[var(--btn-shadow)]">
+                      <step.icon className="h-5 w-5" strokeWidth={2} />
+                    </span>
+                    <span className="mono text-[11px] tracking-[0.18em] text-muted-foreground">
+                      0{i + 1}
+                    </span>
+                  </div>
+                  <h3 className="font-display text-lg font-bold tracking-tight">
+                    {step.title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    {step.body}
+                  </p>
                 </div>
-                <h3 className={`font-semibold mb-2 ${isDark ? "text-foreground" : "text-foreground"}`}>{step.title}</h3>
-                <p className={`text-sm ${isDark ? "text-muted-foreground" : "text-muted-foreground"}`}>{step.desc}</p>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      <section className={`py-24 ${isDark ? "bg-secondary/30" : "bg-secondary/30"}`}>
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className={`text-3xl font-bold ${isDark ? "text-foreground" : "text-foreground"}`}>Ready to streamline your warehouse?</h2>
-          <p className={`mt-4 mb-8 ${isDark ? "text-muted-foreground" : "text-muted-foreground"}`}>Join thousands of businesses managing inventory with Invems.</p>
-          <Link href="/signup" className="inline-flex items-center gap-2 bg-foreground text-background px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-colors">
-            Get started free <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
+      {/* ── Close ─────────────────────────────────────────────── */}
+      <section className="px-6 pb-24">
+        <Reveal>
+          <div className="relative mx-auto max-w-5xl overflow-hidden rounded-3xl border border-border bg-card px-8 py-16 text-center shadow-glow">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 opacity-70"
+              style={{
+                background:
+                  "radial-gradient(38rem 22rem at 50% -20%, color-mix(in oklab, var(--brand-2) 22%, transparent), transparent 70%)",
+              }}
+            />
+            <div className="relative">
+              <h2 className="font-display text-3xl font-extrabold tracking-[-0.03em] sm:text-4xl">
+                Start with one facility.
+              </h2>
+              <p className="mx-auto mt-4 max-w-md text-muted-foreground">
+                Make an account, add a shelf, scan your first box. Invite the
+                rest of the team once it is running.
+              </p>
+              <Link
+                href={isLoggedIn ? "/dashboard" : "/signup"}
+                className="press mt-8 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--btn-shadow)] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-dark"
+              >
+                {isLoggedIn ? "Open your dashboard" : "Create your account"}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </Reveal>
       </section>
 
-      <footer className={`py-8 border-t ${isDark ? "border-border" : "border-border"}`}>
-        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Boxes className="w-4 h-4" />
-            <span className={`text-sm font-medium ${isDark ? "text-foreground" : "text-foreground"}`}>Invems</span>
-          </div>
-          <div className={`flex items-center gap-6 text-sm ${isDark ? "text-muted-foreground" : "text-muted-foreground"}`}>
-            <a href="/terms" className="hover:text-foreground transition-colors">Terms</a>
-            <a href="/privacy" className="hover:text-foreground transition-colors">Privacy</a>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

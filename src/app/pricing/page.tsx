@@ -1,108 +1,125 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, Boxes, Sun, Moon, ArrowLeft, ArrowRight } from "lucide-react";
-import { useTheme } from "@/context/ThemeContext";
+import { Check, ArrowRight } from "lucide-react";
+import { Reveal } from "@/components/motion/primitives";
+import SiteNav from "@/components/landing/SiteNav";
+import SiteFooter from "@/components/landing/SiteFooter";
 
-const features = [
-  "Unlimited users",
-  "Unlimited facilities",
+/**
+ * Every line here is a feature that exists in the product today.
+ * "Google Sheets sync" used to be listed and was never built; the real thing
+ * is CSV import and export, which is what it now says.
+ */
+const INCLUDED = [
+  "Unlimited users and facilities",
   "Unlimited inventory items",
-  "Barcode scanning & camera",
-  "Advanced analytics dashboard",
-  "Order management & approvals",
-  "Role-based access control",
-  "Google Sheets sync",
-  "Multi-facility management",
-  "Activity logs & history",
-  "Priority support",
+  "Barcode scanning from the camera",
+  "Label reading when there is no barcode",
+  "Worker submissions and admin approvals",
+  "Buyer storefronts and order management",
+  "Role based access for workers, admins and buyers",
+  "CSV import and export",
+  "Analytics and activity history",
+  "Offline scanning with automatic sync",
+  "Push notifications",
+  "In app support tickets",
 ];
 
 export default function PricingPage() {
-  const { theme, toggleTheme } = useTheme();
-
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Nav */}
-      <nav className="glass fixed top-0 left-0 right-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center">
-                <Boxes className="w-5 h-5 text-white" />
+      <SiteNav />
+
+      <section className="px-6 pb-20 pt-32">
+        <div className="mx-auto max-w-3xl">
+          <Reveal>
+            <div className="text-center">
+              <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-[var(--brand-1)]" />
+                Pricing
               </div>
-              <span className="text-xl font-bold tracking-tight">Invems</span>
-            </Link>
-            <div className="flex items-center gap-4">
-              <button onClick={toggleTheme} className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition">
-                {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              </button>
-              <Link href="/login" className="text-sm font-medium hover:text-primary transition">Log in</Link>
-              <Link href="/signup" className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary-dark transition">
-                Get Started
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <div className="pt-28 pb-20 px-4">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-12">
-            <Link href="/" className="inline-flex items-center gap-1 text-sm mb-6 hover:text-primary transition text-muted-foreground">
-              <ArrowLeft className="w-4 h-4" /> Back to home
-            </Link>
-            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight">
-              Invems is free for everyone.
-            </h1>
-            <p className="mt-4 text-lg text-muted-foreground">
-              Full access to every feature. No payment required. No limits.
-            </p>
-          </div>
-
-          {/* Single plan card */}
-          <div className="rounded-xl border bg-card p-8 sm:p-10 relative ring-2 ring-success">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-success text-white text-xs font-semibold flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" /> Free Forever
-            </div>
-
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold mb-2">Invems Full Access</h2>
-              <p className="text-sm text-muted-foreground">
-                Everything you need to manage your warehouse operations.
+              <h1 className="font-display text-[2.6rem] font-extrabold leading-[1.05] tracking-[-0.035em] sm:text-5xl">
+                It is free.
+                <br />
+                <span className="text-brand-gradient">All of it.</span>
+              </h1>
+              <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-muted-foreground">
+                Every feature, every user, every facility. There is no paid tier
+                to graduate to and no card to enter.
               </p>
-              <div className="mt-6">
-                <span className="text-5xl font-extrabold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  $0
-                </span>
-                <p className="text-sm mt-2 text-muted-foreground">Free forever — no credit card needed</p>
+            </div>
+          </Reveal>
+
+          <Reveal delay={0.1}>
+            <div className="relative mt-14 overflow-hidden rounded-3xl border border-border bg-card p-8 shadow-glow sm:p-10">
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 opacity-70"
+                style={{
+                  background:
+                    "radial-gradient(34rem 18rem at 50% -10%, color-mix(in oklab, var(--brand-2) 20%, transparent), transparent 70%)",
+                }}
+              />
+
+              <div className="relative">
+                <div className="text-center">
+                  <div className="flex items-baseline justify-center gap-1.5">
+                    <span className="font-display text-6xl font-extrabold tracking-[-0.04em]">
+                      $0
+                    </span>
+                    <span className="mono text-sm text-muted-foreground">/ month</span>
+                  </div>
+                  <p className="mono mt-3 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                    No card. No trial clock.
+                  </p>
+                </div>
+
+                <div className="my-9 h-px bg-border" />
+
+                <ul className="grid gap-3 sm:grid-cols-2">
+                  {INCLUDED.map((item) => (
+                    <li key={item} className="flex items-start gap-2.5 text-sm">
+                      <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-gradient">
+                        <Check className="h-2.5 w-2.5 text-white" strokeWidth={3.5} />
+                      </span>
+                      <span className="leading-snug text-muted-foreground">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Link
+                  href="/signup"
+                  className="press mt-10 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground shadow-[var(--btn-shadow)] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-dark"
+                >
+                  Create your account <ArrowRight className="h-4 w-4" />
+                </Link>
               </div>
             </div>
+          </Reveal>
 
-            <div className="grid sm:grid-cols-2 gap-3 mb-8">
-              {features.map((f) => (
-                <div key={f} className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
-                  {f}
-                </div>
-              ))}
+          <Reveal delay={0.16}>
+            <div className="mt-10 space-y-3 text-center">
+              <p className="text-sm text-muted-foreground">
+                Wondering how it stays free? Invems is early. We would rather
+                have warehouses using it and telling us what breaks.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Questions go to{" "}
+                <a
+                  href="mailto:support@alkasid.com"
+                  className="font-medium text-foreground underline underline-offset-4 transition-colors hover:text-[var(--brand-1)]"
+                >
+                  support@alkasid.com
+                </a>
+                .
+              </p>
             </div>
-
-            <Link
-              href="/signup"
-              className="block text-center py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary-dark transition shadow-lg shadow-primary/25 text-lg flex items-center justify-center gap-2"
-            >
-              Get Started <ArrowRight className="w-5 h-5" />
-            </Link>
-          </div>
-
-          <div className="text-center mt-8">
-            <p className="text-sm text-muted-foreground">
-              Questions? Contact us at support@alkasid.com
-            </p>
-          </div>
+          </Reveal>
         </div>
-      </div>
+      </section>
+
+      <SiteFooter />
     </div>
   );
 }
