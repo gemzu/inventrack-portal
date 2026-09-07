@@ -1,18 +1,19 @@
 "use client";
 
 /**
- * Scroll scrubbing without cached positions.
+ * Damped scroll scrubbing.
  *
- * GSAP ScrollTrigger measures start/end once and caches them. Under Next's
- * hydration, with fonts still loading and several viewport-height sections
- * above the fold, those measurements were stale here and onUpdate never fired.
- * Refreshing on rAF and on fonts.ready did not fix it reliably.
+ * Mapping scroll position straight to progress tracks the wheel exactly, which
+ * reads as jerky. This eases a current value toward the measured target every
+ * frame instead, which is what GSAP's `scrub: <seconds>` does and why its
+ * output feels smooth.
  *
- * Measuring the element every frame instead removes that whole class of bug.
- * It is one passive scroll listener and one rAF, reading a rect that the
- * browser already has, so it is cheap.
+ * The rAF loop only runs while the two values differ, so an idle page costs
+ * nothing.
  *
- * Pairs with `position: sticky` for the pinning, so there is no pin-spacer.
+ * Callers must animate composited properties only (transform, opacity).
+ * Anything that repaints per frame, mask-size especially, will stutter no
+ * matter how well damped the input is.
  */
 
 import { useEffect, useRef, type RefObject } from "react";
@@ -20,9 +21,10 @@ import { useEffect, useRef, type RefObject } from "react";
 export function useScrollScrub(
   ref: RefObject<HTMLElement | null>,
   onProgress: (p: number) => void,
-  onReducedMotion?: () => void
+  onReducedMotion?: () => void,
+  /* 0 to 1. Lower is heavier. 0.14 lands close to scrub: 1. */
+  damping = 0.14
 ) {
-  /* Hold the latest callbacks so changing them never re-subscribes. */
   const progressRef = useRef(onProgress);
   const reducedRef = useRef(onReducedMotion);
   progressRef.current = onProgress;
@@ -38,27 +40,42 @@ export function useScrollScrub(
     }
 
     let frame = 0;
+    let current = -1;
+    let target = 0;
 
     const measure = () => {
-      frame = 0;
       const rect = el.getBoundingClientRect();
       const travel = el.offsetHeight - window.innerHeight;
-      const p = travel <= 0 ? 0 : Math.min(1, Math.max(0, -rect.top / travel));
-      progressRef.current(p);
+      target = travel <= 0 ? 0 : Math.min(1, Math.max(0, -rect.top / travel));
     };
 
-    const schedule = () => {
-      if (!frame) frame = requestAnimationFrame(measure);
+    const tick = () => {
+      const delta = target - current;
+      if (Math.abs(delta) < 0.0004) {
+        current = target;
+        progressRef.current(current);
+        frame = 0;
+        return;
+      }
+      current += delta * damping;
+      progressRef.current(current);
+      frame = requestAnimationFrame(tick);
     };
 
-    measure();
-    window.addEventListener("scroll", schedule, { passive: true });
-    window.addEventListener("resize", schedule);
+    const start = () => {
+      measure();
+      if (current < 0) current = target; /* No slide-in on first paint. */
+      if (!frame) frame = requestAnimationFrame(tick);
+    };
+
+    start();
+    window.addEventListener("scroll", start, { passive: true });
+    window.addEventListener("resize", start);
 
     return () => {
-      window.removeEventListener("scroll", schedule);
-      window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", start);
+      window.removeEventListener("resize", start);
       if (frame) cancelAnimationFrame(frame);
     };
-  }, [ref]);
+  }, [ref, damping]);
 }

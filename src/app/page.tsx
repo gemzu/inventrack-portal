@@ -4,8 +4,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import ScanLineHero from "@/components/landing/ScanLineHero";
-import BoxDive from "@/components/landing/BoxDive";
-import RolesPan from "@/components/landing/RolesPan";
+import ProductRail from "@/components/landing/ProductRail";
 import DeadZone from "@/components/landing/DeadZone";
 import SiteNav from "@/components/landing/SiteNav";
 import SiteFooter from "@/components/landing/SiteFooter";
@@ -20,20 +19,14 @@ export default function LandingPage() {
       <ScrollReveals />
       <SiteNav />
 
-      {/* ── Hero: the scan line ───────────────────────────────── */}
+      {/* ── Hero ──────────────────────────────────────────────── */}
       <section className="pt-14">
-        <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 pb-24 pt-20 lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:pt-24">
+        <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 pb-24 pt-20 lg:grid-cols-[1fr_1.05fr] lg:gap-16 lg:pt-24">
           <div>
-            <div className="fade-up mb-7 inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-[var(--brand-1)]" />
-              Warehouse management
-            </div>
-
-            {/* Each line rises from behind a clipped edge. */}
-            <h1 className="font-display text-[2.6rem] font-extrabold leading-[1.05] tracking-[-0.035em] sm:text-5xl lg:text-[3.6rem]">
+            <h1 className="font-display text-[2.7rem] font-extrabold leading-[1.03] tracking-[-0.035em] sm:text-5xl lg:text-[3.7rem]">
               <span className="word-line">
                 <span className="word-rise" style={{ animationDelay: "0.05s" }}>
-                  Point a phone at a box.
+                  Warehouse stock,
                 </span>
               </span>
               <span className="word-line">
@@ -41,35 +34,29 @@ export default function LandingPage() {
                   className="word-rise text-brand-gradient"
                   style={{ animationDelay: "0.19s" }}
                 >
-                  It becomes inventory.
+                  live from the floor.
                 </span>
               </span>
             </h1>
-
-            <p className="fade-up fade-up-2 mt-6 max-w-lg text-base leading-relaxed text-muted-foreground">
-              Invems turns a scan into a record the whole team works from.
-              Workers scan on the floor and submit. Admins approve. Buyers
-              order from what is actually on the shelf.
-            </p>
 
             <div className="fade-up fade-up-3 mt-9 flex flex-wrap items-center gap-4">
               <Link
                 href={isLoggedIn ? "/dashboard" : "/signup"}
                 className="press inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--btn-shadow)] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:bg-primary-dark"
               >
-                {isLoggedIn ? "Open your dashboard" : "Create your account"}
+                {isLoggedIn ? "Open dashboard" : "Create account"}
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              <a
-                href="#open"
+              <Link
+                href="/login"
                 className="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
               >
-                See what a scan turns into
-              </a>
+                Sign in
+              </Link>
             </div>
 
-            <p className="fade-up fade-up-4 mono mt-8 text-[11px] tracking-wide text-muted-foreground">
-              iPhone, Android and the web. Free while you set up.
+            <p className="fade-up fade-up-4 mono mt-8 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+              iOS · Android · Web · Free
             </p>
           </div>
 
@@ -79,15 +66,10 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── The dive: open the box ────────────────────────────── */}
-      <div id="open" className="scroll-mt-14 border-t border-border">
-        <BoxDive />
-      </div>
+      {/* ── Real surfaces ─────────────────────────────────────── */}
+      <ProductRail />
 
-      {/* ── The handoff ───────────────────────────────────────── */}
-      <RolesPan />
-
-      {/* ── The dead zone ─────────────────────────────────────── */}
+      {/* ── Offline ───────────────────────────────────────────── */}
       <DeadZone />
 
       {/* ── Close ─────────────────────────────────────────────── */}
@@ -103,17 +85,13 @@ export default function LandingPage() {
           />
           <div className="relative">
             <h2 className="font-display text-3xl font-extrabold tracking-[-0.03em] sm:text-4xl">
-              Start with one facility.
+              Start with one shelf.
             </h2>
-            <p className="mx-auto mt-4 max-w-md text-muted-foreground">
-              Make an account, add a shelf, scan your first box. Invite the
-              rest of the team once it is running.
-            </p>
             <Link
               href={isLoggedIn ? "/dashboard" : "/signup"}
               className="press mt-8 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--btn-shadow)] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:bg-primary-dark"
             >
-              {isLoggedIn ? "Open your dashboard" : "Create your account"}
+              {isLoggedIn ? "Open dashboard" : "Create account"}
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>

@@ -68,24 +68,19 @@ export default function DeadZone() {
       <div ref={trackRef} className="relative" style={{ height: "300vh" }}>
         <div className="sticky top-0 flex h-screen items-center overflow-hidden">
           <div className="mx-auto grid w-full max-w-6xl items-center gap-12 px-6 lg:grid-cols-2 lg:gap-16">
-            {/* Words */}
+            {/* Label only. The demo makes the point. */}
             <div>
+              <p className="mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
+                Offline scanning
+              </p>
               <h2
                 id="deadzone-heading"
-                className="font-display text-3xl font-extrabold leading-[1.08] tracking-[-0.03em] sm:text-4xl lg:text-[3rem]"
+                className="mt-3 font-display text-3xl font-extrabold leading-[1.08] tracking-[-0.03em] sm:text-4xl lg:text-[3rem]"
               >
-                The back of the building
+                No signal,
                 <br />
-                <span className="text-brand-gradient">has no signal.</span>
+                <span className="text-brand-gradient">no problem.</span>
               </h2>
-              <p className="mt-6 max-w-md text-muted-foreground">
-                Scans do not stop when the bars do. They queue on the phone in
-                the order they happened, and go up the moment the worker walks
-                back into coverage. Nobody re-counts anything.
-              </p>
-              <p className="mono mt-6 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-                Status: {LABEL[phase]}
-              </p>
             </div>
 
             {/* The device */}
@@ -151,7 +146,7 @@ export default function DeadZone() {
 
               {phase === "synced" && (
                 <p className="mt-4 text-center text-xs font-semibold text-success">
-                  Everything landed. Nothing was typed twice.
+                  10 scans synced
                 </p>
               )}
             </div>
