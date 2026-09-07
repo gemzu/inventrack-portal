@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import BarcodeHero from "@/components/landing/BarcodeHero";
+import CrateLatticeHero from "@/components/landing/CrateLatticeHero";
 import AppLinks from "@/components/landing/AppLinks";
 import ProductRail from "@/components/landing/ProductRail";
 import DeadZone from "@/components/landing/DeadZone";
@@ -21,8 +21,8 @@ export default function LandingPage() {
       <ScrollReveals />
       <SiteNav />
 
-      {/* ── Hero: the barcode is the building ─────────────────── */}
-      <BarcodeHero>
+      {/* ── Hero: the mark tiled into a warehouse ─────────────── */}
+      <CrateLatticeHero>
         {/* Unbounded is a wide face, so it needs far less size than a condensed
             one to carry the same weight. Sized down from the earlier pass. */}
         <h1 className="max-w-4xl font-display text-[1.9rem] font-bold leading-[1.12] tracking-[-0.02em] sm:text-[2.5rem] lg:text-[3.1rem]">
@@ -61,7 +61,7 @@ export default function LandingPage() {
             iOS, Android and the web. Free.
           </span>
         </div>
-      </BarcodeHero>
+      </CrateLatticeHero>
 
       {/* ── Real surfaces ─────────────────────────────────────── */}
       <ProductRail />

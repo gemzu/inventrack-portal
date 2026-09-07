@@ -855,6 +855,54 @@ button:hover > svg {
 }
 
 /* ════════════════════════════════════════════════════════════
+   THE MARK IS THE WAREHOUSE — hero crate lattice.
+   The logo's cube tiled into a wall, with the real three-cube
+   arrangement held lit inside it.
+   ════════════════════════════════════════════════════════════ */
+.crate-glow {
+  background:
+    radial-gradient(54rem 34rem at 68% 16%, color-mix(in oklab, var(--brand-2) 18%, transparent), transparent 70%),
+    radial-gradient(40rem 28rem at 10% 78%, color-mix(in oklab, var(--brand-3) 11%, transparent), transparent 68%);
+}
+
+.crate-field {
+  mask-image: radial-gradient(120% 92% at 62% 22%, #000 30%, transparent 88%);
+}
+
+.crate-dim { stroke: color-mix(in oklab, var(--foreground) 11%, transparent); }
+
+/* Lit pass. Opacity only, so the whole field stays composited. */
+.crate-wave > use {
+  stroke: var(--brand-2);
+  opacity: 0;
+  animation: crate-lit 9s linear infinite;
+}
+@keyframes crate-lit {
+  0%   { opacity: 0; }
+  3%   { opacity: 0.95; }
+  14%  { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+/* The mark, always present and clearly the brightest thing in the field, so
+   it reads as the logo rather than as three crates the wave happened to hit. */
+.crate-mark {
+  stroke: var(--brand-3);
+  filter: drop-shadow(0 0 18px color-mix(in oklab, var(--brand-3) 75%, transparent))
+          drop-shadow(0 0 42px color-mix(in oklab, var(--brand-2) 45%, transparent));
+  animation: crate-mark-breathe 6s ease-in-out infinite;
+}
+@keyframes crate-mark-breathe {
+  0%, 100% { opacity: 0.9; }
+  50%      { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crate-wave > use { animation: none; opacity: 0.18; }
+  .crate-mark { animation: none; }
+}
+
+/* ════════════════════════════════════════════════════════════
    THE BARCODE IS THE BUILDING — hero rack.
    Bars are quantities. A count wave crosses them forever: each
    lifts and lights as it is reached, then settles. Two composited
