@@ -1,20 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+/**
+ * Notifications.
+ *
+ * Unread used to be a violet-tinted row plus a violet dot plus an outlined
+ * type badge — three signals for one bit of information. It is now one: the
+ * unread rows keep a lit left edge, and reading one puts it out.
+ */
+
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
   getNotifications,
   markNotificationRead,
   markAllNotificationsRead,
 } from "@/lib/dataService";
-import { Bell, Check } from "lucide-react";
+import { Bell } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import PageShell from "@/components/page-shell";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Panel, Figure, ListSkeleton } from "@/components/console/surfaces";
+import { Action } from "@/components/console/controls";
 
 interface Note {
   id: string;
@@ -46,7 +53,7 @@ export default function NotificationsPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const unreadCount = items.filter((n) => !n.readAt).length;
+  const unreadCount = useMemo(() => items.filter((n) => !n.readAt).length, [items]);
 
   const markAll = async () => {
     if (!user) return;
@@ -71,48 +78,68 @@ export default function NotificationsPage() {
   return (
     <PageShell
       title="Notifications"
-      subtitle={unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}
+      eyebrow="Console"
+      subtitle="What the floor has told you since you were last here."
       actions={
-        unreadCount > 0 && (
-          <Button variant="outline" onClick={markAll}>
-            <Check /> Mark all read
-          </Button>
-        )
+        unreadCount > 0 ? <Action onClick={markAll}>Mark all read</Action> : undefined
       }
     >
-      <Card><CardContent className="p-0">
-        {loading ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">Loading…</div>
-        ) : items.length === 0 ? (
-          <EmptyState icon={Bell} title="No notifications" description="You'll see alerts and activity updates here." />
-        ) : (
-          <ul className="divide-y divide-border">
-            {items.map((n) => {
-              const unread = !n.readAt;
-              return (
-                <li
-                  key={n.id}
-                  className={`flex items-start gap-3 p-4 transition ${unread ? "bg-primary/5" : ""} hover:bg-muted/30`}
-                  onClick={() => unread && markOne(n.id)}
-                  role={unread ? "button" : undefined}
-                >
-                  <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${unread ? "bg-primary" : "bg-transparent border border-border"}`} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <div className="font-medium text-sm truncate">{n.title || "Notification"}</div>
-                      {n.type && <Badge variant="outline" className="text-[10px]">{n.type}</Badge>}
-                    </div>
-                    {n.body && <p className="text-sm text-muted-foreground mt-0.5">{n.body}</p>}
-                    {n.createdAt && (
-                      <div className="text-xs text-muted-foreground mt-1">{formatDate(n.createdAt)}</div>
+      {loading ? (
+        <ListSkeleton rows={6} />
+      ) : (
+        <div className="space-y-8">
+          <div className="reveal flex flex-wrap items-baseline gap-x-10 gap-y-4">
+            <Figure label="Unread" value={unreadCount} tone={unreadCount ? "brand" : undefined} />
+            <Figure label="All time" value={items.length} />
+          </div>
+
+          {items.length === 0 ? (
+            <EmptyState
+              icon={Bell}
+              title="Nothing waiting"
+              description="Alerts and activity updates land here."
+            />
+          ) : (
+            <Panel className="reveal">
+              {items.map((n) => {
+                const unread = !n.readAt;
+                return (
+                  <div
+                    key={n.id}
+                    onClick={() => unread && markOne(n.id)}
+                    role={unread ? "button" : undefined}
+                    tabIndex={unread ? 0 : undefined}
+                    onKeyDown={(e) => {
+                      if (unread && (e.key === "Enter" || e.key === " ")) {
+                        e.preventDefault();
+                        markOne(n.id);
+                      }
+                    }}
+                    className={`row-line relative flex gap-4 px-5 py-3.5 ${unread ? "cursor-pointer" : ""}`}
+                  >
+                    {/* Unread is one signal: a lit edge. */}
+                    {unread && (
+                      <span className="absolute inset-y-3 left-0 w-0.5 rounded-sm bg-[linear-gradient(to_bottom,var(--brand-1),var(--brand-3))]" />
                     )}
+                    <div className="min-w-0 flex-1">
+                      <p className={`truncate text-sm ${unread ? "font-semibold" : "font-medium text-muted-foreground"}`}>
+                        {n.title || "Notification"}
+                      </p>
+                      {n.body && (
+                        <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">{n.body}</p>
+                      )}
+                      <p className="mono mt-1.5 truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                        {n.type ? `${n.type} · ` : ""}
+                        {n.createdAt ? formatDate(n.createdAt) : ""}
+                      </p>
+                    </div>
                   </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </CardContent></Card>
+                );
+              })}
+            </Panel>
+          )}
+        </div>
+      )}
     </PageShell>
   );
 }

@@ -1,16 +1,27 @@
 "use client";
-import AdminGuard from "@/components/AdminGuard";
+
+/**
+ * Facilities.
+ *
+ * Was a grid of cards, each led by a tinted rounded square holding a building
+ * icon, then the name, then two grey lines each prefixed by a smaller icon.
+ * Three icons per card to say "this is a place, in a region, with people in
+ * it" — which the words already said.
+ *
+ * Now: the headcount is the figure, the name and where it is are the caption,
+ * and the two actions live on the row rather than as tinted buttons on top.
+ */
 
 import { useCallback, useEffect, useState } from "react";
+import AdminGuard from "@/components/AdminGuard";
+import PageShell from "@/components/page-shell";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { Building2, Plus, Pencil, Trash2, MapPin, Users, X } from "lucide-react";
+import { Building2, Plus, Pencil, Trash2 } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import PageShell from "@/components/page-shell";
-import { ListSkeleton } from "@/components/console/surfaces";
+import { Figure, ListSkeleton } from "@/components/console/surfaces";
+import { Action, Field, Input, Modal } from "@/components/console/controls";
 
 interface Facility {
   id: string;
@@ -79,6 +90,7 @@ export default function FacilitiesPage() {
 
   const handleDelete = async (fac: Facility) => {
     if (!orgId) return;
+    if (!confirm(`Delete ${fac.name}? Stock and people assigned to it keep their records.`)) return;
     try {
       const { error } = await supabase.from("facilities").delete().eq("id", fac.id);
       if (error) throw error;
@@ -95,97 +107,112 @@ export default function FacilitiesPage() {
     setShowForm(true);
   };
 
+  const openNew = () => {
+    setEditing(null);
+    setForm({ name: "", state: "", address: "" });
+    setShowForm(true);
+  };
+
   if (loading) {
     return (
-      <ListSkeleton />
+      <AdminGuard>
+        <PageShell title="Sites" subtitle="Reading your locations." eyebrow="Console">
+          <ListSkeleton rows={4} />
+        </PageShell>
+      </AdminGuard>
     );
   }
 
-  return (<AdminGuard>
-    <PageShell
-      title="Facilities"
-      subtitle={`${facilities.length} location${facilities.length !== 1 ? "s" : ""}`}
-      actions={
-        <Button variant="brand" onClick={() => { setShowForm(true); setEditing(null); setForm({ name: "", state: "", address: "" }); }}>
-          <Plus className="w-4 h-4" /> Add Facility
-        </Button>
-      }
-    >
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {facilities.map((fac) => (
-          <Card key={fac.id}><CardContent className="p-5">
-            <div className="flex items-start justify-between mb-3">
-              <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center">
-                <Building2 className="w-5 h-5 text-primary" />
+  return (
+    <AdminGuard>
+      <PageShell
+        title="Sites"
+        eyebrow="Console"
+        subtitle="Warehouses and storage locations, and who is assigned to each."
+        actions={
+          <Action solid onClick={openNew}>
+            <Plus className="h-3.5 w-3.5" /> Add site
+          </Action>
+        }
+      >
+        {facilities.length === 0 ? (
+          <EmptyState
+            icon={Building2}
+            title="No sites yet"
+            description="Add your first warehouse or storage location, then assign stock and people to it."
+          />
+        ) : (
+          <div className="reveal grid gap-px overflow-hidden rounded-md bg-border sm:grid-cols-2 lg:grid-cols-3">
+            {facilities.map((fac) => (
+              <div key={fac.id} className="group relative bg-background p-5">
+                <Figure
+                  label="People assigned"
+                  value={fac.userCount || 0}
+                  className="[&_.figure-value]:text-3xl"
+                />
+                <p className="mt-4 truncate border-t border-border pt-3 text-sm font-medium">
+                  {fac.name}
+                </p>
+                <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                  {fac.state || "No region"}
+                  {fac.address ? ` · ${fac.address}` : ""}
+                </p>
+
+                <div className="absolute right-4 top-4 flex gap-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                  <button
+                    onClick={() => openEdit(fac)}
+                    aria-label={`Edit ${fac.name}`}
+                    className="text-muted-foreground transition-colors duration-300 hover:text-foreground"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(fac)}
+                    aria-label={`Delete ${fac.name}`}
+                    className="text-muted-foreground transition-colors duration-300 hover:text-destructive"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
-              <div className="flex gap-1">
-                <button onClick={() => openEdit(fac)} className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition">
-                  <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
-                </button>
-                <button onClick={() => handleDelete(fac)} className="p-1.5 rounded-lg hover:bg-danger/10 text-danger transition">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-            <h3 className="font-semibold text-lg">{fac.name}</h3>
-            <div className="flex items-center gap-1 text-xs mt-1 text-muted-foreground">
-              <MapPin className="w-3 h-3" /> {fac.state || "N/A"}{fac.address ? ` - ${fac.address}` : ""}
-            </div>
-            <div className="flex items-center gap-1 text-xs mt-2 text-muted-foreground">
-              <Users className="w-3 h-3" /> {fac.userCount || 0} assigned
-            </div>
-          </CardContent></Card>
-        ))}
-        {facilities.length === 0 && (
-          <div className="col-span-full">
-            <EmptyState icon={Building2} title="No facilities yet" description="Add your first warehouse or storage location to get started." />
+            ))}
           </div>
         )}
-      </div>
 
-      {/* Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
-          <Card className="w-full max-w-md"><CardContent className="p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold">{editing ? "Edit Facility" : "Add Facility"}</h3>
-              <button onClick={() => setShowForm(false)}><X className="w-5 h-5" /></button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Name</label>
-                <input
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-md border text-sm outline-none focus:border-[var(--brand-2)] focus:shadow-[0_0_0_1px_color-mix(in_oklab,var(--brand-2)_60%,transparent)] transition bg-input border-border text-foreground"
-                  placeholder="Warehouse A"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">State / Region</label>
-                <input
-                  value={form.state}
-                  onChange={(e) => setForm({ ...form, state: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-md border text-sm outline-none focus:border-[var(--brand-2)] focus:shadow-[0_0_0_1px_color-mix(in_oklab,var(--brand-2)_60%,transparent)] transition bg-input border-border text-foreground"
-                  placeholder="California"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Address</label>
-                <input
-                  value={form.address}
-                  onChange={(e) => setForm({ ...form, address: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-md border text-sm outline-none focus:border-[var(--brand-2)] focus:shadow-[0_0_0_1px_color-mix(in_oklab,var(--brand-2)_60%,transparent)] transition bg-input border-border text-foreground"
-                  placeholder="123 Main St"
-                />
-              </div>
-              <Button variant="brand" onClick={handleSave} className="w-full h-11">
-                {editing ? "Update" : "Add"} Facility
-              </Button>
-            </div>
-          </CardContent></Card>
-        </div>
-      )}
-    </PageShell>
-  </AdminGuard>);
+        <Modal
+          open={showForm}
+          onClose={() => setShowForm(false)}
+          title={editing ? "Edit site" : "Add a site"}
+          subtitle={editing ? editing.name : "Somewhere stock physically lives"}
+        >
+          <div className="space-y-5">
+            <Field label="Name">
+              <Input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Warehouse A"
+              />
+            </Field>
+            <Field label="Region">
+              <Input
+                value={form.state}
+                onChange={(e) => setForm({ ...form, state: e.target.value })}
+                placeholder="California"
+              />
+            </Field>
+            <Field label="Address">
+              <Input
+                value={form.address}
+                onChange={(e) => setForm({ ...form, address: e.target.value })}
+                placeholder="123 Main St"
+              />
+            </Field>
+            <Action solid onClick={handleSave} className="w-full">
+              {editing ? "Save changes" : "Add site"}
+            </Action>
+          </div>
+        </Modal>
+      </PageShell>
+    </AdminGuard>
+  );
 }

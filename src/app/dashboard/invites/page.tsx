@@ -1,17 +1,26 @@
 "use client";
-import AdminGuard from "@/components/AdminGuard";
+
+/**
+ * Invite codes.
+ *
+ * The code is the entire point of this screen, so it is set at display size —
+ * the way a figure is set everywhere else in the console — instead of sitting
+ * in a grey inset box beside an icon in a tinted tile.
+ *
+ * Which code you are looking at is the segmented control, not three buttons
+ * where one happens to be filled.
+ */
 
 import { useCallback, useEffect, useState } from "react";
+import AdminGuard from "@/components/AdminGuard";
+import PageShell from "@/components/page-shell";
 import { useAuth } from "@/context/AuthContext";
 import { getOrg, regenerateInviteCode } from "@/lib/dataService";
-import { Copy, RefreshCw, Share2, Ticket } from "lucide-react";
-import PageShell from "@/components/page-shell";
-import GlassCard from "@/components/glass-card";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Copy, RefreshCw, Share2 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import { isSuperadmin } from "@/lib/roles";
+import { Panel, CrateSkeleton } from "@/components/console/surfaces";
+import { Action, Segmented } from "@/components/console/controls";
 
 type Kind = "admin" | "worker" | "buyer";
 
@@ -27,7 +36,9 @@ export default function InvitesPage() {
     if (!orgId) return;
     setLoading(true);
     try {
-      const org = await getOrg(orgId) as { adminInviteCode?: string; workerInviteCode?: string; inviteCode?: string };
+      const org = (await getOrg(orgId)) as {
+        adminInviteCode?: string; workerInviteCode?: string; inviteCode?: string;
+      };
       setCodes({
         admin: org.adminInviteCode,
         worker: org.workerInviteCode,
@@ -42,12 +53,12 @@ export default function InvitesPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const currentCode = codes[active] || "— not set —";
+  const currentCode = codes[active];
 
   const handleCopy = async () => {
-    if (!codes[active]) return;
+    if (!currentCode) return;
     try {
-      await navigator.clipboard.writeText(codes[active]!);
+      await navigator.clipboard.writeText(currentCode);
       toast("Copied to clipboard", "success");
     } catch {
       toast("Copy failed", "error");
@@ -55,13 +66,14 @@ export default function InvitesPage() {
   };
 
   const handleShare = async () => {
-    const code = codes[active];
-    if (!code) return;
-    const text = `Join our Invems organization with code: ${code}`;
+    if (!currentCode) return;
+    const text = `Join our Invems organization with code: ${currentCode}`;
     if (typeof navigator !== "undefined" && "share" in navigator) {
       try {
         await (navigator as Navigator & { share: (d: { text: string }) => Promise<void> }).share({ text });
-      } catch { /* user cancelled */ }
+      } catch {
+        /* the person cancelled the share sheet */
+      }
     } else {
       const nav = globalThis.navigator as Navigator;
       await nav.clipboard.writeText(text);
@@ -90,62 +102,64 @@ export default function InvitesPage() {
   return (
     <AdminGuard>
       <PageShell
-        title="Invite Codes"
-        subtitle="Share these codes with new members so they join this organization."
+        title="Invite codes"
+        eyebrow="Console"
+        subtitle="New members enter one of these when they sign up. Which code they used sets what they can do."
       >
-        <div className="flex gap-2 flex-wrap">
-          {(["admin", "worker", "buyer"] as Kind[]).map((k) => (
-            <Button
-              key={k}
-              variant={active === k ? "default" : "outline"}
-              onClick={() => setActive(k)}
-            >
-              {labelFor(k)}
-            </Button>
-          ))}
-        </div>
+        <div className="space-y-8">
+          <Segmented
+            value={active}
+            onChange={setActive}
+            options={[
+              { value: "admin", label: "Admin" },
+              { value: "worker", label: "Worker" },
+              { value: "buyer", label: "Buyer" },
+            ]}
+          />
 
-        <GlassCard>
-          <div className="flex items-start gap-3 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-              <Ticket className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold">{labelFor(active)} invite code</h3>
-                <Badge variant="secondary">{active}</Badge>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {descFor(active)}
+          <Panel className="reveal p-8" live>
+            <p className="mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+              {labelFor(active)} code
+            </p>
+
+            {loading ? (
+              <CrateSkeleton className="mt-4 h-12 w-72 border-0" />
+            ) : (
+              <p className="font-display mt-3 break-all text-[1.8rem] font-bold uppercase leading-none tracking-[0.06em] sm:text-[2.6rem]">
+                {currentCode || "Not set"}
               </p>
+            )}
+
+            <p className="mt-4 max-w-lg text-sm leading-relaxed text-muted-foreground">
+              {descFor(active)}
+            </p>
+
+            <div className="mt-7 flex flex-wrap gap-3 border-t border-border pt-6">
+              <Action onClick={handleCopy} disabled={!currentCode}>
+                <Copy className="h-3.5 w-3.5" /> Copy
+              </Action>
+              <Action onClick={handleShare} disabled={!currentCode}>
+                <Share2 className="h-3.5 w-3.5" /> Share
+              </Action>
+              <Action onClick={handleRegenerate} disabled={regenBusy} className="ml-auto">
+                <RefreshCw className={`h-3.5 w-3.5 ${regenBusy ? "animate-spin" : ""}`} />
+                {regenBusy ? "Regenerating" : "Regenerate"}
+              </Action>
             </div>
-          </div>
+          </Panel>
 
-          <div className="rounded-md border border-border bg-muted/30 px-5 py-4 flex items-center justify-between gap-3">
-            <code className="font-mono text-xl sm:text-2xl tracking-wider truncate">
-              {loading ? "…" : currentCode}
-            </code>
-            <div className="flex gap-1 shrink-0">
-              <Button variant="ghost" size="icon-sm" onClick={handleCopy} aria-label="Copy">
-                <Copy />
-              </Button>
-              <Button variant="ghost" size="icon-sm" onClick={handleShare} aria-label="Share">
-                <Share2 />
-              </Button>
-            </div>
+          <div className="reveal d1 space-y-3 border-t border-border pt-6 text-sm leading-relaxed text-muted-foreground">
+            <p>
+              <span className="text-foreground">How it works.</span> New members enter their code
+              when signing up, in the app or on the portal. Their role is set from the code they
+              used, so send the right one.
+            </p>
+            <p>
+              <span className="text-foreground">Regenerating.</span> The previous code stops working
+              immediately. People who already joined are unaffected.
+            </p>
           </div>
-
-          <div className="mt-4 flex justify-end">
-            <Button variant="outline" onClick={handleRegenerate} disabled={regenBusy}>
-              <RefreshCw /> {regenBusy ? "Regenerating..." : "Regenerate code"}
-            </Button>
-          </div>
-        </GlassCard>
-
-        <Card><CardContent className="p-6 space-y-2 text-sm text-muted-foreground">
-          <p><strong className="text-foreground">How it works:</strong> new members enter their code on signup in the mobile app or on the web portal signup page. Their role is set automatically based on which code they used.</p>
-          <p><strong className="text-foreground">Regenerating a code</strong> invalidates the previous one. Existing members are not affected.</p>
-        </CardContent></Card>
+        </div>
       </PageShell>
     </AdminGuard>
   );
@@ -154,8 +168,9 @@ export default function InvitesPage() {
 function labelFor(k: Kind) {
   return k === "admin" ? "Admin" : k === "worker" ? "Worker" : "Buyer";
 }
+
 function descFor(k: Kind) {
-  if (k === "admin") return "Gives the new member full admin access. Share only with trusted staff.";
-  if (k === "worker") return "Warehouse / floor staff who can scan, submit, and fulfil.";
-  return "Customers who shop through your connected storefronts.";
+  if (k === "admin") return "Full admin access to this organization. Share only with people you trust with everything.";
+  if (k === "worker") return "Floor staff: they can scan, submit, and fulfil, but not change how the organization is set up.";
+  return "Customers who order through your connected storefronts.";
 }

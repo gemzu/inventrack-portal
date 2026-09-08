@@ -1,14 +1,24 @@
 "use client";
+
+/**
+ * Product catalog.
+ *
+ * Every product ever entered, keyed by UPC, whether or not it is in stock now.
+ * The "IN STOCK" / "HISTORY" capsules are gone — that is a state, and states
+ * are the shared marker everywhere else in the console.
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import AdminGuard from "@/components/AdminGuard";
 import PageShell from "@/components/page-shell";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { Search, Download, BookOpen, X } from "lucide-react";
+import { Download, BookOpen } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
+import Status from "@/components/Status";
 import { useToast } from "@/components/Toast";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Panel, Figure, ColHead, ListSkeleton } from "@/components/console/surfaces";
+import { Action, SearchInput } from "@/components/console/controls";
 
 type Row = Record<string, unknown>;
 const str = (v: unknown) => (v == null ? "" : String(v));
@@ -26,7 +36,8 @@ export default function CatalogPage() {
     if (!orgId) { setLoading(false); return; }
     const load = async () => {
       const [{ data: cat }, { data: inv }] = await Promise.all([
-        supabase.from("product_catalog").select("*").eq("org_id", orgId).order("last_seen_at", { ascending: false }).limit(1000),
+        supabase.from("product_catalog").select("*").eq("org_id", orgId)
+          .order("last_seen_at", { ascending: false }).limit(1000),
         supabase.from("inventory").select("barcode").eq("org_id", orgId),
       ]);
       setRows((cat as Row[]) || []);
@@ -48,6 +59,11 @@ export default function CatalogPage() {
     );
   }, [rows, search]);
 
+  const inStockCount = useMemo(
+    () => filtered.filter((r) => live.has(str(r.barcode).trim())).length,
+    [filtered, live]
+  );
+
   const exportCsv = () => {
     if (filtered.length === 0) return;
     const headers = ["UPC", "Name", "Brand", "Model ID", "Part #", "Category", "In stock now", "Last seen"];
@@ -68,71 +84,85 @@ export default function CatalogPage() {
   };
 
   return (
-    <AdminGuard><PageShell
-      title="Product Catalog"
-      subtitle={`${filtered.length} product${filtered.length !== 1 ? "s" : ""} ever entered`}
-      actions={
-        <Button variant="outline" onClick={exportCsv} className="h-10 px-4">
-          <Download className="w-4 h-4" /> Export
-        </Button>
-      }
-    >
-      <p className="text-sm text-muted-foreground mb-4 max-w-2xl">
-        Every product ever entered, keyed by UPC — even if it&apos;s no longer in inventory. Search any UPC, brand,
-        or part number to find out which product it was.
-      </p>
+    <AdminGuard>
+      <PageShell
+        title="Catalog"
+        eyebrow="Console"
+        subtitle="Every product this organisation has ever entered, keyed by UPC — including the ones no longer on the floor. Search a code to find out what it was."
+        actions={
+          <Action onClick={exportCsv}>
+            <Download className="h-3.5 w-3.5" /> Export
+          </Action>
+        }
+      >
+        {loading ? (
+          <ListSkeleton rows={7} />
+        ) : (
+          <div className="space-y-8">
+            <div className="reveal flex flex-wrap items-baseline gap-x-10 gap-y-4">
+              <Figure label="Products" value={filtered.length} />
+              <Figure label="On the floor now" value={inStockCount} />
+              <Figure label="History only" value={filtered.length - inStockCount} />
+            </div>
 
-      {/* Search */}
-      <div className="relative mb-4 max-w-xl">
-        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search UPC, brand, part #, name..."
-          className="w-full h-11 pl-10 pr-10 rounded-md border border-border bg-background text-sm outline-none focus:ring-2 focus:ring-primary/40"
-        />
-        {search && (
-          <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-            <X className="w-4 h-4" />
-          </button>
-        )}
-      </div>
+            <SearchInput
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onClear={() => setSearch("")}
+              placeholder="UPC, brand, part number, or name"
+              aria-label="Search the catalog"
+              className="max-w-xl"
+            />
 
-      {loading ? (
-        <div className="py-16 text-center text-muted-foreground text-sm">Loading catalog…</div>
-      ) : filtered.length === 0 ? (
-        <EmptyState
-          icon={BookOpen}
-          title={rows.length === 0 ? "Catalog is empty" : "No matches"}
-          description={rows.length === 0
-            ? "Products appear here as they are added or edited on the app or portal."
-            : "Try a different UPC, brand, or part number."}
-        />
-      ) : (
-        <Card><CardContent className="p-0 divide-y divide-border">
-          {filtered.map((r) => {
-            const inStock = live.has(str(r.barcode).trim());
-            return (
-              <div key={str(r.id)} className="flex items-center gap-3 px-4 py-3">
-                <div className="min-w-0 flex-1">
-                  <div className="font-semibold truncate">
-                    {str(r.display_name) || str(r.model_id) || str(r.part_number) || "Unnamed product"}
-                  </div>
-                  <div className="text-xs text-muted-foreground truncate">
-                    {str(r.brand) || "Unknown brand"}
-                    {r.category ? ` · ${str(r.category)}` : ""}
-                    {r.part_number ? ` · #${str(r.part_number)}` : ""}
-                  </div>
-                  <div className="text-xs font-semibold text-primary mt-1 font-mono">UPC {str(r.barcode)}</div>
+            {filtered.length === 0 ? (
+              <EmptyState
+                icon={BookOpen}
+                title={rows.length === 0 ? "Catalog is empty" : "Nothing matches"}
+                description={
+                  rows.length === 0
+                    ? "Products appear here as they are added or edited, on the app or the portal."
+                    : "Try a different UPC, brand, or part number."
+                }
+              />
+            ) : (
+              <Panel className="reveal">
+                <div className="hidden items-center gap-4 border-b border-border px-5 py-2.5 md:flex">
+                  <ColHead className="min-w-0 flex-1">Product</ColHead>
+                  <ColHead className="w-40 shrink-0">UPC</ColHead>
+                  <ColHead className="w-32 shrink-0">State</ColHead>
                 </div>
-                <span className={`shrink-0 px-2.5 py-1 rounded-sm text-[10px] font-bold ${inStock ? "bg-success/15 text-success" : "bg-warning/15 text-warning"}`}>
-                  {inStock ? "IN STOCK" : "HISTORY"}
-                </span>
-              </div>
-            );
-          })}
-        </CardContent></Card>
-      )}
-    </PageShell></AdminGuard>
+
+                {filtered.map((r) => {
+                  const inStock = live.has(str(r.barcode).trim());
+                  return (
+                    <div key={str(r.id)} className="row-line flex items-center gap-4 px-5 py-3.5">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">
+                          {str(r.display_name) || str(r.model_id) || str(r.part_number) || "Unnamed product"}
+                        </p>
+                        <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                          {str(r.brand) || "Unknown brand"}
+                          {r.category ? ` · ${str(r.category)}` : ""}
+                          {r.part_number ? ` · #${str(r.part_number)}` : ""}
+                        </p>
+                      </div>
+                      <span className="mono hidden w-40 shrink-0 truncate text-sm md:block">
+                        {str(r.barcode)}
+                      </span>
+                      <div className="w-32 shrink-0">
+                        <Status
+                          status={inStock ? "available" : "archived"}
+                          label={inStock ? "On the floor" : "History"}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </Panel>
+            )}
+          </div>
+        )}
+      </PageShell>
+    </AdminGuard>
   );
 }

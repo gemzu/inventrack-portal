@@ -1,43 +1,35 @@
 "use client";
-import AdminGuard from "@/components/AdminGuard";
 
-import { useCallback, useEffect, useState } from "react";
+/**
+ * Boxes.
+ *
+ * A box was a card with a tinted rounded square holding a layers icon, a
+ * secondary badge for the category, and three grey "Label: value" lines. The
+ * code is the thing people actually read off this screen, so the code is what
+ * is set large; everything else is caption.
+ *
+ * The colour a box was given still matters — it is how people find it on the
+ * floor — so it stays, as the lit top edge of the panel rather than as a
+ * pastel tile behind an icon.
+ */
+
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useAuth } from "@/context/AuthContext";
-import {
-  getBoxes,
-  createBox,
-  getLooseItemsCount,
-  type Box,
-} from "@/lib/dataService";
-import { Package, Plus, Search, Layers } from "lucide-react";
+import AdminGuard from "@/components/AdminGuard";
 import PageShell from "@/components/page-shell";
-import GlassCard from "@/components/glass-card";
+import { useAuth } from "@/context/AuthContext";
+import { getBoxes, createBox, getLooseItemsCount, type Box } from "@/lib/dataService";
+import { Package, Plus } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Figure, CrateSkeleton } from "@/components/console/surfaces";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Action, Chip, Field, Input, Modal, SearchInput, Select,
+} from "@/components/console/controls";
 
 const BOX_CATEGORIES = [
-  "general",
-  "electronics",
-  "clothing",
-  "tools",
-  "fragile",
-  "heavy",
-  "perishable",
-  "documents",
-  "other",
+  "general", "electronics", "clothing", "tools", "fragile",
+  "heavy", "perishable", "documents", "other",
 ];
 
 const PRESET_COLORS = [
@@ -58,15 +50,8 @@ interface NewBoxForm {
 }
 
 const emptyForm: NewBoxForm = {
-  code: "",
-  label: "",
-  description: "",
-  color: PRESET_COLORS[0],
-  category: "general",
-  capacity: "",
-  weightLimit: "",
-  location: "",
-  facilityId: "",
+  code: "", label: "", description: "", color: PRESET_COLORS[0],
+  category: "general", capacity: "", weightLimit: "", location: "", facilityId: "",
 };
 
 export default function BoxesPage() {
@@ -86,10 +71,7 @@ export default function BoxesPage() {
     if (!orgId) return;
     setLoading(true);
     try {
-      const [b, loose] = await Promise.all([
-        getBoxes(orgId),
-        getLooseItemsCount(orgId),
-      ]);
+      const [b, loose] = await Promise.all([getBoxes(orgId), getLooseItemsCount(orgId)]);
       setBoxes(b);
       setLooseCount(loose);
     } catch (e) {
@@ -101,15 +83,19 @@ export default function BoxesPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const filtered = boxes.filter((b) => {
-    if (search) {
-      const s = search.toLowerCase();
-      if (!b.code?.toLowerCase().includes(s) && !b.label?.toLowerCase().includes(s)) return false;
-    }
-    if (categoryFilter !== "all" && b.category !== categoryFilter) return false;
-    if (facilityFilter !== "all" && b.facilityId !== facilityFilter) return false;
-    return true;
-  });
+  const filtered = useMemo(
+    () =>
+      boxes.filter((b) => {
+        if (search) {
+          const s = search.toLowerCase();
+          if (!b.code?.toLowerCase().includes(s) && !b.label?.toLowerCase().includes(s)) return false;
+        }
+        if (categoryFilter !== "all" && b.category !== categoryFilter) return false;
+        if (facilityFilter !== "all" && b.facilityId !== facilityFilter) return false;
+        return true;
+      }),
+    [boxes, search, categoryFilter, facilityFilter]
+  );
 
   const handleCreate = async () => {
     if (!orgId) return;
@@ -145,205 +131,222 @@ export default function BoxesPage() {
     <AdminGuard>
       <PageShell
         title="Boxes"
-        subtitle={`${filtered.length} of ${boxes.length} containers • ${looseCount} loose items`}
+        eyebrow="Console"
+        subtitle="Containers on the floor, and what is not in one."
         actions={
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger
-              render={
-                <Button variant="brand">
-                  <Plus /> New Box
-                </Button>
-              }
-            />
-            <DialogContent className="sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle>Create box</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium mb-1 text-muted-foreground">Code *</label>
-                    <Input
-                      value={form.code}
-                      onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
-                      placeholder="BOX-001"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium mb-1 text-muted-foreground">Label</label>
-                    <Input
-                      value={form.label}
-                      onChange={(e) => setForm({ ...form, label: e.target.value })}
-                      placeholder="Shelf A, row 2"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium mb-1 text-muted-foreground">Description</label>
-                  <Input
-                    value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
-                    placeholder="What's kept in here"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium mb-1 text-muted-foreground">Category</label>
-                    <select
-                      value={form.category}
-                      onChange={(e) => setForm({ ...form, category: e.target.value })}
-                      className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
-                    >
-                      {BOX_CATEGORIES.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium mb-1 text-muted-foreground">Facility</label>
-                    <select
-                      value={form.facilityId}
-                      onChange={(e) => setForm({ ...form, facilityId: e.target.value })}
-                      className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
-                    >
-                      <option value="">None</option>
-                      {facilities.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium mb-1 text-muted-foreground">Capacity</label>
-                    <Input
-                      type="number"
-                      value={form.capacity}
-                      onChange={(e) => setForm({ ...form, capacity: e.target.value })}
-                      placeholder="100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium mb-1 text-muted-foreground">Weight limit (kg)</label>
-                    <Input
-                      type="number"
-                      value={form.weightLimit}
-                      onChange={(e) => setForm({ ...form, weightLimit: e.target.value })}
-                      placeholder="25"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium mb-1 text-muted-foreground">Location</label>
-                  <Input
-                    value={form.location}
-                    onChange={(e) => setForm({ ...form, location: e.target.value })}
-                    placeholder="Aisle 3, Shelf B"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium mb-1 text-muted-foreground">Color</label>
-                  <div className="flex gap-2 flex-wrap">
-                    {PRESET_COLORS.map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => setForm({ ...form, color: c })}
-                        className={`w-8 h-8 rounded-full border-2 transition ${form.color === c ? "border-foreground" : "border-transparent"}`}
-                        style={{ backgroundColor: c }}
-                        aria-label={`Color ${c}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button variant="brand" onClick={handleCreate} disabled={saving}>
-                  {saving ? "Creating..." : "Create"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Action solid onClick={() => setOpen(true)}>
+            <Plus className="h-3.5 w-3.5" /> New box
+          </Action>
         }
       >
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by code or label..."
-              className="pl-9 h-10"
+        <div className="space-y-8">
+          <div className="reveal flex flex-wrap items-baseline gap-x-10 gap-y-4">
+            <Figure label="Boxes shown" value={filtered.length} note={`of ${boxes.length}`} />
+            <Figure
+              label="Loose items"
+              value={looseCount}
+              tone={looseCount ? "warning" : undefined}
+              note="not in any box"
             />
           </div>
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="h-10 rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring dark:bg-input/30"
-          >
-            <option value="all">All categories</option>
-            {BOX_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-          {facilities.length > 0 && (
-            <select
-              value={facilityFilter}
-              onChange={(e) => setFacilityFilter(e.target.value)}
-              className="h-10 rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring dark:bg-input/30"
-            >
-              <option value="all">All facilities</option>
-              {facilities.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-            </select>
+
+          <div className="space-y-4">
+            <SearchInput
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onClear={() => setSearch("")}
+              placeholder="Box code or label"
+              aria-label="Search boxes"
+            />
+            <div className="flex flex-wrap items-center gap-2">
+              <Chip on={categoryFilter === "all"} onClick={() => setCategoryFilter("all")}>
+                Any kind
+              </Chip>
+              {BOX_CATEGORIES.map((c) => (
+                <Chip key={c} on={categoryFilter === c} onClick={() => setCategoryFilter(c)}>
+                  {c}
+                </Chip>
+              ))}
+            </div>
+            {facilities.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                <Chip on={facilityFilter === "all"} onClick={() => setFacilityFilter("all")}>
+                  Any site
+                </Chip>
+                {facilities.map((f) => (
+                  <Chip
+                    key={f.id}
+                    on={facilityFilter === f.id}
+                    onClick={() => setFacilityFilter(f.id)}
+                  >
+                    {f.name}
+                  </Chip>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {loading ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <CrateSkeleton key={i} className="h-32 w-full" delay={i * 0.07} />
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            <EmptyState
+              icon={Package}
+              title="No boxes here"
+              description="Group items into labelled boxes to track where they are and how full they get."
+            />
+          ) : (
+            <div className="reveal grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filtered.map((box) => (
+                <Link key={box.id} href={`/dashboard/boxes/${box.id}`} className="block h-full">
+                  <div className="panel panel-hover h-full p-5">
+                    {/* The box's own colour, as the lit edge. */}
+                    <span
+                      className="absolute inset-x-0 top-0 h-0.5"
+                      style={{ background: box.color || "var(--brand-2)" }}
+                    />
+                    <p className="mono truncate text-lg font-semibold tracking-[0.02em]">
+                      {box.code}
+                    </p>
+                    <p className="mono mt-1 truncate text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                      {box.category || "general"}
+                      {box.label ? ` · ${box.label}` : ""}
+                    </p>
+
+                    <div className="mt-4 space-y-1 border-t border-border pt-3 text-xs text-muted-foreground">
+                      {box.location && <p className="truncate">{box.location}</p>}
+                      {facilities.find((f) => f.id === box.facilityId)?.name && (
+                        <p className="truncate">
+                          {facilities.find((f) => f.id === box.facilityId)?.name}
+                        </p>
+                      )}
+                      {box.capacity != null && (
+                        <p className="mono">Holds {box.capacity}</p>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
           )}
         </div>
 
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[0, 1, 2, 3, 4, 5].map((i) => (
-              <Card key={i}><CardContent className="p-6 h-32 animate-pulse bg-muted/40" /></Card>
-            ))}
+        <Modal
+          open={open}
+          onClose={() => setOpen(false)}
+          title="Create a box"
+          subtitle="The code is what people read off the shelf"
+        >
+          <div className="space-y-5">
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Code">
+                <Input
+                  value={form.code}
+                  onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
+                  placeholder="BOX-001"
+                />
+              </Field>
+              <Field label="Label">
+                <Input
+                  value={form.label}
+                  onChange={(e) => setForm({ ...form, label: e.target.value })}
+                  placeholder="Shelf A, row 2"
+                />
+              </Field>
+            </div>
+
+            <Field label="Description">
+              <Input
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                placeholder="What is kept in here"
+              />
+            </Field>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Kind">
+                <Select
+                  value={form.category}
+                  onChange={(e) => setForm({ ...form, category: e.target.value })}
+                >
+                  {BOX_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Site">
+                <Select
+                  value={form.facilityId}
+                  onChange={(e) => setForm({ ...form, facilityId: e.target.value })}
+                >
+                  <option value="">None</option>
+                  {facilities.map((f) => (
+                    <option key={f.id} value={f.id}>{f.name}</option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Capacity">
+                <Input
+                  type="number"
+                  value={form.capacity}
+                  onChange={(e) => setForm({ ...form, capacity: e.target.value })}
+                  placeholder="100"
+                />
+              </Field>
+              <Field label="Weight limit (kg)">
+                <Input
+                  type="number"
+                  value={form.weightLimit}
+                  onChange={(e) => setForm({ ...form, weightLimit: e.target.value })}
+                  placeholder="25"
+                />
+              </Field>
+            </div>
+
+            <Field label="Where it lives">
+              <Input
+                value={form.location}
+                onChange={(e) => setForm({ ...form, location: e.target.value })}
+                placeholder="Aisle 3, shelf B"
+              />
+            </Field>
+
+            <Field label="Colour" hint="How it is spotted on the floor.">
+              <div className="flex flex-wrap gap-2">
+                {PRESET_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setForm({ ...form, color: c })}
+                    aria-label={`Colour ${c}`}
+                    className={`h-8 w-8 rounded-md border transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.30,1)] ${
+                      form.color === c
+                        ? "scale-110 border-foreground"
+                        : "border-transparent hover:scale-105"
+                    }`}
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
+              </div>
+            </Field>
+
+            <div className="flex gap-3">
+              <Action onClick={() => setOpen(false)} className="flex-1">
+                Cancel
+              </Action>
+              <Action solid onClick={handleCreate} disabled={saving} className="flex-1">
+                {saving ? "Creating" : "Create box"}
+              </Action>
+            </div>
           </div>
-        ) : filtered.length === 0 ? (
-          <Card><CardContent className="p-0">
-            <EmptyState
-              icon={Package}
-              title="No boxes yet"
-              description="Group items into labelled boxes to track location and capacity at a glance."
-            />
-          </CardContent></Card>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((box) => <BoxCard key={box.id} box={box} facilityName={facilities.find((f) => f.id === box.facilityId)?.name} />)}
-          </div>
-        )}
+        </Modal>
       </PageShell>
     </AdminGuard>
-  );
-}
-
-function BoxCard({ box, facilityName }: { box: Box; facilityName?: string }) {
-  return (
-    <Link href={`/dashboard/boxes/${box.id}`} className="block group">
-      <GlassCard className="h-full transition hover:border-primary/60 group-hover:-translate-y-0.5">
-        <div className="flex items-start gap-3 mb-3">
-          <div
-            className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-            style={{ backgroundColor: (box.color || "#6366f1") + "33", color: box.color || "#6366f1" }}
-          >
-            <Layers className="w-5 h-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-sm font-semibold">{box.code}</span>
-              {box.category && <Badge variant="secondary">{box.category}</Badge>}
-            </div>
-            {box.label && <div className="text-xs text-muted-foreground truncate mt-0.5">{box.label}</div>}
-          </div>
-        </div>
-        <div className="space-y-1.5 text-xs text-muted-foreground">
-          {box.location && <div className="truncate">Location: {box.location}</div>}
-          {facilityName && <div className="truncate">Facility: {facilityName}</div>}
-          {box.capacity != null && <div>Capacity: {box.capacity}</div>}
-        </div>
-      </GlassCard>
-    </Link>
   );
 }
