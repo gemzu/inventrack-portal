@@ -386,7 +386,7 @@ body::before {
 }
 .fade-in {
   opacity: 0;
-  animation: fade-in 500ms ease forwards;
+  animation: fade-in 500ms var(--ease-out-expo) forwards;
 }
 
 /* Scale in */
@@ -432,15 +432,20 @@ body::before {
 
 /* Press effect */
 .press {
-  transition: transform 100ms ease;
+  transition: transform 120ms var(--ease-out-expo);
 }
 .press:active {
   transform: scale(0.97);
 }
 
-/* Smooth transitions */
-* {
-  transition: background-color 250ms ease, border-color 250ms ease, color 250ms ease, box-shadow 250ms ease;
+/* Smooth transitions.
+   In @layer base on purpose: Tailwind v4 emits utilities into @layer utilities,
+   and unlayered rules beat layered ones whatever the specificity. Unlayered,
+   this blanket rule silently overrode every transition-* utility on the site. */
+@layer base {
+  * {
+    transition: background-color 250ms var(--ease-out-expo), border-color 250ms var(--ease-out-expo), color 250ms var(--ease-out-expo), box-shadow 250ms var(--ease-out-expo);
+  }
 }
 
 /* Stagger animations for children */
@@ -491,7 +496,8 @@ body::before {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  transition: all 300ms ease;
+  /* Named properties, never all: transitioning all animates layout. */
+  transition: transform 300ms var(--ease-out-expo), border-color 300ms var(--ease-out-expo), box-shadow 300ms var(--ease-out-expo);
 }
 .card-luxury:hover {
   border-color: var(--muted-foreground);
@@ -615,11 +621,14 @@ select option {
    Motion polish — a cohesive interaction layer (v0.4)
    ════════════════════════════════════════════════════════════ */
 
-/* Buttons, links and role=button feel responsive by default. */
-button, a, [role="button"], summary, label[for] {
-  transition: color 180ms ease, background-color 180ms ease,
-              border-color 180ms ease, box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1),
-              transform 220ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms ease;
+/* Buttons, links and role=button feel responsive by default. Layered so a
+   component can still name its own properties with a utility. */
+@layer base {
+  button, a, [role="button"], summary, label[for] {
+    transition: color 180ms var(--ease-out-expo), background-color 180ms var(--ease-out-expo),
+                border-color 180ms var(--ease-out-expo), box-shadow 220ms var(--ease-out-expo),
+                transform 220ms var(--ease-out-expo), opacity 180ms var(--ease-out-expo);
+  }
 }
 
 /* Smooth, uniform focus for form fields (was instant). */
@@ -629,8 +638,10 @@ input, select, textarea {
 }
 
 /* Table rows: gentle lift + tint on hover. */
-tbody tr {
-  transition: background-color 160ms ease, box-shadow 200ms ease;
+@layer base {
+  tbody tr {
+    transition: background-color 160ms var(--ease-out-expo), box-shadow 200ms var(--ease-out-expo);
+  }
 }
 
 /* Icon buttons nudge their glyph on hover for a tactile feel. */
@@ -678,20 +689,22 @@ button:hover > svg {
 }
 
 /* ════════════════════════════════════════════════════════════
-   REVEAL SYSTEM — the house entrance is rise + blur out, not a
-   plain fade. Driven by one shared IntersectionObserver.
+   REVEAL SYSTEM — one motion language, taken from the index.
+   The index is the reference for how this site moves: content
+   rises from behind an edge with a slight roll, on ease-out-expo,
+   in 55ms steps. No blur drift, no soft easing. Everything that
+   enters anywhere on the site uses these same values.
+   Driven by one shared IntersectionObserver.
    ════════════════════════════════════════════════════════════ */
 .reveal {
   opacity: 0;
-  transform: translate3d(0, 32px, 0);
-  filter: blur(4px);
-  transition: opacity 0.95s var(--ease-out-soft),
-              transform 1s var(--ease-out-soft),
-              filter 0.8s ease;
+  transform: translate3d(0, 44px, 0) rotate(1.6deg);
+  transition: opacity 0.62s var(--ease-out-expo),
+              transform 0.75s var(--ease-out-expo);
 }
-.reveal-left  { transform: translate3d(-42px, 0, 0); }
-.reveal-right { transform: translate3d(42px, 0, 0); }
-.reveal-img   { transform: scale(0.94) translate3d(0, 22px, 0); filter: blur(6px); }
+.reveal-left  { transform: translate3d(-48px, 0, 0) rotate(-1.2deg); }
+.reveal-right { transform: translate3d(48px, 0, 0) rotate(1.2deg); }
+.reveal-img   { transform: scale(0.95) translate3d(0, 30px, 0); }
 
 .reveal.visible,
 .reveal-left.visible,
@@ -699,12 +712,31 @@ button:hover > svg {
 .reveal-img.visible {
   opacity: 1;
   transform: none;
-  filter: blur(0);
 }
 
-.d1{transition-delay:.07s} .d2{transition-delay:.15s} .d3{transition-delay:.23s}
-.d4{transition-delay:.31s} .d5{transition-delay:.39s} .d6{transition-delay:.48s}
-.d7{transition-delay:.56s}
+/* Headings get the index's exact move: clipped, so the line comes up from
+   behind an edge rather than sliding over the page. Put .reveal-line on the
+   clip and .reveal-line__inner on the text. */
+.reveal-line { display: block; overflow: hidden; }
+.reveal-line__inner {
+  display: block;
+  transform: translateY(140%) rotate(6deg);
+  opacity: 0;
+  transition: transform 0.75s var(--ease-out-expo),
+              opacity 0.5s var(--ease-out-expo);
+}
+.reveal-line.visible .reveal-line__inner { transform: none; opacity: 1; }
+
+/* Load-time stagger for the hero, same 55ms rhythm. These were used in
+   markup but never defined, so the hero row had no stagger at all. */
+.fade-up-1{animation-delay:.055s} .fade-up-2{animation-delay:.11s}
+.fade-up-3{animation-delay:.165s} .fade-up-4{animation-delay:.22s}
+.fade-up-5{animation-delay:.275s}
+
+/* 55ms steps, matching the index links. */
+.d1{transition-delay:.055s} .d2{transition-delay:.11s} .d3{transition-delay:.165s}
+.d4{transition-delay:.22s}  .d5{transition-delay:.275s} .d6{transition-delay:.33s}
+.d7{transition-delay:.385s}
 
 /* Hero headline: split by word, each rises from behind a clipped line. */
 .word-line { overflow: hidden; display: block; }
@@ -1037,7 +1069,7 @@ button:hover > svg {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .reveal, .reveal-left, .reveal-right, .reveal-img {
+  .reveal, .reveal-left, .reveal-right, .reveal-img, .reveal-line__inner {
     opacity: 1 !important;
     transform: none !important;
     filter: none !important;

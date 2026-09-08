@@ -34,13 +34,15 @@ const BARCODE =
 export default function AppLinks() {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      {STORES.map((s) => (
+      {STORES.map((s, i) => (
+        /* Wrapped rather than revealed directly: .reveal sets a transform, which
+           would override the hover lift on the anchor. */
+        <div key={s.code} className={`reveal d${i + 1}`}>
         <a
-          key={s.code}
           href={s.href}
           target="_blank"
           rel="noopener noreferrer"
-          className="bay-tag group relative overflow-hidden rounded-xl border border-border bg-card p-5 text-left transition-all duration-300 ease-[cubic-bezier(0.16,1,0.30,1)] hover:-translate-y-1 hover:border-[var(--brand-1)]"
+          className="bay-tag group relative overflow-hidden rounded-xl border border-border bg-card p-5 text-left transition-[transform,border-color,box-shadow] duration-300 ease-[cubic-bezier(0.16,1,0.30,1)] hover:-translate-y-1 hover:border-[var(--brand-1)]"
         >
           {/* The tag's barcode. Goes brand-coloured once scanned. */}
           <span
@@ -62,9 +64,10 @@ export default function AppLinks() {
                 {s.platform}
               </span>
             </span>
-            <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground transition-all duration-300 ease-[cubic-bezier(0.16,1,0.30,1)] group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[var(--brand-1)]" />
+            <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground transition-[transform,color] duration-300 ease-[cubic-bezier(0.16,1,0.30,1)] group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[var(--brand-1)]" />
           </span>
         </a>
+        </div>
       ))}
     </div>
   );

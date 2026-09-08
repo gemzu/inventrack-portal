@@ -85,7 +85,7 @@ export default function DeadZone() {
         <div className="sticky top-0 flex h-screen items-center overflow-hidden">
           <div className="mx-auto grid w-full max-w-6xl items-center gap-14 px-6 lg:grid-cols-[1fr_26rem] lg:gap-20">
             <div>
-              <p className="text-base font-semibold text-muted-foreground">
+              <p className="reveal text-base font-semibold text-muted-foreground">
                 Offline scanning
               </p>
               <h2
@@ -97,9 +97,11 @@ export default function DeadZone() {
               </h2>
             </div>
 
-            {/* The scanner in hand. */}
+            {/* The scanner in hand. Entrance lives on a wrapper: .reveal sets its
+               own transition, which would otherwise replace the filter fade. */}
+            <div className="reveal d2">
             <div
-              className="relative rounded-[1.75rem] border border-border bg-card p-6 shadow-glow transition-[filter] duration-700"
+              className="relative rounded-[1.75rem] border border-border bg-card p-6 shadow-glow transition-[filter] duration-700 ease-[cubic-bezier(0.16,1,0.30,1)]"
               style={{ filter: offline ? "saturate(0.2)" : "none" }}
             >
               {/* Status row: signal strength plus what is happening. */}
@@ -179,6 +181,7 @@ export default function DeadZone() {
                   <>Ready to scan</>
                 )}
               </p>
+            </div>
             </div>
           </div>
         </div>

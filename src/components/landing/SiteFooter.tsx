@@ -4,7 +4,7 @@ import Link from "next/link";
 export default function SiteFooter() {
   return (
     <footer className="border-t border-border py-9">
-      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-5 px-6 sm:flex-row">
+      <div className="reveal mx-auto flex max-w-6xl flex-col items-center justify-between gap-5 px-6 sm:flex-row">
         <div className="flex items-center gap-2.5">
           <span className="flex h-5 w-5 items-center justify-center overflow-hidden rounded">
             {/* eslint-disable-next-line @next/next/no-img-element */}
