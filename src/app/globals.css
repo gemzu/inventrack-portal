@@ -1431,3 +1431,17 @@ a:hover > .panel::before,
   .console-shell { display: none; }
   .app-gate { display: flex; }
 }
+
+/* Lenis needs these three, and it is a small enough set to keep here rather
+   than pull its stylesheet into a lazily-loaded path.
+
+   The height rule matters most: the root layout sets `h-full` on <html>, which
+   is exactly the case that stops a smoothed scroll from measuring the document
+   properly. The other two keep a locked page locked, and stop a scrollable
+   panel inside the page from handing its overscroll back to the window. */
+html.lenis,
+html.lenis body { height: auto; }
+
+.lenis.lenis-stopped { overflow: clip; }
+
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }

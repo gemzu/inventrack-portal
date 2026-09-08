@@ -10,6 +10,7 @@ import DeadZone from "@/components/landing/DeadZone";
 import SiteNav from "@/components/landing/SiteNav";
 import SiteFooter from "@/components/landing/SiteFooter";
 import ScanText from "@/components/motion/ScanText";
+import SmoothScroll from "@/components/motion/SmoothScroll";
 
 export default function LandingPage() {
   const { user, loading } = useAuth();
@@ -17,6 +18,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <SmoothScroll />
       <SiteNav />
 
       {/* ── Hero: the mark tiled into a warehouse ─────────────── */}

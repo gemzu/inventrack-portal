@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { getUnreadNotificationCount } from "@/lib/dataService";
 import PageLoader from "@/components/PageLoader";
+import AppGate from "@/components/console/AppGate";
 
 const LINKS = [
   { href: "/buyer/catalog", label: "Catalog", icon: ShoppingBag, meta: "What is available to order" },
@@ -116,56 +117,8 @@ function Rail({
   );
 }
 
-/* Mobile keeps a bottom bar, because reaching a rail one-handed on a phone is
-   worse than any amount of consistency is worth. It carries the same lit
-   hairline as the rail rather than a filled tab. */
-function BottomBar({
-  pathname, unread, cartCount,
-}: {
-  pathname: string;
-  unread: number;
-  cartCount: number;
-}) {
-  const items = LINKS.filter((l) => l.href !== "/buyer/profile");
-  return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/90 backdrop-blur-xl md:hidden">
-      <div className="flex items-stretch justify-around">
-        {items.map((l) => {
-          const active = pathname === l.href;
-          const count = countFor(l.href, unread, cartCount);
-          return (
-            <Link
-              key={l.href}
-              href={l.href}
-              className={`relative flex flex-1 flex-col items-center gap-1 py-2.5 transition-colors duration-300 ${
-                active ? "text-foreground" : "text-muted-foreground"
-              }`}
-            >
-              <span
-                className={`absolute inset-x-4 top-0 h-px origin-center bg-[linear-gradient(to_right,var(--brand-1),var(--brand-3))] transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.30,1)] ${
-                  active ? "scale-x-100" : "scale-x-0"
-                }`}
-              />
-              <span className="relative">
-                <l.icon className="h-4 w-4" />
-                {count > 0 && (
-                  <span className="mono absolute -right-2.5 -top-1.5 text-[9px] tabular-nums text-[var(--brand-2)]">
-                    {count}
-                  </span>
-                )}
-              </span>
-              <span className="mono text-[10px]">{l.label}</span>
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
-  );
-}
-
 export default function BuyerLayout({ children }: { children: React.ReactNode }) {
   const { user, userRole, userActive, loading, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const { items: cartItems } = useCart();
   const pathname = usePathname();
   const router = useRouter();
@@ -215,9 +168,13 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
   const here = LINKS.find((l) => pathname === l.href || pathname.startsWith(l.href + "/"));
 
   return (
-    <div className="console flex min-h-screen bg-background text-foreground">
+    <>
+      {/* Phones and tablets get the app. Both branches render and CSS picks,
+          so there is no hydration mismatch and no flash of the wrong shell. */}
+      <AppGate audience="buyer" />
 
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[16.5rem] md:block">
+      <div className="console console-shell min-h-screen bg-background text-foreground">
+      <aside className="fixed inset-y-0 left-0 z-40 w-[16.5rem]">
         <Rail
           pathname={pathname}
           unread={unreadCount}
@@ -226,35 +183,9 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
         />
       </aside>
 
-      <main className="w-full min-w-0 flex-1 md:pl-[16.5rem]">
-        {/* Mobile header, matching the site's bar. */}
-        <header className="fixed inset-x-0 top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/85 px-5 backdrop-blur-xl md:hidden">
-          <Link href="/buyer/catalog" className="flex items-center gap-2.5">
-            <Mark className="h-5 w-5" />
-            <span className="font-display text-[13px] font-extrabold uppercase tracking-[0.02em]">
-              Invems
-            </span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/buyer/profile"
-              aria-label="Profile"
-              className="text-muted-foreground transition-colors duration-300 hover:text-foreground"
-            >
-              <User className="h-3.5 w-3.5" />
-            </Link>
-            <button
-              onClick={toggleTheme}
-              aria-label="Toggle theme"
-              className="text-muted-foreground transition-colors duration-300 hover:text-foreground"
-            >
-              {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-            </button>
-          </div>
-        </header>
-
+      <main className="w-full min-w-0 flex-1 pl-[16.5rem]">
         {/* Desktop readout bar: where you are, and what it is for. */}
-        <header className="sticky top-0 z-30 hidden h-14 items-center border-b border-border bg-background/80 px-8 backdrop-blur-xl md:flex">
+        <header className="sticky top-0 z-30 flex h-14 items-center border-b border-border bg-background/80 px-8 backdrop-blur-xl">
           <p key={pathname} className="feed-line flex items-baseline gap-3">
             <span className="font-display text-[13px] font-bold uppercase tracking-[0.06em]">
               {here?.label || "Buying"}
@@ -265,15 +196,14 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
           </p>
         </header>
 
-        <div className="relative pb-24 pt-14 md:pb-10 md:pt-0">
+        <div className="relative pb-10">
           <span className="bay-wipe" aria-hidden key={`wipe-${pathname}`} />
           <div className="bay-in" key={pathname}>
             {children}
           </div>
         </div>
-
-        <BottomBar pathname={pathname} unread={unreadCount} cartCount={cartCount} />
       </main>
-    </div>
+      </div>
+    </>
   );
 }
