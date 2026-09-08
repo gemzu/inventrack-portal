@@ -72,7 +72,7 @@ function DialogContent({
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            className="absolute top-4 right-4 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-all opacity-60 hover:opacity-100"
+            className="absolute top-4 right-4 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-[color,background-color,border-color,box-shadow,transform,opacity] opacity-60 hover:opacity-100"
           >
             <X className="w-4 h-4" />
             <span className="sr-only">Close</span>

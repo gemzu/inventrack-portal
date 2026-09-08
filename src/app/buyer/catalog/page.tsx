@@ -142,7 +142,7 @@ export default function BuyerCatalogPage() {
               placeholder="Search by name, model, brand, barcode..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-14 pl-12 pr-4 rounded-2xl border border-border bg-card/80 backdrop-blur-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+              className="w-full h-14 pl-12 pr-4 rounded-2xl border border-border bg-card/80 backdrop-blur-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-[color,background-color,border-color,box-shadow,transform,opacity]"
             />
             {search && (
               <button onClick={() => setSearch("")} className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -189,7 +189,7 @@ export default function BuyerCatalogPage() {
               <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
                 <button
                   onClick={() => setCategoryFilter(null)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,transform,opacity] ${
                     !categoryFilter 
                       ? "bg-brand-gradient text-white shadow-[0_4px_12px_-4px_var(--brand-1)]"
                       : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -201,7 +201,7 @@ export default function BuyerCatalogPage() {
                   <button
                     key={cat}
                     onClick={() => setCategoryFilter(categoryFilter === cat ? null : cat)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                    className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,transform,opacity] ${
                       categoryFilter === cat
                         ? "bg-brand-gradient text-white"
                         : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -218,7 +218,7 @@ export default function BuyerCatalogPage() {
               {filtered.map((item, index) => (
                 <div
                   key={item.id}
-                  className="group relative bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10"
+                  className="group relative bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/50 transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-300 hover:shadow-lg hover:shadow-primary/10"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   {/* Image */}

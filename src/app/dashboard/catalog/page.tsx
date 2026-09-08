@@ -125,7 +125,7 @@ export default function CatalogPage() {
                   </div>
                   <div className="text-xs font-semibold text-primary mt-1 font-mono">UPC {str(r.barcode)}</div>
                 </div>
-                <span className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold ${inStock ? "bg-emerald-500/15 text-emerald-500" : "bg-amber-500/15 text-amber-500"}`}>
+                <span className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold ${inStock ? "bg-success/15 text-success" : "bg-warning/15 text-warning"}`}>
                   {inStock ? "IN STOCK" : "HISTORY"}
                 </span>
               </div>

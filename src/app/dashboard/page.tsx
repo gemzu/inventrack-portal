@@ -17,11 +17,11 @@ import InventoryDonut from "@/components/dashboard/InventoryDonut";
 import { PieChart as PieIcon } from "lucide-react";
 
 const STATUS_STYLES: Record<string, string> = {
-  pending_approval: "bg-amber-500/12 text-amber-600 border-amber-500/25 dark:text-amber-400",
+  pending_approval: "bg-warning/12 text-warning border-warning/25 dark:text-warning",
   confirmed: "bg-primary/12 text-primary border-primary/25",
   processing: "bg-primary/12 text-primary border-primary/25",
-  shipped: "bg-violet-500/12 text-violet-600 border-violet-500/25 dark:text-violet-400",
-  delivered: "bg-emerald-500/12 text-emerald-600 border-emerald-500/25 dark:text-emerald-400",
+  shipped: "bg-primary/12 text-primary border-primary/25 dark:text-primary",
+  delivered: "bg-success/12 text-success border-success/25 dark:text-success",
   cancelled: "bg-muted text-muted-foreground border-border",
 };
 
@@ -64,14 +64,14 @@ function QuickAction({ icon: Icon, title, description, href }: { icon: React.Ele
     <StaggerItem>
       <Link href={href} className="block">
         <MotionCard className="p-5 flex items-center gap-4 group">
-          <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center shrink-0 transition-all duration-300 group-hover:bg-brand-gradient group-hover:text-white group-hover:scale-110">
+          <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center shrink-0 transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-300 group-hover:bg-brand-gradient group-hover:text-white group-hover:scale-110">
             <Icon className="w-5 h-5" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold">{title}</p>
             <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
           </div>
-          <ArrowRight className="w-5 h-5 text-muted-foreground opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
+          <ArrowRight className="w-5 h-5 text-muted-foreground opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-300" />
         </MotionCard>
       </Link>
     </StaggerItem>
@@ -276,8 +276,8 @@ export default function DashboardPage() {
         {/* Announcement */}
         {announcement && (
           <Reveal>
-            <MotionCard interactive={false} className={`p-4 flex items-center gap-4 ${announcement.type === "warning" ? "border-amber-400/40" : ""}`}>
-              <AlertTriangle className={`w-5 h-5 shrink-0 ${announcement.type === "warning" ? "text-amber-500" : "text-primary"}`} />
+            <MotionCard interactive={false} className={`p-4 flex items-center gap-4 ${announcement.type === "warning" ? "border-warning/40" : ""}`}>
+              <AlertTriangle className={`w-5 h-5 shrink-0 ${announcement.type === "warning" ? "text-warning" : "text-primary"}`} />
               <div className="flex-1 min-w-0">
                 <p className="font-medium">{announcement.title}</p>
                 <p className="text-sm text-muted-foreground truncate">{announcement.message}</p>
@@ -329,7 +329,7 @@ export default function DashboardPage() {
                 <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-secondary">{teamBreakdown.buyers} buyer{teamBreakdown.buyers !== 1 ? "s" : ""}</span>
               </div>
               <div className="flex items-center gap-2 ml-auto">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 pulse-dot" />
+                <span className="w-2 h-2 rounded-full bg-success pulse-dot" />
                 <span className="text-sm text-muted-foreground">{teamBreakdown.active} active</span>
               </div>
             </div>

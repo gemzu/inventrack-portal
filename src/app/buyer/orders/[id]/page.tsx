@@ -62,10 +62,10 @@ function statusIndex(status?: string) {
 
 function statusColor(status?: string) {
   if (status === "cancelled") return "text-destructive bg-destructive/10 border-destructive/30";
-  if (status === "delivered") return "text-emerald-500 bg-emerald-500/10 border-emerald-500/30";
-  if (status === "shipped") return "text-blue-500 bg-blue-500/10 border-blue-500/30";
+  if (status === "delivered") return "text-success bg-success/10 border-success/30";
+  if (status === "shipped") return "text-primary bg-primary/10 border-primary/30";
   if (status === "processing" || status === "confirmed")
-    return "text-amber-500 bg-amber-500/10 border-amber-500/30";
+    return "text-warning bg-warning/10 border-warning/30";
   return "text-muted-foreground bg-muted border-border";
 }
 

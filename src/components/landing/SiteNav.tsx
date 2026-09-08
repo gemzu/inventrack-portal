@@ -15,6 +15,7 @@
  * would not earn its weight.
  */
 
+import Mark from "@/components/Mark";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
@@ -75,8 +76,7 @@ export default function SiteNav() {
           <div className="flex items-center gap-7">
             <Link href="/" className="group flex items-center gap-2.5">
               <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-lg transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/logo.svg" alt="" className="h-full w-full object-contain" />
+                <Mark className="h-full w-full text-foreground" />
               </span>
               <span className="font-display text-base font-extrabold uppercase tracking-[0.02em]">
                 Invems

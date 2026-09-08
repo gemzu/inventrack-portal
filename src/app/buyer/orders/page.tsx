@@ -10,9 +10,9 @@ import { useToast } from "@/components/Toast";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock }> = {
   pending_approval: { label: "Pending", color: "bg-warning/20 text-warning border-warning/30", icon: Clock },
-  confirmed: { label: "Confirmed", color: "bg-blue-500/20 text-blue-500 border-blue-500/30", icon: Clock },
-  processing: { label: "Processing", color: "bg-indigo-500/20 text-indigo-500 border-indigo-500/30", icon: Package },
-  shipped: { label: "Shipped", color: "bg-purple-500/20 text-purple-500 border-purple-500/30", icon: Package },
+  confirmed: { label: "Confirmed", color: "bg-primary/20 text-primary border-primary/30", icon: Clock },
+  processing: { label: "Processing", color: "bg-primary/20 text-primary border-primary/30", icon: Package },
+  shipped: { label: "Shipped", color: "bg-primary/20 text-primary border-primary/30", icon: Package },
   delivered: { label: "Delivered", color: "bg-success/20 text-success border-success/30", icon: CheckCircle },
   cancelled: { label: "Cancelled", color: "bg-destructive/20 text-destructive border-destructive/30", icon: XCircle },
   rejected: { label: "Rejected", color: "bg-destructive/20 text-destructive border-destructive/30", icon: XCircle },
@@ -133,7 +133,7 @@ export default function BuyerOrdersPage() {
                   className="group block"
                 >
                   <div 
-                    className="relative bg-card border border-border rounded-2xl p-6 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10"
+                    className="relative bg-card border border-border rounded-2xl p-6 hover:border-primary/50 transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-300 hover:shadow-lg hover:shadow-primary/10"
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
                     {/* Status Badge */}
@@ -181,7 +181,7 @@ export default function BuyerOrdersPage() {
                       </div>
 
                       {/* Arrow */}
-                      <div className="hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-muted group-hover:bg-primary/10 group-hover:text-primary transition-all">
+                      <div className="hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-muted group-hover:bg-primary/10 group-hover:text-primary transition-[color,background-color,border-color,box-shadow,transform,opacity]">
                         <ArrowRight className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" />
                       </div>
                     </div>

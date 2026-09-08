@@ -1,5 +1,6 @@
 "use client";
 
+import Mark from "@/components/Mark";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -67,8 +68,7 @@ export default function LoginPage() {
         <div className="w-full max-w-sm">
           <div className="reveal mb-9 flex items-center gap-2.5">
             <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-lg">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo.svg" alt="" className="h-full w-full object-contain" />
+              <Mark className="h-full w-full text-foreground" />
             </span>
             <span className="font-display text-sm font-bold tracking-tight">Invems</span>
           </div>

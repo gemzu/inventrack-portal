@@ -83,13 +83,13 @@ function AutoSaveInput({
         onChange={(e) => setLocalValue(e.target.value)}
         onBlur={handleBlur}
         placeholder={placeholder}
-        className="w-full px-4 py-3 rounded-lg border border-border bg-background text-sm transition-all focus:border-foreground focus:ring-0"
+        className="w-full px-4 py-3 rounded-lg border border-border bg-background text-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] focus:border-foreground focus:ring-0"
       />
       <div className="absolute right-3 top-1/2 -translate-y-1/2">
         {isSaving ? (
           <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
         ) : saved ? (
-          <Check className="w-4 h-4 text-green-500" />
+          <Check className="w-4 h-4 text-success" />
         ) : null}
       </div>
     </div>
@@ -281,7 +281,7 @@ export default function SettingsPage() {
             <SettingRow label="Dark Mode" description="Switch between light and dark themes">
               <button
                 onClick={toggleTheme}
-                className="px-5 py-2.5 rounded-xl border border-border bg-secondary text-sm font-medium hover:bg-muted transition-all min-w-[80px]"
+                className="px-5 py-2.5 rounded-xl border border-border bg-secondary text-sm font-medium hover:bg-muted transition-[color,background-color,border-color,box-shadow,transform,opacity] min-w-[80px]"
               >
                 {theme === "dark" ? "🌙 On" : "☀️ Off"}
               </button>
@@ -289,7 +289,7 @@ export default function SettingsPage() {
             <SettingRow label="Pink Theme (#E398CA)" description="Use soft pink accent color">
               <button
                 onClick={() => setAccent(accent === "pink" ? "neutral" : "pink")}
-                className={`px-5 py-2.5 rounded-xl border text-sm font-medium transition-all min-w-[80px] ${
+                className={`px-5 py-2.5 rounded-xl border text-sm font-medium transition-[color,background-color,border-color,box-shadow,transform,opacity] min-w-[80px] ${
                   accent === "pink" 
                     ? "bg-[#E398CA] border-[#E398CA] text-[#3d2a35]" 
                     : "border-border bg-secondary hover:bg-muted"

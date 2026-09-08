@@ -74,9 +74,9 @@ function formatDuration(minutes: number | null) {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  admin: "bg-red-500/10 text-red-500",
-  worker: "bg-blue-500/10 text-blue-500",
-  buyer: "bg-purple-500/10 text-purple-500",
+  admin: "bg-destructive/10 text-destructive",
+  worker: "bg-primary/10 text-primary",
+  buyer: "bg-primary/10 text-primary",
 };
 
 export default function TeamPage() {
@@ -146,9 +146,9 @@ export default function TeamPage() {
         {/* Summary Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { label: "Active Now", value: activeCount, icon: Users, color: "text-green-500", bg: "bg-green-500/10" },
+            { label: "Active Now", value: activeCount, icon: Users, color: "text-success", bg: "bg-success/10" },
             { label: "Total Hours Today", value: formatDuration(totalMinutes), icon: Clock, color: "text-primary", bg: "bg-primary/10" },
-            { label: "Avg Shift", value: formatDuration(avgDuration), icon: TrendingUp, color: "text-amber-500", bg: "bg-amber-500/10" },
+            { label: "Avg Shift", value: formatDuration(avgDuration), icon: TrendingUp, color: "text-warning", bg: "bg-warning/10" },
           ].map((stat) => (
             <Card key={stat.label}><CardContent className="p-5">
               <div className="flex items-center gap-3 mb-3">
@@ -167,9 +167,9 @@ export default function TeamPage() {
         {/* Currently Active */}
         <Card className="rounded-2xl overflow-hidden"><CardContent className="p-0">
           <div className="px-5 py-4 flex items-center gap-2 border-b border-border">
-            <Users className="w-4 h-4 text-green-500" />
+            <Users className="w-4 h-4 text-success" />
             <h2 className="font-semibold">Currently Active</h2>
-            <span className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full bg-green-500/10 text-green-500">
+            <span className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full bg-success/10 text-success">
               {activeUsers.length}
             </span>
           </div>
@@ -182,7 +182,7 @@ export default function TeamPage() {
               {activeUsers.map((u) => (
                 <div key={u.id} className="px-5 py-3.5 flex items-center gap-3">
                   <div className="relative">
-                    <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-success animate-pulse" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -204,7 +204,7 @@ export default function TeamPage() {
                     </div>
                   </div>
                   {u.isClockedIn && (
-                    <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-green-500/10 text-green-500">
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-success/10 text-success">
                       Clocked in
                     </span>
                   )}
@@ -243,13 +243,13 @@ export default function TeamPage() {
                   <div className="text-sm text-muted-foreground shrink-0 hidden sm:block whitespace-nowrap">
                     {formatTime(shift.clockIn)}
                     {" → "}
-                    {shift.clockOut ? formatTime(shift.clockOut) : <span className="text-green-500 font-medium">now</span>}
+                    {shift.clockOut ? formatTime(shift.clockOut) : <span className="text-success font-medium">now</span>}
                   </div>
                   <div className="text-sm font-semibold shrink-0 w-16 text-right">
                     {shift.durationMinutes ? (
                       <span className="text-primary">{formatDuration(shift.durationMinutes)}</span>
                     ) : (
-                      <span className="text-green-500">Active</span>
+                      <span className="text-success">Active</span>
                     )}
                   </div>
                 </div>

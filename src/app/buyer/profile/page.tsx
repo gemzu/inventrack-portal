@@ -180,7 +180,7 @@ export default function BuyerProfilePage() {
                       </div>
                     ) : null}
                   </div>
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                  <CheckCircle2 className="w-5 h-5 text-success" />
                 </div>
               ))}
             </div>
@@ -195,7 +195,7 @@ export default function BuyerProfilePage() {
               <h2 className="text-lg font-semibold">Two-factor authentication</h2>
             </div>
             {mfaEnrolled ? (
-              <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
+              <Badge className="bg-success/10 text-success border-success/30">
                 Enabled
               </Badge>
             ) : (

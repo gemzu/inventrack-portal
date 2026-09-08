@@ -90,7 +90,7 @@ export default function BuyerCartPage() {
               {items.map((item, index) => (
                 <div
                   key={item.id}
-                  className="group relative bg-card border border-border rounded-2xl p-4 hover:border-primary/50 transition-all duration-300"
+                  className="group relative bg-card border border-border rounded-2xl p-4 hover:border-primary/50 transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-300"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <div className="flex items-center justify-between gap-4">

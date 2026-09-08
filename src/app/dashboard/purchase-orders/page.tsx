@@ -19,8 +19,8 @@ type PO = {
 const STATUS_STYLE: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
   ordered: "bg-primary/15 text-primary",
-  received: "bg-emerald-500/15 text-emerald-500",
-  cancelled: "bg-red-500/15 text-red-500",
+  received: "bg-success/15 text-success",
+  cancelled: "bg-destructive/15 text-destructive",
 };
 
 export default function PurchaseOrdersPage() {
@@ -146,7 +146,7 @@ export default function PurchaseOrdersPage() {
                     </Button>
                   )}
                   {po.status !== "received" && (
-                    <button onClick={() => removePo(po)} className="p-2 text-muted-foreground hover:text-red-500" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => removePo(po)} className="p-2 text-muted-foreground hover:text-destructive" title="Delete"><Trash2 className="w-4 h-4" /></button>
                   )}
                 </div>
               </CardContent></Card>
@@ -182,7 +182,7 @@ export default function PurchaseOrdersPage() {
                     <span className="flex-1 text-sm font-medium truncate">{l.barcode}</span>
                     <span className="text-sm font-bold text-primary">×{l.qty}</span>
                     {l.cost != null && <span className="text-xs text-muted-foreground">${l.cost}</span>}
-                    <button onClick={() => setLines((p) => p.filter((_, j) => j !== i))} className="text-red-500"><X className="w-4 h-4" /></button>
+                    <button onClick={() => setLines((p) => p.filter((_, j) => j !== i))} className="text-destructive"><X className="w-4 h-4" /></button>
                   </div>
                 ))}
                 <div className="flex gap-2">

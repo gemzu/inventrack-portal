@@ -60,7 +60,7 @@ export default function ConnectStorefrontPage() {
                 <Link
                   key={(sf as {storefront?: {id?: string}}).storefront?.id}
                   href="/buyer/catalog"
-                  className="flex items-center gap-2 px-4 py-3 rounded-xl border bg-card hover:border-primary/50 hover:shadow-md transition-all"
+                  className="flex items-center gap-2 px-4 py-3 rounded-xl border bg-card hover:border-primary/50 hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity]"
                 >
                   <Check className="w-4 h-4 text-success" />
                   <span className="font-medium">{(sf as {storefront?: {name?: string}}).storefront?.name}</span>
@@ -159,7 +159,7 @@ export default function ConnectStorefrontPage() {
         <div className="mt-10">
           <h2 className="text-lg font-semibold mb-4">Messages</h2>
           <Link href="/buyer/messages">
-            <Card className="hover:border-primary/50 hover:shadow-md transition-all cursor-pointer">
+            <Card className="hover:border-primary/50 hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] cursor-pointer">
               <CardContent className="p-5 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">

@@ -163,9 +163,9 @@ export default function EnrichmentDashboardPage() {
   });
 
   function getConfidenceColor(confidence: number) {
-    if (confidence >= 0.8) return "text-green-500 bg-green-50";
-    if (confidence >= 0.5) return "text-amber-500 bg-amber-50";
-    return "text-red-500 bg-red-50";
+    if (confidence >= 0.8) return "text-success bg-success";
+    if (confidence >= 0.5) return "text-warning bg-warning";
+    return "text-destructive bg-destructive";
   }
 
   if (loading) {
@@ -217,7 +217,7 @@ export default function EnrichmentDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-500">{stats?.verifiedCount || 0}</div>
+            <div className="text-2xl font-bold text-success">{stats?.verifiedCount || 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -227,7 +227,7 @@ export default function EnrichmentDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-between">
-            <div className="text-2xl font-bold text-amber-500">{stats?.queueCount || 0}</div>
+            <div className="text-2xl font-bold text-warning">{stats?.queueCount || 0}</div>
             {(stats?.queueCount ?? 0) > 0 && (
               <Button 
                 onClick={processQueue} 
@@ -251,7 +251,7 @@ export default function EnrichmentDashboardPage() {
           <CardContent>
             {queue.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                <CheckCircle className="w-8 h-8 mx-auto mb-2 text-success" />
                 <p className="text-sm">Queue is empty</p>
               </div>
             ) : (
@@ -260,7 +260,7 @@ export default function EnrichmentDashboardPage() {
                   <div key={item.id} className="p-3 rounded-lg border bg-card">
                     <div className="flex items-center justify-between">
                       <span className="font-mono text-sm font-medium">{item.modelId}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-warning text-warning">
                         #{item.priority}
                       </span>
                     </div>
@@ -312,7 +312,7 @@ export default function EnrichmentDashboardPage() {
           <CardContent>
             {filteredProducts.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                <CheckCircle className="w-8 h-8 mx-auto mb-2 text-success" />
                 <p className="text-sm">All products verified!</p>
               </div>
             ) : (

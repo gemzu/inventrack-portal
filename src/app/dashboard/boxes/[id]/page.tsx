@@ -271,9 +271,9 @@ export default function BoxDetailPage() {
               {box.description && <p className="text-sm mt-2">{box.description}</p>}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
                 <Stat label="Total" value={stats.total} />
-                <Stat label="Available" value={stats.available} tone="text-emerald-500" />
-                <Stat label="Reserved" value={stats.reserved} tone="text-amber-500" />
-                <Stat label="Sold" value={stats.sold} tone="text-blue-500" />
+                <Stat label="Available" value={stats.available} tone="text-success" />
+                <Stat label="Reserved" value={stats.reserved} tone="text-warning" />
+                <Stat label="Sold" value={stats.sold} tone="text-muted-foreground" />
               </div>
               {capacityPct != null && (
                 <div className="mt-4">
@@ -283,7 +283,7 @@ export default function BoxDetailPage() {
                   </div>
                   <div className="h-2 rounded-full bg-muted overflow-hidden">
                     <div
-                      className="h-full transition-all"
+                      className="h-full transition-[color,background-color,border-color,box-shadow,transform,opacity]"
                       style={{
                         width: `${capacityPct}%`,
                         backgroundColor: box.color || "#6366f1",
@@ -349,7 +349,7 @@ export default function BoxDetailPage() {
                     </div>
                     <div className="text-sm text-muted-foreground shrink-0 hidden sm:block">×{it.quantity ?? "-"}</div>
                     <Badge variant="outline" className="shrink-0 hidden sm:inline-flex capitalize">{it.status || "-"}</Badge>
-                    <button onClick={() => handleRemove(it.id)} title="Remove from box (keeps the item)" className="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center bg-secondary text-muted-foreground hover:bg-amber-500 hover:text-white transition-colors">
+                    <button onClick={() => handleRemove(it.id)} title="Remove from box (keeps the item)" className="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center bg-secondary text-muted-foreground hover:bg-warning hover:text-white transition-colors">
                       <PackageMinus className="w-4 h-4" />
                     </button>
                     <button onClick={() => deleteItem(it.id)} title="Delete item permanently" className="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center bg-secondary text-muted-foreground hover:bg-destructive hover:text-white transition-colors">

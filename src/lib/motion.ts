@@ -27,7 +27,7 @@ export const scaleIn: Variants = {
 };
 
 /* Parent that reveals children one after another. */
-export const stagger = (delay = 0, gap = 0.06): Variants => ({
+export const stagger = (delay = 0, gap = 0.055): Variants => ({
   hidden: {},
   show: { transition: { delayChildren: delay, staggerChildren: gap } },
 });

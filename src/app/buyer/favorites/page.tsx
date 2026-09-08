@@ -105,7 +105,7 @@ export default function BuyerFavoritesPage() {
             {items.map((it) => (
               <div
                 key={it.id}
-                className="group bg-card border border-border rounded-2xl p-5 hover:border-primary/50 hover:shadow-lg transition-all duration-300"
+                className="group bg-card border border-border rounded-2xl p-5 hover:border-primary/50 hover:shadow-lg transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-300"
               >
                 <div className="flex items-start gap-3 mb-4">
                   <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">

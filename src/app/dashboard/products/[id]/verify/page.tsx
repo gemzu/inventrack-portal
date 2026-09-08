@@ -189,9 +189,9 @@ export default function ProductVerificationPage() {
   }
 
   function getConfidenceColor(confidence: number) {
-    if (confidence >= 0.8) return "bg-green-100 text-green-700 border-green-200";
-    if (confidence >= 0.5) return "bg-amber-100 text-amber-700 border-amber-200";
-    return "bg-red-100 text-red-700 border-red-200";
+    if (confidence >= 0.8) return "bg-success text-success border-success";
+    if (confidence >= 0.5) return "bg-warning text-warning border-warning";
+    return "bg-destructive text-destructive border-destructive";
   }
 
   if (loading) {
@@ -402,7 +402,7 @@ export default function ProductVerificationPage() {
                   </div>
                   <button
                     onClick={() => removeCompatibility(index)}
-                    className="p-2 text-red-500 hover:bg-red-50 rounded-md transition"
+                    className="p-2 text-destructive hover:bg-destructive rounded-md transition"
                   >
                     <XCircle className="w-4 h-4" />
                   </button>
@@ -464,7 +464,7 @@ export default function ProductVerificationPage() {
               <summary className="cursor-pointer text-sm font-medium text-muted-foreground">
                 View Raw AI Data
               </summary>
-              <pre className="mt-3 text-xs overflow-auto max-h-64 p-3 rounded bg-black text-green-400 font-mono">
+              <pre className="mt-3 text-xs overflow-auto max-h-64 p-3 rounded bg-black text-success font-mono">
                 {JSON.stringify(product.enrichmentData, null, 2)}
               </pre>
             </details>

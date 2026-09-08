@@ -1,5 +1,6 @@
 "use client";
 
+import Mark from "@/components/Mark";
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
@@ -141,7 +142,7 @@ function SidebarNav({
       <div className="h-16 flex items-center px-5 shrink-0">
         <Link href="/" className="flex items-center gap-3 group" onClick={onNavigate}>
           <div className="relative w-9 h-9 rounded-xl bg-brand-gradient flex items-center justify-center shadow-[0_6px_16px_-6px_var(--brand-1)] overflow-hidden">
-            <span className="font-display font-extrabold text-white text-lg leading-none">I</span>
+            <Mark className="h-6 w-6 text-white" />
             <span className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors" />
           </div>
           <span className="font-display font-bold text-lg tracking-tight">Invems</span>
@@ -244,8 +245,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <Card className="max-w-md">
           <CardContent className="p-10 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto mb-5">
-              <Bell className="w-8 h-8 text-amber-500" />
+            <div className="w-16 h-16 rounded-2xl bg-warning/10 flex items-center justify-center mx-auto mb-5">
+              <Bell className="w-8 h-8 text-warning" />
             </div>
             <h2 className="text-xl font-bold mb-2">Account Pending</h2>
             <p className="text-sm text-muted-foreground mb-6">
@@ -412,9 +413,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main className="flex-1 overflow-auto">
           <motion.div
             key={pathname}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
             className="max-w-6xl mx-auto p-6 lg:p-8"
           >
             <ErrorBoundary>

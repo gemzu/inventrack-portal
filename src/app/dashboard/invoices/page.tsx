@@ -39,8 +39,8 @@ interface Order {
 
 const STATUS_STYLES: Record<string, string> = {
   draft: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-  sent: "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  paid: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+  sent: "bg-primary text-primary dark:bg-primary/30 dark:text-primary",
+  paid: "bg-success text-success dark:bg-success/30 dark:text-success",
 };
 
 const NEXT_STATUS: Record<string, string> = {

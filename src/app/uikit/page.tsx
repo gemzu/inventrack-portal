@@ -57,14 +57,14 @@ export default function UIKit() {
       <Stagger className="grid sm:grid-cols-2 gap-4">
         <StaggerItem>
           <MotionCard className="p-5 flex items-center gap-4 group">
-            <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center group-hover:bg-brand-gradient group-hover:text-white transition-all">
+            <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center group-hover:bg-brand-gradient group-hover:text-white transition-[color,background-color,border-color,box-shadow,transform,opacity]">
               <Upload className="w-5 h-5" />
             </div>
             <div className="flex-1">
               <p className="font-semibold">Import Inventory</p>
               <p className="text-sm text-muted-foreground">Upload CSV to add items</p>
             </div>
-            <ArrowRight className="w-5 h-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all" />
+            <ArrowRight className="w-5 h-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-[color,background-color,border-color,box-shadow,transform,opacity]" />
           </MotionCard>
         </StaggerItem>
         <StaggerItem>

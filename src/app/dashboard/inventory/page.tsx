@@ -39,9 +39,9 @@ interface Item {
 }
 
 const STATUS_DOT: Record<string, string> = {
-  available: "bg-green-500",
-  reserved: "bg-amber-500",
-  sold: "bg-blue-500",
+  available: "bg-success",
+  reserved: "bg-warning",
+  sold: "bg-primary",
 };
 
 function mapItem(row: Record<string, unknown>): Item {
@@ -663,21 +663,21 @@ export default function InventoryPage() {
             <EmptyState icon={Package} title="No items found" description="Import a CSV or add items from the mobile app to get started." />
           )}
           {histResults.length > 0 && (
-            <div className="mt-6 pt-5 border-t border-amber-500/30">
-              <div className="flex items-center gap-2 mb-3 text-amber-500 text-xs font-bold tracking-wide">
+            <div className="mt-6 pt-5 border-t border-warning/30">
+              <div className="flex items-center gap-2 mb-3 text-warning text-xs font-bold tracking-wide">
                 <Clock className="w-3.5 h-3.5" />
                 FROM HISTORY · NO LONGER IN INVENTORY ({histResults.length})
               </div>
               <div className="space-y-2">
                 {histResults.map((h) => (
-                  <div key={String(h.id)} className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
+                  <div key={String(h.id)} className="rounded-xl border border-warning/30 bg-warning/5 p-3">
                     <div className="font-semibold truncate">
                       {String(h.display_name || h.model_id || h.part_number || "Known product")}
                     </div>
                     <div className="text-xs text-muted-foreground truncate">
                       {String(h.brand || "Unknown brand")}{h.category ? ` · ${String(h.category)}` : ""}
                     </div>
-                    <div className="text-xs font-semibold text-amber-500 mt-1 font-mono">UPC {String(h.barcode)}</div>
+                    <div className="text-xs font-semibold text-warning mt-1 font-mono">UPC {String(h.barcode)}</div>
                   </div>
                 ))}
               </div>

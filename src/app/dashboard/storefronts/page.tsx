@@ -176,7 +176,7 @@ export default function StorefrontsPage() {
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button variant="ghost" size="icon-sm" onClick={() => openEdit(sf)}><Pencil className="w-3.5 h-3.5 text-muted-foreground" /></Button>
-                    <Button variant="ghost" size="icon-sm" className="text-red-500 hover:bg-red-500/10" onClick={() => remove(sf)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                    <Button variant="ghost" size="icon-sm" className="text-destructive hover:bg-destructive/10" onClick={() => remove(sf)}><Trash2 className="w-3.5 h-3.5" /></Button>
                   </div>
                 </div>
                 <div>
@@ -266,7 +266,7 @@ function MultiList({ title, icon, items, selected, onToggle, tone }: { title: st
       <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">{title}</label>
       <div className="max-h-44 overflow-auto rounded-lg border p-2 space-y-1">
         {items.map((it) => (
-          <button key={it.id} type="button" onClick={() => onToggle(it.id)} className={`w-full text-left px-2 py-1.5 rounded text-xs ${selected.includes(it.id) ? (tone === "danger" ? "bg-red-500/15 text-red-500" : "bg-primary/15 text-primary") : "hover:bg-muted"}`}>
+          <button key={it.id} type="button" onClick={() => onToggle(it.id)} className={`w-full text-left px-2 py-1.5 rounded text-xs ${selected.includes(it.id) ? (tone === "danger" ? "bg-destructive/15 text-destructive" : "bg-primary/15 text-primary") : "hover:bg-muted"}`}>
             {icon} <span className="ml-1">{it.label}</span>
           </button>
         ))}

@@ -267,8 +267,8 @@ export default function ReportsPage() {
       desc: "One-file KPI digest for owners and managers",
       icon: TrendingUp,
       type: "ops_digest",
-      color: "text-purple-500",
-      bg: "bg-purple-500/10",
+      color: "text-primary",
+      bg: "bg-primary/10",
     },
     {
       title: "Activity Report",
@@ -323,19 +323,19 @@ export default function ReportsPage() {
             <div className="text-xs text-muted-foreground">Total Orders</div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-500">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-warning/10 text-warning">
               {snapshot.ordersPending} pending
             </span>
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-500/10 text-green-500">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-success/10 text-success">
               {snapshot.ordersFulfilled} fulfilled
             </span>
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-500">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-destructive/10 text-destructive">
               {snapshot.ordersRejected} rejected
             </span>
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-500">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary">
               {snapshot.fulfillmentRate}% fulfillment
             </span>
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-500">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary">
               {snapshot.pendingApprovals} approvals queued
             </span>
           </div>

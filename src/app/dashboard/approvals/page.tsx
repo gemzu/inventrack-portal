@@ -187,7 +187,7 @@ function ApprovalsContent() {
   return (
     <PageShell title="Approvals" subtitle={`${approvals.length} pending`}>
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-500 font-semibold">
+        <span className="text-xs px-2.5 py-1 rounded-full bg-warning/10 text-warning font-semibold">
           Pending: {approvals.length}
         </span>
         <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-semibold">
@@ -251,7 +251,7 @@ function ApprovalsContent() {
                   <button
                     onClick={() => handleApprove(item)}
                     disabled={busy}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium text-white transition disabled:opacity-50 bg-green-600"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium text-white transition disabled:opacity-50 bg-success"
                   >
                     <Check className="w-4 h-4" />
                     Approve
@@ -259,7 +259,7 @@ function ApprovalsContent() {
                   <button
                     onClick={() => handleReject(item)}
                     disabled={busy}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium text-white transition disabled:opacity-50 bg-red-600"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium text-white transition disabled:opacity-50 bg-destructive"
                   >
                     <X className="w-4 h-4" />
                     Reject

@@ -1,5 +1,6 @@
 "use client";
 
+import Mark from "@/components/Mark";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -53,7 +54,7 @@ function Sidebar({ pathname, onNavigate, unread, cartCount }: { pathname: string
       <div className="h-16 flex items-center px-5 shrink-0">
         <Link href="/buyer/catalog" className="flex items-center gap-3 group" onClick={onNavigate}>
           <div className="w-9 h-9 rounded-xl bg-brand-gradient flex items-center justify-center shadow-[0_6px_16px_-6px_var(--brand-1)]">
-            <span className="font-display font-extrabold text-white text-lg leading-none">I</span>
+            <Mark className="h-6 w-6 text-white" />
           </div>
           <span className="font-display font-bold text-lg tracking-tight">Invems</span>
         </Link>
@@ -164,7 +165,7 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
         <header className="md:hidden fixed top-0 left-0 right-0 h-14 glass border-b border-border z-30 flex items-center justify-between px-4">
           <Link href="/buyer/catalog" className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-brand-gradient flex items-center justify-center">
-              <span className="font-display font-extrabold text-white text-sm leading-none">I</span>
+              <Mark className="h-5 w-5 text-white" />
             </div>
             <span className="font-display font-bold text-sm">Invems</span>
           </Link>
@@ -179,9 +180,9 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
         {/* Fade only — a transform here would break position:fixed drawers/modals. */}
         <motion.div
           key={pathname}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
           className="pt-14 md:pt-0 pb-24 md:pb-0"
         >
           {children}

@@ -49,7 +49,7 @@ function ResetPageContent() {
 
   const inputClass = useMemo(
     () =>
-      `w-full px-4 py-3 rounded-lg border text-sm transition-all outline-none focus:border-foreground ${
+      `w-full px-4 py-3 rounded-lg border text-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] outline-none focus:border-foreground ${
         isDark
           ? "bg-card border-border text-foreground placeholder:text-muted-foreground"
           : "bg-background border-border text-foreground placeholder:text-muted-foreground"
