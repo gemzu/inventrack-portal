@@ -7,14 +7,12 @@ import {
   createStorefront, deleteStorefront, getStorefronts, updateStorefront,
   getFacilities, getBoxes, getInventoryPaginated,
 } from "@/lib/dataService";
-import { ShoppingBag, Plus, Pencil, Trash2, Tag, MapPin, Globe, Copy, X, Ban, Package } from "lucide-react";
+import { ShoppingBag, Plus, Pencil, Trash2, Copy } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import PageShell from "@/components/page-shell";
-import { ListSkeleton } from "@/components/console/surfaces";
+import { Figure, ColHead, ListSkeleton } from "@/components/console/surfaces";
+import { Action, Chip, Field, Input, Modal } from "@/components/console/controls";
 
 interface Storefront {
   id: string;
@@ -164,113 +162,240 @@ export default function StorefrontsPage() {
     <AdminGuard>
       <PageShell
         title="Storefronts"
-        subtitle="App-style filtering: facilities + categories + include/exclude lists."
-        actions={<Button variant="brand" onClick={openCreate}><Plus className="w-4 h-4" /> Create Storefront</Button>}
+        eyebrow="Console"
+        subtitle="A storefront is a filtered view of your stock with its own join code. Buyers only ever see what the filters let through."
+        actions={
+          <Action solid onClick={openCreate}>
+            <Plus className="h-3.5 w-3.5" /> New storefront
+          </Action>
+        }
       >
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {storefronts.map((sf) => (
-            <Card key={sf.id} className="relative overflow-hidden group border-border">
-              <CardContent className="p-5 space-y-4">
-                <div className="flex items-start justify-between">
-                  <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center">
-                    <ShoppingBag className="w-5 h-5 text-primary" />
+        <div className="space-y-8">
+          <div className="reveal flex flex-wrap items-baseline gap-x-10 gap-y-4">
+            <Figure label="Storefronts" value={storefronts.length} />
+          </div>
+
+          {storefronts.length === 0 ? (
+            <EmptyState
+              icon={ShoppingBag}
+              title="No storefronts"
+              description="Create one, set its filters, and hand out the code."
+            />
+          ) : (
+            <div className="reveal grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {storefronts.map((sf) => {
+                const bans = (sf.filterValue?.excludedItemIds as unknown[] | undefined)?.length || 0;
+                return (
+                  <div key={sf.id} className="panel group h-full p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="font-display truncate text-[15px] font-bold tracking-[-0.015em]">
+                        {sf.name}
+                      </p>
+                      <div className="flex shrink-0 gap-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                        <button
+                          onClick={() => openEdit(sf)}
+                          aria-label={`Edit ${sf.name}`}
+                          className="text-muted-foreground transition-colors duration-300 hover:text-foreground"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => remove(sf)}
+                          aria-label={`Delete ${sf.name}`}
+                          className="text-muted-foreground transition-colors duration-300 hover:text-destructive"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <p className="mt-1.5 line-clamp-2 min-h-[2.5rem] text-sm leading-relaxed text-muted-foreground">
+                      {sf.description || "No description."}
+                    </p>
+
+                    {/* The join code is what gets handed out, so it is set
+                        like a code rather than tucked into a grey strip. */}
+                    <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-4">
+                      <div className="min-w-0">
+                        <ColHead className="block">Join code</ColHead>
+                        <p className="mono mt-1 truncate text-base font-semibold tracking-[0.08em]">
+                          {sf.inviteCode}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(sf.inviteCode)}
+                        aria-label="Copy join code"
+                        className="shrink-0 text-muted-foreground transition-colors duration-300 hover:text-[var(--brand-2)]"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+
+                    <p className="mono mt-3 truncate text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                      {sf.filterType === "all" ? "Everything" : "Filtered"}
+                      {bans ? ` · ${bans} item ${bans === 1 ? "ban" : "bans"}` : ""}
+                    </p>
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon-sm" onClick={() => openEdit(sf)}><Pencil className="w-3.5 h-3.5 text-muted-foreground" /></Button>
-                    <Button variant="ghost" size="icon-sm" className="text-destructive hover:bg-destructive/10" onClick={() => remove(sf)}><Trash2 className="w-3.5 h-3.5" /></Button>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg">{sf.name}</h3>
-                  <p className="text-xs text-muted-foreground line-clamp-2 min-h-[2rem]">{sf.description || "No description provided."}</p>
-                </div>
-                <div className="flex items-center justify-between p-2 rounded-lg bg-muted/40 border border-border font-mono text-xs">
-                  <span className="text-muted-foreground">Code:</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-primary">{sf.inviteCode}</span>
-                    <Button variant="ghost" size="icon-sm" onClick={() => navigator.clipboard.writeText(sf.inviteCode)} className="h-6 w-6"><Copy className="w-3 h-3" /></Button>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
-                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted text-foreground">
-                    {sf.filterType === "all" ? <Globe className="w-3 h-3" /> : <MapPin className="w-3 h-3" />} {sf.filterType}
-                  </div>
-                  {(sf.filterValue?.excludedItemIds as unknown[] | undefined)?.length ? (
-                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-destructive/10 text-destructive"><Ban className="w-3 h-3" /> item bans</div>
-                  ) : null}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-          {storefronts.length === 0 && (
-            <div className="col-span-full">
-              <EmptyState icon={ShoppingBag} title="No Storefronts" description="Create a storefront and set filters exactly like the app." />
+                );
+              })}
             </div>
           )}
         </div>
 
-        {showForm && (
-          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowForm(false)}>
-            <Card className="w-full max-w-4xl max-h-[88vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-              <CardContent className="p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-bold">{editing ? "Edit Storefront" : "Create Storefront"}</h3>
-                  <Button variant="ghost" size="icon-sm" onClick={() => setShowForm(false)}><X className="w-5 h-5" /></Button>
-                </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Name</label>
-                    <Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Premium Hub" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Description</label>
-                    <Input value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} placeholder="Who is this for?" />
-                  </div>
-                </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <MultiPill title="Facilities" icon={<MapPin className="w-3 h-3" />} values={facilities.map((f) => ({ id: String(f.id), label: String(f.name || "") }))} selected={form.selectedFacilityIds} onToggle={(id) => toggleList("selectedFacilityIds", id)} />
-                  <MultiPill title="Categories" icon={<Tag className="w-3 h-3" />} values={categories.map((c) => ({ id: c, label: c }))} selected={form.selectedCategories} onToggle={(id) => toggleList("selectedCategories", id)} />
-                </div>
-                <div className="grid md:grid-cols-3 gap-4">
-                  <MultiList title="Include Boxes" icon={<Package className="w-3 h-3" />} items={boxes.map((b) => ({ id: String(b.id), label: String(b.code || "") }))} selected={form.includedBoxIds} onToggle={(id) => toggleList("includedBoxIds", id)} tone="primary" />
-                  <MultiList title="Exclude Boxes" icon={<Ban className="w-3 h-3" />} items={boxes.map((b) => ({ id: String(b.id), label: String(b.code || "") }))} selected={form.excludedBoxIds} onToggle={(id) => toggleList("excludedBoxIds", id)} tone="danger" />
-                  <MultiList title="Exclude Items" icon={<Ban className="w-3 h-3" />} items={inventory.slice(0, 150).map((i) => ({ id: String(i.id), label: String(i.modelId || i.barcode || "Item") }))} selected={form.excludedItemIds} onToggle={(id) => toggleList("excludedItemIds", id)} tone="danger" />
-                </div>
-                <Button variant="brand" className="w-full h-11" onClick={save}>{editing ? "Save Changes" : "Create Storefront"}</Button>
-              </CardContent>
-            </Card>
+        <Modal
+          open={showForm}
+          onClose={() => setShowForm(false)}
+          title={editing ? "Edit storefront" : "New storefront"}
+          subtitle="What buyers on this code are allowed to see"
+          wide
+        >
+          <div className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Name">
+                <Input
+                  value={form.name}
+                  onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="Premium hub"
+                />
+              </Field>
+              <Field label="Description">
+                <Input
+                  value={form.description}
+                  onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+                  placeholder="Who is this for?"
+                />
+              </Field>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <PickChips
+                title="Sites"
+                values={facilities.map((f) => ({ id: String(f.id), label: String(f.name || "") }))}
+                selected={form.selectedFacilityIds}
+                onToggle={(id) => toggleList("selectedFacilityIds", id)}
+              />
+              <PickChips
+                title="Categories"
+                values={categories.map((c) => ({ id: c, label: c }))}
+                selected={form.selectedCategories}
+                onToggle={(id) => toggleList("selectedCategories", id)}
+              />
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-3">
+              <PickList
+                title="Boxes shown"
+                items={boxes.map((b) => ({ id: String(b.id), label: String(b.code || "") }))}
+                selected={form.includedBoxIds}
+                onToggle={(id) => toggleList("includedBoxIds", id)}
+              />
+              <PickList
+                title="Boxes hidden"
+                items={boxes.map((b) => ({ id: String(b.id), label: String(b.code || "") }))}
+                selected={form.excludedBoxIds}
+                onToggle={(id) => toggleList("excludedBoxIds", id)}
+                deny
+              />
+              <PickList
+                title="Items hidden"
+                items={inventory.slice(0, 150).map((i) => ({
+                  id: String(i.id),
+                  label: String(i.modelId || i.barcode || "Item"),
+                }))}
+                selected={form.excludedItemIds}
+                onToggle={(id) => toggleList("excludedItemIds", id)}
+                deny
+              />
+            </div>
+
+            <div className="flex gap-3 border-t border-border pt-5">
+              <Action onClick={() => setShowForm(false)} className="flex-1">
+                Cancel
+              </Action>
+              <Action solid onClick={save} className="flex-1">
+                {editing ? "Save changes" : "Create storefront"}
+              </Action>
+            </div>
           </div>
-        )}
+        </Modal>
       </PageShell>
     </AdminGuard>
   );
 }
 
-function MultiPill({ title, icon, values, selected, onToggle }: { title: string; icon: React.ReactNode; values: Array<{ id: string; label: string }>; selected: string[]; onToggle: (id: string) => void }) {
+/* A short set of options, as chips. */
+function PickChips({
+  title,
+  values,
+  selected,
+  onToggle,
+}: {
+  title: string;
+  values: Array<{ id: string; label: string }>;
+  selected: string[];
+  onToggle: (id: string) => void;
+}) {
   return (
-    <div className="space-y-2">
-      <label className="block text-xs font-semibold text-muted-foreground">{title}</label>
+    <div>
+      <ColHead className="mb-2 block">{title}</ColHead>
       <div className="flex flex-wrap gap-2">
-        {values.map((v) => (
-          <Button key={v.id} size="sm" variant={selected.includes(v.id) ? "default" : "outline"} onClick={() => onToggle(v.id)}>
-            {icon} {v.label}
-          </Button>
-        ))}
+        {values.length === 0 ? (
+          <p className="text-xs text-muted-foreground">None set up yet.</p>
+        ) : (
+          values.map((v) => (
+            <Chip key={v.id} on={selected.includes(v.id)} onClick={() => onToggle(v.id)}>
+              {v.label}
+            </Chip>
+          ))
+        )}
       </div>
     </div>
   );
 }
 
-function MultiList({ title, icon, items, selected, onToggle, tone }: { title: string; icon: React.ReactNode; items: Array<{ id: string; label: string }>; selected: string[]; onToggle: (id: string) => void; tone: "primary" | "danger" }) {
+/* A long set, as a scrolling list. Denial reads red, permission reads brand —
+   the only place in the console where a list row takes colour, because
+   hiding stock from a buyer is worth being obvious about. */
+function PickList({
+  title,
+  items,
+  selected,
+  onToggle,
+  deny = false,
+}: {
+  title: string;
+  items: Array<{ id: string; label: string }>;
+  selected: string[];
+  onToggle: (id: string) => void;
+  deny?: boolean;
+}) {
   return (
-    <div className="space-y-2">
-      <label className="block text-xs font-semibold text-muted-foreground">{title}</label>
-      <div className="max-h-44 overflow-auto rounded-lg border p-2 space-y-1">
-        {items.map((it) => (
-          <button key={it.id} type="button" onClick={() => onToggle(it.id)} className={`w-full text-left px-2 py-1.5 rounded text-xs ${selected.includes(it.id) ? (tone === "danger" ? "bg-destructive/15 text-destructive" : "bg-primary/15 text-primary") : "hover:bg-muted"}`}>
-            {icon} <span className="ml-1">{it.label}</span>
-          </button>
-        ))}
+    <div>
+      <ColHead className="mb-2 block">{title}</ColHead>
+      <div className="panel max-h-44 space-y-0.5 overflow-auto p-1.5">
+        {items.length === 0 ? (
+          <p className="p-2 text-xs text-muted-foreground">Nothing to pick from.</p>
+        ) : (
+          items.map((it) => {
+            const on = selected.includes(it.id);
+            return (
+              <button
+                key={it.id}
+                type="button"
+                onClick={() => onToggle(it.id)}
+                className={`mono w-full truncate rounded-sm px-2 py-1.5 text-left text-[11px] transition-colors duration-300 ${
+                  on
+                    ? deny
+                      ? "bg-destructive/15 text-destructive"
+                      : "bg-[color-mix(in_oklab,var(--brand-2)_15%,transparent)] text-[var(--brand-2)]"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {it.label}
+              </button>
+            );
+          })
+        )}
       </div>
     </div>
   );

@@ -3,16 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import {
-  FileBarChart, Package, ShoppingCart, Activity, Download,
-  AlertTriangle, TrendingUp, Loader2, CheckCircle, DollarSign,
-} from "lucide-react";
+import { FileBarChart, Download, Loader2 } from "lucide-react";
 
 const money = (n: number) => `$${(Number(n) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-import { Card, CardContent } from "@/components/ui/card";
 import PageShell from "@/components/page-shell";
+import EmptyState from "@/components/EmptyState";
+import { Panel, Rule, Figure, CrateSkeleton } from "@/components/console/surfaces";
 import { normalizeOrderStatus, ORDER_STATUS } from "@/lib/orderStatus";
-import { SkeletonCard } from "@/components/Skeleton";
 
 function downloadCsv(filename: string, header: string, rows: string[][]) {
   const csvHeader = header;
@@ -202,222 +199,175 @@ export default function ReportsPage() {
       setGenerating(null);
     }
   }
-
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <div className="h-8 w-40 rounded-lg animate-pulse bg-border" />
-          <div className="h-4 w-64 rounded-lg animate-pulse mt-2 bg-border" />
-        </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <SkeletonCard key={i} />
+      <PageShell title="Reports" subtitle="Reading the floor." eyebrow="Console">
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-md bg-border lg:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="bg-background p-5">
+              <CrateSkeleton className="h-8 w-24 border-0" delay={i * 0.06} />
+              <CrateSkeleton className="mt-3 h-2.5 w-16 border-0" delay={i * 0.06 + 0.04} />
+            </div>
           ))}
         </div>
-      </div>
+      </PageShell>
     );
   }
 
   if (!orgId) {
     return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <Card><CardContent className="p-10 max-w-md text-center">
-          <div className="w-16 h-16 rounded-md bg-primary/10 flex items-center justify-center mx-auto mb-5">
-            <FileBarChart className="w-8 h-8 text-primary" />
-          </div>
-          <h2 className="text-xl font-bold mb-2">No Organization</h2>
-          <p className="text-sm text-muted-foreground">
-            Join an organization to access reports.
-          </p>
-        </CardContent></Card>
-      </div>
+      <PageShell title="Reports" eyebrow="Console">
+        <EmptyState
+          icon={FileBarChart}
+          title="No organization"
+          description="Join an organization and its reports appear here."
+        />
+      </PageShell>
     );
   }
 
-  const statCards = [
-    { label: "Total Items", value: snapshot.totalItems, icon: Package, color: "text-primary", bg: "bg-primary/10" },
-    { label: "Available", value: snapshot.available, icon: CheckCircle, color: "text-success", bg: "bg-success/10" },
-    { label: "Reserved", value: snapshot.reserved, icon: AlertTriangle, color: "text-warning", bg: "bg-warning/10" },
-    { label: "Sold", value: snapshot.sold, icon: TrendingUp, color: "text-accent", bg: "bg-accent/10" },
-    { label: "Retail Value", value: money(snapshot.totalValue), icon: DollarSign, color: "text-success", bg: "bg-success/10" },
-    { label: "Inventory at Cost", value: money(snapshot.totalCost), icon: DollarSign, color: "text-primary", bg: "bg-primary/10" },
-    { label: "Potential Margin", value: money(snapshot.totalValue - snapshot.totalCost), icon: TrendingUp, color: "text-accent", bg: "bg-accent/10" },
-  ];
-
-  const reportCards = [
-    {
-      title: "Inventory Report",
-      desc: "Full inventory with all fields exported as CSV",
-      icon: Package,
-      type: "inventory",
-      color: "text-primary",
-      bg: "bg-primary/10",
-    },
-    {
-      title: "Orders Report",
-      desc: "All orders with buyer info, status, and item counts",
-      icon: ShoppingCart,
-      type: "orders",
-      color: "text-accent",
-      bg: "bg-accent/10",
-    },
-    {
-      title: "Ops Digest",
-      desc: "One-file KPI digest for owners and managers",
-      icon: TrendingUp,
-      type: "ops_digest",
-      color: "text-primary",
-      bg: "bg-primary/10",
-    },
-    {
-      title: "Activity Report",
-      desc: "Recent scan logs and barcode activity (up to 1000)",
-      icon: Activity,
-      type: "activity",
-      color: "text-success",
-      bg: "bg-success/10",
-    },
-    {
-      title: "Valuation & COGS",
-      desc: "Per-item cost value, retail value, and margin for stock on hand",
-      icon: DollarSign,
-      type: "valuation",
-      color: "text-success",
-      bg: "bg-success/10",
-    },
+  const REPORTS = [
+    { title: "Inventory", desc: "Every field on every line, as CSV.", type: "inventory" },
+    { title: "Orders", desc: "Buyers, states, and line counts.", type: "orders" },
+    { title: "Ops digest", desc: "One file of headline figures for whoever asks.", type: "ops_digest" },
+    { title: "Activity", desc: "The last thousand scans, in order.", type: "activity" },
+    { title: "Valuation and COGS", desc: "Cost, retail, and margin per line on hand.", type: "valuation" },
   ];
 
   return (
-    <PageShell title="Reports" subtitle="Generate and download reports for your organization">
-      {/* Current Snapshot */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <TrendingUp className="w-4 h-4 text-primary" />
-          <h3 className="font-semibold">Current Snapshot</h3>
-        </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {statCards.map((card) => (
-            <Card key={card.label}><CardContent className="p-5">
-              <div className="flex items-center justify-between mb-3">
-                <div className={`w-10 h-10 rounded-md ${card.bg} flex items-center justify-center`}>
-                  <card.icon className={`w-5 h-5 ${card.color}`} />
-                </div>
-              </div>
-              <div className="text-2xl font-bold">{card.value}</div>
-              <div className="text-xs text-muted-foreground">{card.label}</div>
-          </CardContent></Card>
-          ))}
-        </div>
-      </div>
-
-      {/* Orders This Month */}
-      <Card><CardContent className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <ShoppingCart className="w-4 h-4 text-primary" />
-          <h3 className="font-semibold">Orders This Month</h3>
-        </div>
-        <div className="flex items-center gap-6 flex-wrap">
-          <div>
-            <div className="text-3xl font-bold">{snapshot.ordersThisMonth}</div>
-            <div className="text-xs text-muted-foreground">Total Orders</div>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="px-3 py-1 rounded-sm text-xs font-semibold bg-warning/10 text-warning">
-              {snapshot.ordersPending} pending
-            </span>
-            <span className="px-3 py-1 rounded-sm text-xs font-semibold bg-success/10 text-success">
-              {snapshot.ordersFulfilled} fulfilled
-            </span>
-            <span className="px-3 py-1 rounded-sm text-xs font-semibold bg-destructive/10 text-destructive">
-              {snapshot.ordersRejected} rejected
-            </span>
-            <span className="px-3 py-1 rounded-sm text-xs font-semibold bg-primary/10 text-primary">
-              {snapshot.fulfillmentRate}% fulfillment
-            </span>
-            <span className="px-3 py-1 rounded-sm text-xs font-semibold bg-primary/10 text-primary">
-              {snapshot.pendingApprovals} approvals queued
-            </span>
-          </div>
-        </div>
-      </CardContent></Card>
-
-      {/* Low Stock Items */}
-      {snapshot.lowStockItems.length > 0 && (
-        <Card><CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-warning" />
-              <h3 className="font-semibold">Low Stock Items ({snapshot.lowStockItems.length})</h3>
-            </div>
-            <button
-              onClick={() => generateReport("low_stock")}
-              disabled={generating === "low_stock"}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium hover:border-primary transition"
-            >
-              {generating === "low_stock" ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <Download className="w-3 h-3" />
-              )}
-              Download CSV
-            </button>
-          </div>
-          <div className="space-y-2">
-            {snapshot.lowStockItems.slice(0, 8).map((item, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between py-2 border-b last:border-0"
-              >
-                <div>
-                  <span className="text-sm font-medium">{item.modelId}</span>
-                  <span className="text-xs ml-2 text-muted-foreground">{item.brand}</span>
-                </div>
-                <span className="text-xs px-2.5 py-1 rounded-sm font-semibold bg-warning/10 text-warning">
-                  Qty: {item.quantity}
-                </span>
+    <PageShell
+      title="Reports"
+      eyebrow="Console"
+      subtitle="Where the floor stands, and everything you can take away as a file."
+    >
+      <div className="space-y-12">
+        {/* ──
+            The snapshot. Money last, because it is derived from the counts
+            above it and reads better as a conclusion than as a headline. ── */}
+        <section className="space-y-5">
+          <Rule label="Right now" />
+          <div className="reveal grid grid-cols-2 gap-px overflow-hidden rounded-md bg-border lg:grid-cols-4">
+            {[
+              { label: "Units on hand", value: snapshot.totalItems },
+              { label: "Available", value: snapshot.available },
+              { label: "Reserved", value: snapshot.reserved },
+              { label: "Sold", value: snapshot.sold },
+              { label: "Retail value", value: money(snapshot.totalValue) },
+              { label: "At cost", value: money(snapshot.totalCost) },
+              {
+                label: "Potential margin",
+                value: money(snapshot.totalValue - snapshot.totalCost),
+                tone: "brand" as const,
+              },
+            ].map((s) => (
+              <div key={s.label} className="bg-background p-5">
+                <Figure
+                  label={s.label}
+                  value={s.value}
+                  tone={s.tone}
+                  className="[&_.figure-value]:text-[clamp(1.4rem,0.9rem+1.4vw,2rem)]"
+                />
               </div>
             ))}
-            {snapshot.lowStockItems.length > 8 && (
-              <p className="text-xs text-center pt-2 text-muted-foreground">
-                +{snapshot.lowStockItems.length - 8} more items
-              </p>
-            )}
           </div>
-        </CardContent></Card>
-      )}
+        </section>
 
-      {/* Quick Reports */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <FileBarChart className="w-4 h-4 text-primary" />
-          <h3 className="font-semibold">Quick Reports</h3>
-        </div>
-        <div className="grid sm:grid-cols-4 gap-4">
-          {reportCards.map((report) => (
-            <Card key={report.type}><CardContent className="p-5">
-              <div className={`w-10 h-10 rounded-md ${report.bg} flex items-center justify-center mb-4`}>
-                <report.icon className={`w-5 h-5 ${report.color}`} />
-              </div>
-              <h4 className="font-semibold text-sm mb-1">{report.title}</h4>
-              <p className="text-xs mb-4 text-muted-foreground">
-                {report.desc}
-              </p>
+        {/* ── This month ─────────────────────────────────────── */}
+        <section className="space-y-5">
+          <Rule label="This month" />
+          <div className="reveal flex flex-wrap items-baseline gap-x-10 gap-y-4">
+            <Figure label="Orders placed" value={snapshot.ordersThisMonth} />
+            <Figure label="Fulfilled" value={snapshot.fulfillmentRate} suffix="%" />
+            <Figure
+              label="Still pending"
+              value={snapshot.ordersPending}
+              tone={snapshot.ordersPending ? "warning" : undefined}
+            />
+            <Figure
+              label="Approvals queued"
+              value={snapshot.pendingApprovals}
+              tone={snapshot.pendingApprovals ? "brand" : undefined}
+            />
+            <Figure
+              label="Rejected"
+              value={snapshot.ordersRejected}
+              tone={snapshot.ordersRejected ? "destructive" : undefined}
+            />
+          </div>
+        </section>
+
+        {/* ── Running low ────────────────────────────────────── */}
+        {snapshot.lowStockItems.length > 0 && (
+          <section className="space-y-5">
+            <Rule
+              label="Running low"
+              action={
+                <button
+                  onClick={() => generateReport("low_stock")}
+                  disabled={generating === "low_stock"}
+                  className="mono inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground transition-colors duration-300 hover:text-[var(--brand-2)] disabled:opacity-40"
+                >
+                  {generating === "low_stock" ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Download className="h-3 w-3" />
+                  )}
+                  CSV
+                </button>
+              }
+            />
+            <Panel className="reveal">
+              {snapshot.lowStockItems.slice(0, 8).map((item, i) => (
+                <div key={i} className="row-line flex items-center justify-between gap-4 px-5 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{item.modelId}</p>
+                    {item.brand && (
+                      <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                        {item.brand}
+                      </p>
+                    )}
+                  </div>
+                  <span className="mono shrink-0 text-sm font-semibold tabular-nums text-warning">
+                    {item.quantity}
+                  </span>
+                </div>
+              ))}
+              {snapshot.lowStockItems.length > 8 && (
+                <p className="mono px-5 py-3 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                  and {snapshot.lowStockItems.length - 8} more
+                </p>
+              )}
+            </Panel>
+          </section>
+        )}
+
+        {/* ── Take it away ───────────────────────────────────── */}
+        <section className="space-y-5">
+          <Rule label="Take it away" />
+          <div className="reveal grid gap-px overflow-hidden rounded-md bg-border sm:grid-cols-2 lg:grid-cols-3">
+            {REPORTS.map((r) => (
               <button
-                onClick={() => generateReport(report.type)}
-                disabled={generating === report.type}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-md border text-sm font-medium w-full justify-center hover:border-primary transition"
+                key={r.type}
+                onClick={() => generateReport(r.type)}
+                disabled={generating === r.type}
+                className="group bg-background p-5 text-left transition-colors duration-300 hover:bg-[color-mix(in_oklab,var(--brand-2)_5%,transparent)] disabled:opacity-50"
               >
-                {generating === report.type ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Download className="w-4 h-4" />
-                )}
-                {generating === report.type ? "Generating..." : "Download CSV"}
+                <p className="font-display text-[15px] font-bold tracking-[-0.015em]">{r.title}</p>
+                <p className="mt-1.5 min-h-[2.5rem] text-sm leading-relaxed text-muted-foreground">
+                  {r.desc}
+                </p>
+                <span className="mono mt-4 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground transition-colors duration-300 group-hover:text-[var(--brand-2)]">
+                  {generating === r.type ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Download className="h-3 w-3" />
+                  )}
+                  {generating === r.type ? "Generating" : "Download CSV"}
+                </span>
               </button>
-            </CardContent></Card>
-          ))}
-        </div>
+            ))}
+          </div>
+        </section>
       </div>
     </PageShell>
   );

@@ -3,16 +3,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import {
-  TrendingUp, Users as UsersIcon, Package, ShoppingCart,
-  Building2, Activity,
-} from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { ShieldAlert } from "lucide-react";
 import PageShell from "@/components/page-shell";
+import EmptyState from "@/components/EmptyState";
+import { Panel, Rule, Figure, CrateSkeleton } from "@/components/console/surfaces";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { SkeletonCard, SkeletonChart } from "@/components/Skeleton";
 
 export default function PlatformAnalyticsPage() {
   const { userPermissions } = useAuth();
@@ -125,151 +122,160 @@ export default function PlatformAnalyticsPage() {
 
   if (userPermissions !== "superadmin" && !loading) {
     return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <Card><CardContent className="p-10 max-w-md text-center">
-          <div className="w-16 h-16 rounded-md bg-danger/10 flex items-center justify-center mx-auto mb-5">
-            <TrendingUp className="w-8 h-8 text-danger" />
-          </div>
-          <h2 className="text-xl font-bold mb-2">Access Denied</h2>
-          <p className="text-sm text-muted-foreground">
-            Platform Analytics is only available to superadmins.
-          </p>
-        </CardContent></Card>
-      </div>
+      <PageShell title="Platform" eyebrow="Console">
+        <EmptyState
+          icon={ShieldAlert}
+          title="Not yours to see"
+          description="Platform analytics is superadmin only."
+        />
+      </PageShell>
     );
   }
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <div className="h-8 w-56 rounded-lg animate-pulse bg-border" />
-          <div className="h-4 w-80 rounded-lg animate-pulse mt-2 bg-border" />
+      <PageShell title="Platform" subtitle="Reading every floor." eyebrow="Console">
+        <div className="space-y-8">
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-md bg-border lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="bg-background p-5">
+                <CrateSkeleton className="h-8 w-24 border-0" delay={i * 0.07} />
+                <CrateSkeleton className="mt-3 h-2.5 w-16 border-0" delay={i * 0.07 + 0.04} />
+              </div>
+            ))}
+          </div>
+          <CrateSkeleton className="h-72 w-full" delay={0.3} />
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <SkeletonCard key={i} />
-          ))}
-        </div>
-        <SkeletonChart />
-      </div>
+      </PageShell>
     );
   }
 
-  const kpis = [
-    { label: "Total Orgs", value: totalOrgs, icon: Building2, color: "text-primary", bg: "bg-primary/10" },
-    { label: "Total Users", value: totalUsers, icon: UsersIcon, color: "text-success", bg: "bg-success/10" },
-    { label: "Total Items", value: totalItems, icon: Package, color: "text-accent", bg: "bg-accent/10" },
-    { label: "Total Orders", value: totalOrders, icon: ShoppingCart, color: "text-warning", bg: "bg-warning/10" },
-  ];
-
   return (
-    <PageShell title="Platform Analytics" subtitle="Cross-organization metrics and growth insights">
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {kpis.map((kpi) => (
-          <Card key={kpi.label}><CardContent className="p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className={`w-10 h-10 rounded-md ${kpi.bg} flex items-center justify-center`}>
-                <kpi.icon className={`w-5 h-5 ${kpi.color}`} />
-              </div>
-              <TrendingUp className="w-4 h-4 text-muted-foreground" />
-            </div>
-            <div className="text-2xl font-bold">{kpi.value}</div>
-            <div className="text-xs text-muted-foreground">{kpi.label}</div>
-          </CardContent></Card>
-        ))}
-      </div>
-
-      {/* Growth Chart */}
-      <Card><CardContent className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="w-4 h-4 text-primary" />
-          <h3 className="font-semibold">User Growth (Last 30 Days)</h3>
-        </div>
-        {growthData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={growthData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis
-                dataKey="date"
-                fontSize={10}
-                tick={{ fill: "var(--muted)" }}
-                interval={Math.floor(growthData.length / 8)}
-              />
-              <YAxis fontSize={12} tick={{ fill: "var(--muted)" }} allowDecimals={false} />
-              <Tooltip />
-              <Bar dataKey="count" fill="#2563eb" radius={[4, 4, 0, 0]} animationDuration={1200} />
-            </BarChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="h-[300px] flex items-center justify-center text-sm text-muted-foreground">
-            No signup data in the last 30 days
-          </div>
-        )}
-      </CardContent></Card>
-
-      {/* Top Organizations */}
-      <Card><CardContent className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Building2 className="w-4 h-4 text-primary" />
-          <h3 className="font-semibold">Top Organizations by Inventory</h3>
-        </div>
-        {topOrgs.length > 0 ? (
-          <div>
-            {topOrgs.map((org, i) => (
-              <div key={org.id} className="flex items-center gap-4 py-2.5 border-b border-border/60 last:border-0">
-                <div className="w-6 shrink-0 font-bold text-muted-foreground tabular-nums">{i + 1}</div>
-                <div className="flex-1 min-w-0 font-semibold truncate">{org.name}</div>
-                <span className="px-2.5 py-1 rounded-sm text-xs font-semibold bg-primary/10 text-primary shrink-0">
-                  {org.itemCount} items
-                </span>
-                <div className="text-xs text-muted-foreground shrink-0 hidden sm:block whitespace-nowrap">
-                  {new Date(org.createdAt).toLocaleDateString()}
-                </div>
+    <PageShell
+      title="Platform"
+      eyebrow="Console"
+      subtitle="Across every organization on this deployment."
+    >
+      <div className="space-y-12">
+        <section className="space-y-5">
+          <Rule label="Totals" />
+          <div className="reveal grid grid-cols-2 gap-px overflow-hidden rounded-md bg-border lg:grid-cols-4">
+            {[
+              { label: "Organizations", value: totalOrgs },
+              { label: "People", value: totalUsers },
+              { label: "Units tracked", value: totalItems },
+              { label: "Orders placed", value: totalOrders },
+            ].map((k) => (
+              <div key={k.label} className="bg-background p-5">
+                <Figure label={k.label} value={k.value} />
               </div>
             ))}
           </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">No organizations found</p>
-        )}
-      </CardContent></Card>
+        </section>
 
-      {/* Active Users */}
-      <Card><CardContent className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Activity className="w-4 h-4 text-primary" />
-          <h3 className="font-semibold">Active Users (Last 7 Days)</h3>
-        </div>
-        {activeUsers.length > 0 ? (
-          <div className="space-y-3">
-            {activeUsers.map((u) => (
-              <div
-                key={u.email}
-                className="flex items-center justify-between py-2 border-b last:border-0"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-success/10 flex items-center justify-center">
-                    <UsersIcon className="w-4 h-4 text-success" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">{u.name}</div>
-                    <div className="text-xs text-muted-foreground">{u.email}</div>
-                  </div>
+        {/* The chart keeps recharts, but drawn in the brand rather than in a
+            default blue that appears nowhere else in the product. */}
+        <section className="space-y-5">
+          <Rule label="Signups, last 30 days" />
+          <Panel className="reveal p-6">
+            {growthData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={growthData}>
+                  <CartesianGrid
+                    strokeDasharray="2 4"
+                    stroke="color-mix(in oklab, var(--foreground) 10%, transparent)"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="date"
+                    fontSize={10}
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fill: "var(--muted-foreground)" }}
+                    interval={Math.floor(growthData.length / 8)}
+                  />
+                  <YAxis
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fill: "var(--muted-foreground)" }}
+                    allowDecimals={false}
+                  />
+                  <Tooltip
+                    cursor={{ fill: "color-mix(in oklab, var(--brand-2) 8%, transparent)" }}
+                    contentStyle={{
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 6,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Bar
+                    dataKey="count"
+                    fill="var(--brand-2)"
+                    radius={[2, 2, 0, 0]}
+                    animationDuration={900}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="py-20 text-center text-sm text-muted-foreground">
+                Nobody signed up in the last 30 days.
+              </p>
+            )}
+          </Panel>
+        </section>
+
+        <section className="space-y-5">
+          <Rule label="Biggest floors" />
+          <Panel className="reveal">
+            {topOrgs.length === 0 ? (
+              <p className="px-5 py-4 text-sm text-muted-foreground">No organizations yet.</p>
+            ) : (
+              topOrgs.map((org, i) => (
+                <div key={org.id} className="row-line flex items-center gap-4 px-5 py-3">
+                  <span className="mono w-6 shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                    {i + 1}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{org.name}</span>
+                  <span className="mono shrink-0 text-sm font-semibold tabular-nums">
+                    {org.itemCount}
+                  </span>
+                  <span className="mono hidden w-28 shrink-0 text-right text-[11px] text-muted-foreground sm:block">
+                    {new Date(org.createdAt).toLocaleDateString()}
+                  </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                  <span className="text-xs text-muted-foreground">
+              ))
+            )}
+          </Panel>
+        </section>
+
+        <section className="space-y-5">
+          <Rule label="Active, last 7 days" />
+          <Panel className="reveal">
+            {activeUsers.length === 0 ? (
+              <p className="px-5 py-4 text-sm text-muted-foreground">
+                Nobody has scanned anything this week.
+              </p>
+            ) : (
+              activeUsers.map((u) => (
+                <div key={u.email} className="row-line flex items-center gap-4 px-5 py-3">
+                  <span className="pulse-dot h-1.5 w-1.5 shrink-0 rounded-full bg-success" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{u.name}</p>
+                    <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                      {u.email}
+                    </p>
+                  </div>
+                  <span className="mono shrink-0 text-[11px] text-muted-foreground">
                     {new Date(u.lastScan).toLocaleDateString()}
                   </span>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">No active users in the last 7 days</p>
-        )}
-      </CardContent></Card>
+              ))
+            )}
+          </Panel>
+        </section>
+      </div>
     </PageShell>
   );
 }

@@ -3,24 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { getTickets, createTicket, updateTicket } from "@/lib/dataService";
-import { LifeBuoy, Plus, MessageSquare } from "lucide-react";
+import { LifeBuoy, Plus } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import PageShell from "@/components/page-shell";
+import Status from "@/components/Status";
+import { Panel, Figure, ColHead, ListSkeleton } from "@/components/console/surfaces";
+import { Action, Chip, Drawer, Field, Modal, Select, Textarea } from "@/components/console/controls";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogTrigger,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import { isAdminRole } from "@/lib/roles";
 
 interface Ticket {
@@ -34,14 +24,6 @@ interface Ticket {
   createdAt?: string;
   updatedAt?: string;
 }
-
-const STATUS_STYLE: Record<string, string> = {
-  open: "bg-warning/10 text-warning border-warning/20",
-  in_progress: "bg-primary/10 text-primary border-primary/20",
-  resolved: "bg-success/10 text-success border-success/20",
-  closed: "bg-muted text-muted-foreground border-border",
-};
-
 export default function SupportPage() {
   const { orgId, user, userRole } = useAuth();
   const { toast } = useToast();
@@ -109,156 +91,180 @@ export default function SupportPage() {
     }
   };
 
+  const open = items.filter((t) => (t.status || "open") === "open").length;
+
   return (
     <PageShell
-      title="Support tickets"
-      subtitle={`${filtered.length} of ${items.length}`}
+      title="Support"
+      eyebrow="Console"
+      subtitle="Tickets you have raised, and anything waiting on a reply."
       actions={
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger render={<Button><Plus /> New ticket</Button>} />
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Open a support ticket</DialogTitle>
-              <DialogDescription>We&apos;ll reply by email and in-app.</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-3">
-              <div>
-                <label className="block text-xs font-medium mb-1 text-muted-foreground">Category</label>
-                <select
-                  value={form.category}
-                  onChange={(e) => setForm({ ...form, category: e.target.value })}
-                  className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none dark:bg-input/30"
-                >
-                  <option value="general">General</option>
-                  <option value="billing">Billing</option>
-                  <option value="bug">Bug</option>
-                  <option value="feature">Feature request</option>
-                  <option value="account">Account</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium mb-1 text-muted-foreground">Priority</label>
-                <select
-                  value={form.priority}
-                  onChange={(e) => setForm({ ...form, priority: e.target.value })}
-                  className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none dark:bg-input/30"
-                >
-                  <option value="low">Low</option>
-                  <option value="normal">Normal</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium mb-1 text-muted-foreground">Message *</label>
-                <textarea
-                  value={form.message}
-                  onChange={(e) => setForm({ ...form, message: e.target.value })}
-                  rows={5}
-                  className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
-                  placeholder="Describe the issue…"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-              <Button onClick={create}>Submit</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Action solid onClick={() => setCreateOpen(true)}>
+          <Plus className="h-3.5 w-3.5" /> New ticket
+        </Action>
       }
     >
-      <div className="flex gap-2 flex-wrap">
-        {["all", "open", "in_progress", "resolved", "closed"].map((s) => (
-          <Button
-            key={s}
-            size="sm"
-            variant={statusFilter === s ? "default" : "outline"}
-            onClick={() => setStatusFilter(s)}
-          >
-            {s.replace("_", " ")}
-          </Button>
-        ))}
+      <div className="space-y-8">
+        <div className="reveal flex flex-wrap items-baseline gap-x-10 gap-y-4">
+          <Figure label="Open" value={open} tone={open ? "brand" : undefined} />
+          <Figure label="All tickets" value={items.length} />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {["all", "open", "in_progress", "resolved", "closed"].map((s) => (
+            <Chip key={s} on={statusFilter === s} onClick={() => setStatusFilter(s)}>
+              {s.replace("_", " ")}
+            </Chip>
+          ))}
+        </div>
+
+        {loading ? (
+          <ListSkeleton rows={5} />
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            icon={LifeBuoy}
+            title="No tickets"
+            description="Raise one and it lands with us by email and in-app."
+          />
+        ) : (
+          <Panel className="reveal">
+            {filtered.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setDetail(t)}
+                className="row-line block w-full px-5 py-4 text-left"
+              >
+                <div className="flex items-baseline justify-between gap-4">
+                  <span className="truncate text-sm font-medium capitalize">
+                    {t.category || "general"}
+                  </span>
+                  <Status status={t.status || "open"} className="shrink-0" />
+                </div>
+                <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+                  {t.message}
+                </p>
+                <p className="mono mt-2 truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                  {t.priority && t.priority !== "normal" ? `${t.priority} · ` : ""}
+                  {t.userEmail}
+                  {t.createdAt ? ` · ${formatDate(t.createdAt)}` : ""}
+                </p>
+              </button>
+            ))}
+          </Panel>
+        )}
       </div>
 
-      <Card><CardContent className="p-0">
-        {loading ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">Loading…</div>
-        ) : filtered.length === 0 ? (
-          <EmptyState icon={LifeBuoy} title="No tickets" description="Submit a new ticket to get help." />
-        ) : (
-          <ul className="divide-y divide-border">
-            {filtered.map((t) => (
-              <li key={t.id} className="p-4 hover:bg-muted/20 cursor-pointer transition" onClick={() => setDetail(t)}>
-                <div className="flex items-start gap-3">
-                  <MessageSquare className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-sm">{t.category || "general"}</span>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-sm text-xs border ${STATUS_STYLE[t.status || "open"] || STATUS_STYLE.open}`}>
-                        {t.status || "open"}
-                      </span>
-                      {t.priority && t.priority !== "normal" && (
-                        <Badge variant={t.priority === "urgent" ? "destructive" : "secondary"}>{t.priority}</Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{t.message}</p>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {t.userEmail} · {t.createdAt ? formatDate(t.createdAt) : ""}
-                    </div>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </CardContent></Card>
+      {/* ── Raise a ticket ──────────────────────────────────── */}
+      <Modal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        title="Open a ticket"
+        subtitle="We reply by email and in-app"
+      >
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="About">
+              <Select
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+              >
+                <option value="general">General</option>
+                <option value="billing">Billing</option>
+                <option value="bug">Something is broken</option>
+                <option value="feature">A request</option>
+                <option value="account">Account</option>
+              </Select>
+            </Field>
+            <Field label="Priority">
+              <Select
+                value={form.priority}
+                onChange={(e) => setForm({ ...form, priority: e.target.value })}
+              >
+                <option value="low">Low</option>
+                <option value="normal">Normal</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </Select>
+            </Field>
+          </div>
+          <Field label="What happened" hint="What you did, what you expected, what happened instead.">
+            <Textarea
+              value={form.message}
+              onChange={(e) => setForm({ ...form, message: e.target.value })}
+              rows={6}
+              placeholder="Describe the issue"
+            />
+          </Field>
+          <div className="flex gap-3">
+            <Action onClick={() => setCreateOpen(false)} className="flex-1">
+              Cancel
+            </Action>
+            <Action solid onClick={create} disabled={!form.message.trim()} className="flex-1">
+              Send
+            </Action>
+          </div>
+        </div>
+      </Modal>
 
-      {/* Detail dialog */}
-      <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{detail?.category || "Ticket"}</DialogTitle>
-            <DialogDescription>
-              {detail?.userEmail} · {detail?.createdAt ? formatDate(detail.createdAt) : ""}
-            </DialogDescription>
-          </DialogHeader>
-          {detail && (
-            <div className="space-y-3">
-              <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm whitespace-pre-wrap">
-                {detail.message}
-              </div>
-              {detail.adminReply && (
-                <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm whitespace-pre-wrap">
-                  <div className="text-xs text-muted-foreground mb-1">Admin reply</div>
-                  {detail.adminReply}
-                </div>
+      {/* ── One ticket ──────────────────────────────────────── */}
+      <Drawer
+        open={!!detail}
+        onClose={() => setDetail(null)}
+        title={detail?.category || "Ticket"}
+        subtitle={`${detail?.userEmail || ""}${detail?.createdAt ? ` · ${formatDate(detail.createdAt)}` : ""}`}
+        footer={
+          detail && isAdminRole(userRole) ? (
+            <>
+              {detail.status !== "closed" && (
+                <Action
+                  onClick={() => { setStatus(detail.id, "closed"); setDetail(null); }}
+                  className="flex-1"
+                >
+                  Close ticket
+                </Action>
               )}
-              {isAdminRole(userRole) && detail.status !== "resolved" && (
-                <div>
-                  <label className="block text-xs font-medium mb-1 text-muted-foreground">Reply</label>
-                  <textarea
-                    value={reply}
-                    onChange={(e) => setReply(e.target.value)}
-                    rows={4}
-                    className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none dark:bg-input/30"
-                  />
-                </div>
+              {reply.trim() && (
+                <Action solid onClick={sendReply} className="flex-1">
+                  Send reply
+                </Action>
               )}
+            </>
+          ) : (
+            <Action onClick={() => setDetail(null)} className="flex-1">
+              Close
+            </Action>
+          )
+        }
+      >
+        {detail && (
+          <div className="space-y-6">
+            <div>
+              <ColHead className="mb-2 block">Reported</ColHead>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed">{detail.message}</p>
             </div>
-          )}
-          <DialogFooter>
-            {isAdminRole(userRole) && detail && detail.status !== "closed" && (
-              <Button variant="outline" onClick={() => { setStatus(detail.id, "closed"); setDetail(null); }}>
-                Close ticket
-              </Button>
+
+            {detail.adminReply && (
+              <div className="border-t border-border pt-5">
+                <ColHead className="mb-2 block">Our reply</ColHead>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--brand-2)]">
+                  {detail.adminReply}
+                </p>
+              </div>
             )}
-            {isAdminRole(userRole) && reply.trim() && (
-              <Button onClick={sendReply}>Send reply</Button>
+
+            {isAdminRole(userRole) && detail.status !== "resolved" && (
+              <Field label="Reply" className="border-t border-border pt-5">
+                <Textarea
+                  value={reply}
+                  onChange={(e) => setReply(e.target.value)}
+                  rows={5}
+                  placeholder="What you are going to do about it"
+                />
+              </Field>
             )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        )}
+      </Drawer>
     </PageShell>
   );
 }
