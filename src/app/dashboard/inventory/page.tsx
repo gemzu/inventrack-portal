@@ -1,4 +1,5 @@
 "use client";
+import { itemIdentity } from "@/lib/itemIdentity";
 import { useEffect, useMemo, useState } from "react";
 import AdminGuard from "@/components/AdminGuard";
 import PageShell from "@/components/page-shell";
@@ -7,7 +8,6 @@ import { useAuth } from "@/context/AuthContext";
 import { Search, Download, Package, Boxes, ChevronDown, ChevronRight, Upload, Loader2, X, FileSpreadsheet, Save, Trash2, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { spring } from "@/lib/motion";
-import { statusColor } from "@/lib/utils";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
 import { Card, CardContent } from "@/components/ui/card";
@@ -592,7 +592,7 @@ export default function InventoryPage() {
       {view === "items" ? (
       <Card className="overflow-hidden"><CardContent className="p-0">
         {/* Header (desktop only) */}
-        <div className="hidden md:flex items-center gap-4 px-4 py-3 border-b border-border bg-muted/40 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <div className="hidden md:flex items-center gap-4 px-4 py-2.5 border-b border-border text-xs font-semibold text-muted-foreground">
           <input
             type="checkbox"
             checked={selected.size === filtered.length && filtered.length > 0}
@@ -633,25 +633,38 @@ export default function InventoryPage() {
                   </div>
                 )}
                 <div className="min-w-0">
-                  <div className="font-semibold truncate">{item.displayName || item.modelId}</div>
-                  <div className="text-xs text-muted-foreground font-mono truncate">{item.barcode || item.modelId}</div>
+                  {(() => {
+                    const id = itemIdentity(item);
+                    return (
+                      <>
+                        <div className={`truncate font-medium ${id.unnamed ? "mono text-[13px]" : ""}`}>
+                          {id.title}
+                        </div>
+                        {id.subtitle ? (
+                          <div className="mono truncate text-xs text-muted-foreground">{id.subtitle}</div>
+                        ) : (
+                          <div className="truncate text-xs text-muted-foreground">Unnamed item</div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
-              {/* Status */}
-              <div className="w-28 shrink-0 hidden md:block">
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statusColor(item.status)}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[item.status] || "bg-gray-400"}`} />
-                  {item.status}
+              {/* Status. A dot and a word, not a filled pill. */}
+              <div className="hidden w-28 shrink-0 md:block">
+                <span className="inline-flex items-center gap-2 text-sm">
+                  <span className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT[item.status] || "bg-muted-foreground"}`} />
+                  <span className="text-muted-foreground">{item.status}</span>
                 </span>
               </div>
               {/* Qty */}
-              <div className="w-14 shrink-0 text-right font-semibold tabular-nums hidden md:block">{item.quantity}</div>
+              <div className="mono hidden w-14 shrink-0 text-right text-sm font-semibold tabular-nums md:block">{item.quantity}</div>
               {/* Location */}
-              <div className="w-40 shrink-0 hidden md:block min-w-0">
-                <div className="text-xs text-muted-foreground truncate">{facilityName(item.facilityId) || "No facility"}</div>
-                <span className={`inline-flex mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium ${item.boxId ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
+              <div className="hidden w-40 min-w-0 shrink-0 md:block">
+                <div className="truncate text-sm">{facilityName(item.facilityId) || "No facility"}</div>
+                <div className="mono truncate text-xs text-muted-foreground">
                   {item.boxId ? `Box ${boxCode(item.boxId)}` : "Loose"}
-                </span>
+                </div>
               </div>
               {/* Edit affordance — always visible, pinned right */}
               <div className="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center text-muted-foreground bg-secondary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">

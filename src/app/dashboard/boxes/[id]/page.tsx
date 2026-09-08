@@ -1,4 +1,5 @@
 "use client";
+import { itemIdentity } from "@/lib/itemIdentity";
 import AdminGuard from "@/components/AdminGuard";
 
 import { useCallback, useEffect, useState } from "react";
@@ -342,10 +343,16 @@ export default function BoxDetailPage() {
                       <Package className="w-4 h-4 text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold truncate">{it.modelId || it.displayName || "Item"}</div>
-                      <div className="text-xs text-muted-foreground font-mono truncate">
-                        {it.barcode || "-"}{it.brand ? ` · ${it.brand}` : ""}
-                      </div>
+                      <div className="truncate font-medium">{itemIdentity(it).title}</div>
+                      {(() => {
+                        const sub = itemIdentity(it).subtitle;
+                        const extra = [sub, it.brand].filter(Boolean).join(" · ");
+                        return extra ? (
+                          <div className="mono truncate text-xs text-muted-foreground">{extra}</div>
+                        ) : (
+                          <div className="truncate text-xs text-muted-foreground">Unnamed item</div>
+                        );
+                      })()}
                     </div>
                     <div className="text-sm text-muted-foreground shrink-0 hidden sm:block">×{it.quantity ?? "-"}</div>
                     <Badge variant="outline" className="shrink-0 hidden sm:inline-flex capitalize">{it.status || "-"}</Badge>
@@ -448,8 +455,10 @@ export default function BoxDetailPage() {
                         className="w-4 h-4"
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">{it.modelId || it.displayName || "-"}</div>
-                        <div className="text-xs text-muted-foreground font-mono truncate">{it.barcode}</div>
+                        <div className="truncate text-sm font-medium">{itemIdentity(it).title}</div>
+                        {itemIdentity(it).subtitle && (
+                          <div className="mono truncate text-xs text-muted-foreground">{itemIdentity(it).subtitle}</div>
+                        )}
                       </div>
                       <Badge variant="outline">{it.status || "-"}</Badge>
                     </label>
@@ -476,8 +485,8 @@ export default function BoxDetailPage() {
 function Stat({ label, value, tone }: { label: string; value: number; tone?: string }) {
   return (
     <div>
-      <div className={`text-2xl font-bold ${tone || ""}`}>{value}</div>
-      <div className="text-xs text-muted-foreground uppercase tracking-wider">{label}</div>
+      <div className={`mono text-2xl font-semibold tabular-nums ${tone || "text-foreground"}`}>{value}</div>
+      <div className="text-xs text-muted-foreground">{label}</div>
     </div>
   );
 }
