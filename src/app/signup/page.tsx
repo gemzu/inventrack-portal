@@ -1,28 +1,48 @@
 "use client";
 
+/**
+ * Signing up.
+ *
+ * This screen used to ask "I am a: Business owner / Buyer" and take the answer
+ * at face value — no code, no check. Which meant two things: the role was self
+ * declared, and there was no way at all to join an existing organization from a
+ * browser. Codes worked in the app and nowhere else, so a worker signing up on
+ * the web landed in an empty console with no way to enter the code they had
+ * been sent.
+ *
+ * There is no role picker now, because the role was never the visitor's to
+ * choose. Either you have a code, and it decides what you are — admin, worker
+ * or buyer, resolved server-side by join-org-secure — or you are starting an
+ * organization, and you own it.
+ *
+ * The account is created either way before the code is spent, because you have
+ * to be somebody before you can join something.
+ */
+
 import Mark from "@/components/Mark";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
+import { redeemInviteCode, homeFor, stashInvite } from "@/lib/invite";
 
 const FIELD =
   "w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition-[border-color,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.30,1)] placeholder:text-muted-foreground";
 
-const ROLES = [
-  { value: "admin", label: "Business owner" },
-  { value: "buyer", label: "Buyer" },
-];
+type Mode = "join" | "start";
 
 export default function SignupPage() {
+  const [mode, setMode] = useState<Mode>("join");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("admin");
+  const [code, setCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
   const { user, signup, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -32,21 +52,65 @@ export default function SignupPage() {
     return null;
   }
 
+  const joining = mode === "join";
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (password.length < 6) { setError("Passwords need at least 6 characters."); return; }
+    setNotice("");
+    if (password.length < 6) {
+      setError("Passwords need at least 6 characters.");
+      return;
+    }
+    if (joining && !code.trim()) {
+      setError("Enter the code you were sent, or start an organization instead.");
+      return;
+    }
+
     setLoading(true);
     try {
-      await signup(name, email, password, "", role);
-      if (role === "admin") router.push("/setup/organization");
-      else router.push("/dashboard");
+      /* Metadata carries the least it can. On the joining path the code decides
+         the role and join-org-secure overwrites this; if the join then fails,
+         the account is left as a buyer with no organization, which is the safe
+         way to fail. */
+      await signup(name, email, password, "", joining ? "buyer" : "admin");
+
+      if (!joining) {
+        router.push("/setup/organization");
+        return;
+      }
+
+      /* With email confirmation switched on there is no session yet, so there
+         is nobody to redeem the code as. Keep it and spend it at sign-in. */
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        stashInvite(code);
+        setNotice(
+          "Account created. Confirm your email, then sign in — we will finish joining you with that code."
+        );
+        return;
+      }
+
+      const result = await redeemInviteCode(code);
+      router.push(homeFor(result.role));
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Signup failed";
-      if (msg.includes("already")) setError("There is already an account on this email. Try signing in.");
-      else if (msg.includes("weak") || msg.includes("password")) setError("That password is too easy to guess. Use at least 6 characters.");
-      else setError("That did not go through. Try again.");
-    } finally { setLoading(false); }
+      const msg = err instanceof Error ? err.message : "";
+      if (/already/i.test(msg)) {
+        setError("There is already an account on this email. Try signing in.");
+      } else if (/weak|password/i.test(msg)) {
+        setError("That password is too easy to guess. Use at least 6 characters.");
+      } else if (/code not found|not found/i.test(msg)) {
+        setError("No organization uses that code. Check it with whoever sent it.");
+      } else if (msg) {
+        /* join-org-secure explains itself — a wrong role for the code, or a
+           country restriction. Those are worth repeating verbatim. */
+        setError(msg);
+      } else {
+        setError("That did not go through. Try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -73,42 +137,85 @@ export default function SignupPage() {
           </div>
 
           <h1 className="reveal d1 font-display text-[1.6rem] font-bold tracking-[-0.015em] sm:text-[2rem]">
-            Set up your warehouse.
+            {joining ? "Join your team." : "Set up your warehouse."}
           </h1>
-          <p className="reveal d2 mb-8 mt-2 text-sm text-muted-foreground">
-            Takes about a minute. You can add your team afterwards.
+          <p className="reveal d2 mb-8 mt-2 text-sm leading-relaxed text-muted-foreground">
+            {joining
+              ? "Whoever runs the floor sends you a code. It decides what you can do, so you do not have to."
+              : "Takes about a minute. You can invite your team afterwards."}
           </p>
+
+          {/* Two ways in. The lit edge marks which, the same as everywhere. */}
+          <div className="reveal d2 mb-7 flex items-end gap-6 border-b border-border" role="tablist">
+            {([
+              { value: "join", label: "I have a code" },
+              { value: "start", label: "Start an organization" },
+            ] as const).map((o) => {
+              const on = mode === o.value;
+              return (
+                <button
+                  key={o.value}
+                  type="button"
+                  role="tab"
+                  aria-selected={on}
+                  onClick={() => {
+                    setMode(o.value);
+                    setError("");
+                    setNotice("");
+                  }}
+                  className={`relative -mb-px pb-2.5 text-[13px] font-semibold transition-colors duration-300 ${
+                    on ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {o.label}
+                  <span
+                    className={`absolute inset-x-0 bottom-0 h-px origin-left bg-[linear-gradient(to_right,var(--brand-1),var(--brand-3))] transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.30,1)] ${
+                      on ? "scale-x-100" : "scale-x-0"
+                    }`}
+                  />
+                </button>
+              );
+            })}
+          </div>
 
           <form onSubmit={handleSubmit} className="reveal d3 space-y-4">
             {error && (
               <div
                 role="alert"
-                className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-xs text-destructive"
+                className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-xs leading-relaxed text-destructive"
               >
                 {error}
               </div>
             )}
-
-            <div>
-              <span className="mb-2 block text-xs font-semibold text-muted-foreground">I am a</span>
-              <div className="grid grid-cols-2 gap-2">
-                {ROLES.map((r) => (
-                  <button
-                    key={r.value}
-                    type="button"
-                    aria-pressed={role === r.value}
-                    onClick={() => setRole(r.value)}
-                    className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition-[background,color,border-color,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                      role === r.value
-                        ? "bg-primary text-primary-foreground shadow-[0_4px_12px_-4px_var(--brand-1)]"
-                        : "border border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
-                    }`}
-                  >
-                    {r.label}
-                  </button>
-                ))}
+            {notice && (
+              <div
+                role="status"
+                className="rounded-lg border border-[color-mix(in_oklab,var(--brand-2)_35%,transparent)] px-3 py-2.5 text-xs leading-relaxed text-[var(--brand-2)]"
+              >
+                {notice}
               </div>
-            </div>
+            )}
+
+            {joining && (
+              <div>
+                <label htmlFor="code" className="mb-2 block text-xs font-semibold text-muted-foreground">
+                  Invite code
+                </label>
+                <input
+                  id="code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.toUpperCase())}
+                  required
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder="WRK-XXXX"
+                  className={`${FIELD} mono tracking-[0.12em]`}
+                />
+                <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                  A staff code from your admin, or a storefront code from a supplier.
+                </p>
+              </div>
+            )}
 
             <div>
               <label htmlFor="name" className="mb-2 block text-xs font-semibold text-muted-foreground">
@@ -191,8 +298,11 @@ export default function SignupPage() {
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Creating your account
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {joining ? "Joining" : "Creating your account"}
                 </span>
+              ) : joining ? (
+                "Join"
               ) : (
                 "Create account"
               )}

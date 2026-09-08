@@ -27,6 +27,14 @@
  * Everything is wrapped in try/catch because localStorage throws outright in
  * some private modes, and neither a theme nor an entrance is worth taking the
  * page down for.
+ *
+ * React logs "Encountered a script tag while rendering React component" for
+ * this in development. That is correct and is the point: React never executes
+ * a script it renders on the client, so this runs exactly once, from the
+ * server HTML, and never again on a client navigation — which is what stops
+ * the gate replaying when you move around the site. The warning lives only in
+ * react-dom's development bundles and is stripped from production. Routing it
+ * through next/script does not silence it, so it is a bare tag.
  */
 
 const TOTAL_MS = 2150; // draw 1250 + door 900, matching globals.css

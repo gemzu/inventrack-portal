@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { redeemInviteCode, homeFor, takeInvite } from "@/lib/invite";
 
 /* Shared field styling. Focus ring comes from globals (input:focus). */
 const FIELD =
@@ -32,6 +33,23 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
+
+      /* Somebody who signed up with a code but had to confirm their email
+         first left it behind. This is the first moment there is a session to
+         spend it as. A failure here is not a failed sign-in — they are in,
+         they just are not in an organization yet, and Suppliers or the app
+         can still take the code. */
+      const pending = takeInvite();
+      if (pending) {
+        try {
+          const result = await redeemInviteCode(pending);
+          router.push(homeFor(result.role));
+          return;
+        } catch {
+          /* Fall through to the usual destination. */
+        }
+      }
+
       router.push("/dashboard");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Login failed";
