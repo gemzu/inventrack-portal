@@ -16,6 +16,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminGuard from "@/components/AdminGuard";
 import PageShell from "@/components/page-shell";
+import { itemIdentity } from "@/lib/itemIdentity";
+import { Panel, Figure, ColHead, ListSkeleton } from "@/components/console/surfaces";
+import { Action, Chip, Input } from "@/components/console/controls";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
 import { useAuth } from "@/context/AuthContext";
@@ -147,103 +150,111 @@ export default function CycleCountPage() {
     [boxes]
   );
 
+
   return (
     <AdminGuard>
       <PageShell
         title="Cycle count"
-        subtitle="Count what is physically there, then adjust the system to match."
+        eyebrow="Console"
+        subtitle="Count what is physically there, then set the system to match. Lines you leave blank are not touched — not counting something is different from counting it as zero."
+        actions={
+          <>
+            {stats.counted > 0 && (
+              <Action onClick={() => setCounts({})}>
+                <RotateCcw className="h-3.5 w-3.5" /> Clear
+              </Action>
+            )}
+            <Action solid onClick={apply} disabled={applying || stats.variances === 0}>
+              {applying ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ClipboardCheck className="h-3.5 w-3.5" />
+              )}
+              Adjust {stats.variances > 0 ? stats.variances : ""}
+            </Action>
+          </>
+        }
       >
-        <div className="space-y-6">
-          <div className="flex flex-wrap gap-2">
+        <div className="space-y-8">
+          {/* What the sweep currently says. Short and over are the two numbers
+              that mean something is wrong, so they are the only coloured ones. */}
+          <div className="reveal flex flex-wrap items-baseline gap-x-10 gap-y-4">
+            <Figure label="In scope" value={stats.total} />
+            <Figure label="Counted" value={stats.counted} />
+            <Figure label="Matching" value={stats.matched} />
+            <Figure label="Short" value={stats.short} tone={stats.short ? "warning" : undefined} />
+            <Figure label="Over" value={stats.over} tone={stats.over ? "brand" : undefined} />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
             {chips.map((c) => (
-              <button
+              <Chip
                 key={c.key}
+                on={scope === c.key}
                 onClick={() => { setScope(c.key); setCounts({}); }}
-                className={`rounded-sm px-3.5 py-1.5 text-sm font-medium transition-[background-color,color,border-color] duration-200 ease-[cubic-bezier(0.16,1,0.30,1)] ${
-                  scope === c.key
-                    ? "bg-primary text-primary-foreground"
-                    : "border border-border text-muted-foreground hover:text-foreground"
-                }`}
               >
                 {c.label}
-              </button>
+              </Chip>
             ))}
           </div>
 
-          <div className="card-luxury flex flex-wrap items-center gap-x-8 gap-y-3 p-5">
-            <Figure label="In scope" value={stats.total} />
-            <Figure label="Counted" value={stats.counted} />
-            <Figure label="Match" value={stats.matched} />
-            <Figure label="Short" value={stats.short} tone={stats.short ? "text-warning" : undefined} />
-            <Figure label="Over" value={stats.over} tone={stats.over ? "text-primary" : undefined} />
-            <div className="ml-auto flex items-center gap-3">
-              {stats.counted > 0 && (
-                <button
-                  onClick={() => setCounts({})}
-                  className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" /> Clear
-                </button>
-              )}
-              <button
-                onClick={apply}
-                disabled={applying || stats.variances === 0}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-[var(--btn-shadow)] transition-[transform,background-color] duration-200 ease-[cubic-bezier(0.16,1,0.30,1)] hover:-translate-y-0.5 hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {applying ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardCheck className="h-4 w-4" />}
-                Adjust {stats.variances > 0 ? stats.variances : ""}
-              </button>
-            </div>
-          </div>
-
           {loading ? (
-            <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading stock
-            </p>
+            <ListSkeleton rows={8} />
           ) : scoped.length === 0 ? (
             <EmptyState
               icon={ClipboardCheck}
               title="Nothing in this scope"
-              description="Pick another box, or add stock first."
+              description="Pick another box, or put stock on the floor first."
             />
           ) : (
-            <div className="card-luxury overflow-hidden p-0">
-              <div className="grid grid-cols-[1fr_6rem_7rem_5rem] gap-3 border-b border-border px-5 py-2.5 text-xs font-semibold text-muted-foreground">
-                <span>Item</span>
-                <span className="text-right">Expected</span>
-                <span className="text-right">Counted</span>
-                <span className="text-right">Diff</span>
+            <Panel className="reveal">
+              <div className="grid grid-cols-[1fr_5rem_7rem_4rem] gap-3 border-b border-border px-5 py-2.5">
+                <ColHead>Item</ColHead>
+                <ColHead className="text-right">Expected</ColHead>
+                <ColHead className="text-right">Counted</ColHead>
+                <ColHead className="text-right">Diff</ColHead>
               </div>
+
               {scoped.map((it) => {
+                const id = itemIdentity(it);
                 const c = counts[it.id];
                 const diff = c === undefined ? null : c - it.quantity;
                 return (
                   <div
                     key={it.id}
-                    className="grid grid-cols-[1fr_6rem_7rem_5rem] items-center gap-3 border-b border-border/70 px-5 py-3 last:border-0"
+                    className="row-line grid grid-cols-[1fr_5rem_7rem_4rem] items-center gap-3 px-5 py-3"
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">
-                        {it.displayName || it.modelId || it.barcode || "Item"}
+                      <p className={`truncate text-sm font-medium ${id.unnamed ? "mono" : ""}`}>
+                        {id.title}
                       </p>
-                      <p className="mono truncate text-xs text-muted-foreground">{it.barcode || it.modelId}</p>
+                      {id.subtitle && (
+                        <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                          {id.subtitle}
+                        </p>
+                      )}
                     </div>
-                    <span className="mono text-right text-sm text-muted-foreground">{it.quantity}</span>
-                    <input
+
+                    <span className="mono text-right text-sm text-muted-foreground">
+                      {it.quantity}
+                    </span>
+
+                    <Input
                       inputMode="numeric"
                       value={c ?? ""}
                       onChange={(e) => setCount(it.id, e.target.value)}
                       placeholder="—"
-                      aria-label={`Counted quantity for ${it.displayName || it.barcode || "item"}`}
-                      className="mono w-full rounded-lg border border-border bg-background px-2 py-1.5 text-right text-sm outline-none transition-[border-color,box-shadow] duration-200"
+                      aria-label={`Counted quantity for ${id.title}`}
+                      className="mono h-8 py-1 text-right"
                     />
+
                     <span
-                      className={`mono text-right text-sm font-semibold ${
+                      className={`mono text-right text-sm font-semibold tabular-nums ${
                         diff === null || diff === 0
                           ? "text-muted-foreground"
                           : diff < 0
                             ? "text-warning"
-                            : "text-primary"
+                            : "text-[var(--brand-2)]"
                       }`}
                     >
                       {diff === null ? "" : diff > 0 ? `+${diff}` : diff}
@@ -251,19 +262,10 @@ export default function CycleCountPage() {
                   </div>
                 );
               })}
-            </div>
+            </Panel>
           )}
         </div>
       </PageShell>
     </AdminGuard>
-  );
-}
-
-function Figure({ label, value, tone }: { label: string; value: number; tone?: string }) {
-  return (
-    <div>
-      <p className={`mono text-xl font-semibold tabular-nums ${tone || ""}`}>{value}</p>
-      <p className="text-xs text-muted-foreground">{label}</p>
-    </div>
   );
 }

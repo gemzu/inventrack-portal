@@ -4,12 +4,12 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import AdminGuard from "@/components/AdminGuard";
-import {
-  Plus, X, Download, FileText, Loader2, ChevronDown,
-} from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Plus, X, Download, FileText } from "lucide-react";
 import PageShell from "@/components/page-shell";
+import EmptyState from "@/components/EmptyState";
+import Status from "@/components/Status";
+import { Panel, Figure, ColHead, ListSkeleton } from "@/components/console/surfaces";
+import { Action, Field, Input, Modal, Select } from "@/components/console/controls";
 
 interface InvoiceItem {
   name: string;
@@ -36,12 +36,6 @@ interface Order {
   items?: { name?: string; quantity?: number; price?: number }[];
   total_qty?: number;
 }
-
-const STATUS_STYLES: Record<string, string> = {
-  draft: "bg-muted text-muted-foreground",
-  sent: "bg-primary/15 text-primary",
-  paid: "bg-success/15 text-success",
-};
 
 const NEXT_STATUS: Record<string, string> = {
   draft: "sent",
@@ -188,207 +182,221 @@ export default function InvoicesPage() {
     URL.revokeObjectURL(url);
   }
 
+  const outstanding = invoices
+    .filter((i) => i.status !== "paid")
+    .reduce((s, i) => s + (i.total || 0), 0);
+  const collected = invoices
+    .filter((i) => i.status === "paid")
+    .reduce((s, i) => s + (i.total || 0), 0);
+  const draftTotal = invoiceItems.reduce((sum, i) => sum + i.quantity * i.price, 0);
+
   return (
     <AdminGuard>
       <PageShell
         title="Invoices"
-        subtitle={`${invoices.length} invoice${invoices.length !== 1 ? "s" : ""}`}
+        eyebrow="Console"
+        subtitle="What has been billed, and what is still owed."
         actions={
-          <div className="flex gap-2">
+          <>
             {invoices.length > 0 && (
-              <Button variant="outline" onClick={downloadCsv} className="h-10">
-                <Download className="w-4 h-4" /> Export
-              </Button>
+              <Action onClick={downloadCsv}>
+                <Download className="h-3.5 w-3.5" /> Export
+              </Action>
             )}
-            <Button variant="brand" onClick={() => setShowModal(true)} className="h-10">
-              <Plus className="w-4 h-4" /> Create Invoice
-            </Button>
-          </div>
+            <Action solid onClick={() => setShowModal(true)}>
+              <Plus className="h-3.5 w-3.5" /> New invoice
+            </Action>
+          </>
         }
       >
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        ) : invoices.length === 0 ? (
-          <Card><CardContent className="flex flex-col items-center justify-center py-20">
-            <FileText className="w-12 h-12 mb-3 text-muted-foreground" />
-            <p className="font-semibold mb-1">No invoices yet</p>
-            <p className="text-sm text-muted-foreground">
-              Create your first invoice to get started
-            </p>
-          </CardContent></Card>
+          <ListSkeleton rows={6} />
         ) : (
-          <Card className="overflow-hidden"><CardContent className="p-0">
-            {invoices.map((inv) => (
-              <div key={inv.id} className="flex items-center gap-4 px-4 py-3.5 border-b border-border/60 last:border-0 hover:bg-primary/[0.03] transition-colors">
-                <div className="w-9 h-9 rounded-md border border-border flex items-center justify-center shrink-0 text-muted-foreground">
-                  <FileText className="w-4 h-4 text-muted-foreground" />
+          <div className="space-y-8">
+            {/* Money is the content of this screen, so money is what is set
+                large. Outstanding leads, because it is the one that needs
+                doing something about. */}
+            <div className="reveal flex flex-wrap items-baseline gap-x-10 gap-y-4">
+              <Figure
+                label="Outstanding"
+                value={`$${outstanding.toFixed(2)}`}
+                tone={outstanding > 0 ? "warning" : undefined}
+              />
+              <Figure label="Collected" value={`$${collected.toFixed(2)}`} />
+              <Figure label="Invoices" value={invoices.length} />
+            </div>
+
+            {invoices.length === 0 ? (
+              <EmptyState
+                icon={FileText}
+                title="Nothing billed yet"
+                description="Create an invoice from an order, or write one by hand."
+              />
+            ) : (
+              <Panel className="reveal">
+                <div className="hidden items-center gap-4 border-b border-border px-5 py-2.5 md:flex">
+                  <ColHead className="min-w-0 flex-1">Buyer</ColHead>
+                  <ColHead className="w-28 shrink-0 text-right">Total</ColHead>
+                  <ColHead className="w-32 shrink-0">Raised</ColHead>
+                  <ColHead className="w-32 shrink-0">State</ColHead>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold truncate">{inv.buyer_name}</div>
-                  <div className="text-xs text-muted-foreground font-mono truncate">{inv.invoice_number}</div>
-                </div>
-                <div className="font-semibold tabular-nums shrink-0">${inv.total.toFixed(2)}</div>
-                <div className="text-xs text-muted-foreground shrink-0 hidden sm:block whitespace-nowrap">
-                  {new Date(inv.created_at).toLocaleDateString()}
-                </div>
-                <button
-                  onClick={() => toggleStatus(inv)}
-                  disabled={inv.status === "paid"}
-                  className={`px-3 py-1.5 rounded-sm text-xs font-semibold capitalize shrink-0 ${STATUS_STYLES[inv.status]} ${inv.status !== "paid" ? "cursor-pointer hover:opacity-80" : ""}`}
-                  title={inv.status !== "paid" ? "Advance status" : "Paid"}
-                >
-                  {inv.status}
-                  {inv.status !== "paid" && <ChevronDown className="w-3 h-3 inline ml-1" />}
-                </button>
-              </div>
-            ))}
-      </CardContent></Card>
+
+                {invoices.map((inv) => (
+                  <div key={inv.id} className="row-line flex items-center gap-4 px-5 py-3.5">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{inv.buyer_name}</p>
+                      <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                        {inv.invoice_number}
+                      </p>
+                    </div>
+
+                    <span className="mono w-28 shrink-0 text-right text-sm font-semibold tabular-nums">
+                      ${inv.total.toFixed(2)}
+                    </span>
+                    <span className="mono hidden w-32 shrink-0 text-[11px] text-muted-foreground lg:block">
+                      {new Date(inv.created_at).toLocaleDateString()}
+                    </span>
+
+                    {/* The state is also the control: clicking advances it.
+                        Kept as the shared marker so it reads the same as
+                        every other state in the console. */}
+                    <div className="w-32 shrink-0">
+                      {inv.status === "paid" ? (
+                        <Status status="paid" />
+                      ) : (
+                        <button
+                          onClick={() => toggleStatus(inv)}
+                          title="Advance this invoice"
+                          className="text-left transition-opacity duration-300 hover:opacity-70"
+                        >
+                          <Status status={inv.status} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </Panel>
+            )}
+          </div>
         )}
 
-        {/* Create Invoice Modal */}
-        {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div
-              className="rounded-md p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto bg-background border border-border"
-            >
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-lg font-bold">Create Invoice</h2>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Order selector */}
-              <label className="block text-sm font-medium mb-1.5">
-                Link to Order (optional)
-              </label>
-              <select
+        <Modal
+          open={showModal}
+          onClose={() => setShowModal(false)}
+          title="New invoice"
+          subtitle={draftTotal > 0 ? `$${draftTotal.toFixed(2)} so far` : "From an order, or by hand"}
+        >
+          <div className="space-y-5">
+            <Field label="Link to an order" hint="Fills the lines in for you.">
+              <Select
                 value={selectedOrderId}
                 onChange={(e) => handleSelectOrder(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-md text-sm mb-4 outline-none bg-muted border border-border text-foreground"
               >
-                <option value="">Select an order...</option>
+                <option value="">Not linked</option>
                 {orders.map((o) => (
                   <option key={o.id} value={o.id}>
-                    {o.buyerName || o.buyer_name || o.id} -{" "}
-                    {(o.items?.length || 0)} items
+                    {String(o.buyerName || o.buyer_name || o.id)} — {o.items?.length || 0} items
                   </option>
                 ))}
-              </select>
+              </Select>
+            </Field>
 
-              {/* Buyer name */}
-              <label className="block text-sm font-medium mb-1.5">
-                Buyer Name
-              </label>
-              <input
-                type="text"
+            <Field label="Buyer">
+              <Input
                 value={buyerName}
                 onChange={(e) => setBuyerName(e.target.value)}
-                placeholder="Enter buyer name"
-                className="w-full px-3 py-2.5 rounded-md text-sm mb-4 outline-none bg-muted border border-border text-foreground"
+                placeholder="Who is being billed"
               />
+            </Field>
 
-              {/* Items */}
-              <label className="block text-sm font-medium mb-1.5">Items</label>
+            <Field label="Lines">
               {invoiceItems.length === 0 && (
-                <p className="text-xs mb-2 text-muted-foreground">
-                  Select an order to auto-fill items, or add manually.
+                <p className="mb-3 text-xs text-muted-foreground">
+                  Pick an order above, or add lines by hand.
                 </p>
               )}
-              {invoiceItems.map((item, idx) => (
-                <div key={idx} className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={item.name}
-                    onChange={(e) => {
-                      const updated = [...invoiceItems];
-                      updated[idx].name = e.target.value;
-                      setInvoiceItems(updated);
-                    }}
-                    placeholder="Item name"
-                    className="flex-1 px-3 py-2 rounded-lg text-sm outline-none bg-muted border border-border text-foreground"
-                  />
-                  <input
-                    type="number"
-                    value={item.quantity}
-                    onChange={(e) => {
-                      const updated = [...invoiceItems];
-                      updated[idx].quantity = parseInt(e.target.value) || 0;
-                      setInvoiceItems(updated);
-                    }}
-                    placeholder="Qty"
-                    className="w-16 px-3 py-2 rounded-lg text-sm outline-none text-center bg-muted border border-border text-foreground"
-                  />
-                  <input
-                    type="number"
-                    value={item.price}
-                    onChange={(e) => {
-                      const updated = [...invoiceItems];
-                      updated[idx].price = parseFloat(e.target.value) || 0;
-                      setInvoiceItems(updated);
-                    }}
-                    placeholder="Price"
-                    className="w-24 px-3 py-2 rounded-lg text-sm outline-none bg-muted border border-border text-foreground"
-                  />
-                  <button
-                    onClick={() =>
-                      setInvoiceItems((prev) => prev.filter((_, i) => i !== idx))
-                    }
-                    className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
-                  >
-                    <X className="w-4 h-4 text-muted-foreground" />
-                  </button>
-                </div>
-              ))}
+              <div className="space-y-2">
+                {invoiceItems.map((item, idx) => (
+                  <div key={idx} className="flex gap-2">
+                    <Input
+                      value={item.name}
+                      onChange={(e) => {
+                        const updated = [...invoiceItems];
+                        updated[idx].name = e.target.value;
+                        setInvoiceItems(updated);
+                      }}
+                      placeholder="Item"
+                      aria-label="Item name"
+                      className="flex-1"
+                    />
+                    <Input
+                      type="number"
+                      value={item.quantity}
+                      onChange={(e) => {
+                        const updated = [...invoiceItems];
+                        updated[idx].quantity = parseInt(e.target.value) || 0;
+                        setInvoiceItems(updated);
+                      }}
+                      placeholder="Qty"
+                      aria-label="Quantity"
+                      className="w-20 text-center"
+                    />
+                    <Input
+                      type="number"
+                      value={item.price}
+                      onChange={(e) => {
+                        const updated = [...invoiceItems];
+                        updated[idx].price = parseFloat(e.target.value) || 0;
+                        setInvoiceItems(updated);
+                      }}
+                      placeholder="Price"
+                      aria-label="Unit price"
+                      className="w-24 text-center"
+                    />
+                    <button
+                      onClick={() => setInvoiceItems((prev) => prev.filter((_, i) => i !== idx))}
+                      aria-label="Remove line"
+                      className="shrink-0 px-1 text-muted-foreground transition-colors duration-300 hover:text-destructive"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
               <button
                 onClick={() =>
-                  setInvoiceItems((prev) => [
-                    ...prev,
-                    { name: "", quantity: 1, price: 0 },
-                  ])
+                  setInvoiceItems((prev) => [...prev, { name: "", quantity: 1, price: 0 }])
                 }
-                className="text-xs text-primary font-medium mb-4 hover:underline"
+                className="mono mt-3 text-[11px] uppercase tracking-[0.18em] text-[var(--brand-2)] transition-colors duration-300 hover:text-foreground"
               >
-                + Add Item
+                Add a line
               </button>
+            </Field>
 
-              {/* Total */}
-              {invoiceItems.length > 0 && (
-                <div className="flex justify-between items-center mb-4 px-1">
-                  <span className="text-sm font-medium">Total</span>
-                  <span className="text-lg font-bold">
-                    $
-                    {invoiceItems
-                      .reduce((sum, i) => sum + i.quantity * i.price, 0)
-                      .toFixed(2)}
-                  </span>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2.5 rounded-md text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 transition border border-border"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveInvoice}
-                  disabled={!buyerName.trim() || saving}
-                  className="flex-1 px-4 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary-dark transition disabled:opacity-40"
-                >
-                  {saving ? "Saving..." : "Save Invoice"}
-                </button>
+            {invoiceItems.length > 0 && (
+              <div className="flex items-baseline justify-between border-t border-border pt-5">
+                <ColHead>Total</ColHead>
+                <span className="font-display text-2xl font-bold tabular-nums tracking-[-0.03em]">
+                  ${draftTotal.toFixed(2)}
+                </span>
               </div>
+            )}
+
+            <div className="flex gap-3">
+              <Action onClick={() => setShowModal(false)} className="flex-1">
+                Cancel
+              </Action>
+              <Action
+                solid
+                onClick={handleSaveInvoice}
+                disabled={!buyerName.trim() || saving}
+                className="flex-1"
+              >
+                {saving ? "Saving" : "Save invoice"}
+              </Action>
             </div>
           </div>
-        )}
+        </Modal>
       </PageShell>
     </AdminGuard>
   );

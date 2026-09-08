@@ -1,62 +1,99 @@
 "use client";
-import MfaSetup from "@/components/dashboard/MfaSetup";
-import AdminGuard from "@/components/AdminGuard";
+
+/**
+ * Settings.
+ *
+ * Was five stacked cards, each with its own heading, and toggles drawn as
+ * iOS-style capsules with a white knob. The appearance controls said "🌙 On"
+ * and "✨ On", which is the only place in the product where an emoji was doing
+ * the work of a word.
+ *
+ * Sections are rules now, the same as everywhere else, and the switch is the
+ * console's: a hairline track with a square knob, on the site's easing. Every
+ * field still saves itself as you leave it — that behaviour was good and is
+ * untouched.
+ */
 
 import { useState, useEffect, useCallback, useTransition } from "react";
+import AdminGuard from "@/components/AdminGuard";
+import PageShell from "@/components/page-shell";
+import MfaSetup from "@/components/dashboard/MfaSetup";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Check, Loader2 } from "lucide-react";
-import PageShell from "@/components/page-shell";
+import { Rule } from "@/components/console/surfaces";
+import { Field, Input, Select } from "@/components/console/controls";
 
-interface SettingsSectionProps {
-  title: string;
-  description: string;
+/* A row is a label, what it does, and the control. The hairline between rows
+   is the only chrome. */
+function Row({
+  label,
+  description,
+  children,
+}: {
+  label: string;
+  description?: string;
   children: React.ReactNode;
-}
-
-function SettingsSection({ title, description, children }: SettingsSectionProps) {
-  return (
-    <div className="card-luxury p-6">
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold">{title}</h2>
-        <p className="text-sm text-muted-foreground mt-1">{description}</p>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function SettingRow({ 
-  label, 
-  description, 
-  children 
-}: { 
-  label: string; 
-  description?: string; 
-  children: React.ReactNode 
 }) {
   return (
-    <div className="flex items-center justify-between py-4 border-b border-border/50 last:border-0">
-      <div className="flex-1 min-w-0 pr-4">
-        <p className="font-medium">{label}</p>
-        {description && <p className="text-sm text-muted-foreground mt-0.5">{description}</p>}
+    <div className="row-line flex items-center justify-between gap-6 py-4">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium">{label}</p>
+        {description && (
+          <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">{description}</p>
+        )}
       </div>
       <div className="shrink-0">{children}</div>
     </div>
   );
 }
 
-function AutoSaveInput({ 
-  value, 
-  onChange, 
-  label, 
-  placeholder 
-}: { 
-  value: string; 
-  onChange: (value: string) => void;
+/* The switch. Square knob, hairline track, brand fill when on — the same
+   vocabulary as the rest of the console rather than a phone's. */
+function Toggle({
+  value,
+  onChange,
+  label,
+}: {
+  value: boolean;
+  onChange: (v: boolean) => void;
   label: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={value}
+      aria-label={label}
+      onClick={() => onChange(!value)}
+      className={`relative h-6 w-11 shrink-0 rounded-md border transition-colors duration-300 ease-[cubic-bezier(0.16,1,0.30,1)] ${
+        value
+          ? "border-[var(--brand-2)] bg-[color-mix(in_oklab,var(--brand-2)_28%,transparent)]"
+          : "border-border bg-transparent"
+      }`}
+    >
+      <span
+        className={`absolute top-1 h-3.5 w-3.5 rounded-sm transition-[transform,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.30,1)] ${
+          value ? "translate-x-6 bg-[var(--brand-2)]" : "translate-x-1 bg-muted-foreground"
+        }`}
+      />
+    </button>
+  );
+}
+
+/* Saves on blur, and says so. The tick is the only feedback this screen needs;
+   a Save button would be a lie about when the write happens. */
+function AutoSaveInput({
+  value,
+  onChange,
+  placeholder,
+  label,
+}: {
+  value: string;
+  onChange: (value: string) => void;
   placeholder?: string;
+  label: string;
 }) {
   const [localValue, setLocalValue] = useState(value);
   const [isSaving, setIsSaving] = useState(false);
@@ -70,7 +107,7 @@ function AutoSaveInput({
     if (localValue === value) return;
     setIsSaving(true);
     onChange(localValue);
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 500));
     setIsSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -78,47 +115,29 @@ function AutoSaveInput({
 
   return (
     <div className="relative">
-      <input
-        type="text"
+      <Input
         value={localValue}
         onChange={(e) => setLocalValue(e.target.value)}
         onBlur={handleBlur}
         placeholder={placeholder}
-        className="w-full px-4 py-3 rounded-lg border border-border bg-background text-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] focus:border-foreground focus:ring-0"
+        aria-label={label}
+        className="pr-10"
       />
-      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+      <span className="absolute right-3 top-1/2 -translate-y-1/2">
         {isSaving ? (
-          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
         ) : saved ? (
-          <Check className="w-4 h-4 text-success" />
+          <Check className="h-3.5 w-3.5 text-success" />
         ) : null}
-      </div>
+      </span>
     </div>
-  );
-}
-
-function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!value)}
-      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-        value ? "bg-foreground" : "bg-border"
-      }`}
-    >
-      <span
-        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform duration-200 ease-in-out ${
-          value ? "translate-x-5" : "translate-x-0"
-        }`}
-      />
-    </button>
   );
 }
 
 export default function SettingsPage() {
   const { orgId, orgData } = useAuth();
   const { theme, toggleTheme, accent, setAccent } = useTheme();
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
@@ -144,10 +163,13 @@ export default function SettingsPage() {
     }
   }, [orgData]);
 
-  const saveSettings = useCallback(async (updates: Record<string, unknown>) => {
-    if (!orgId) return;
-    await supabase.from("organizations").update(updates).eq("id", orgId);
-  }, [orgId]);
+  const saveSettings = useCallback(
+    async (updates: Record<string, unknown>) => {
+      if (!orgId) return;
+      await supabase.from("organizations").update(updates).eq("id", orgId);
+    },
+    [orgId]
+  );
 
   const debouncedSave = useCallback(
     (() => {
@@ -164,149 +186,158 @@ export default function SettingsPage() {
 
   return (
     <AdminGuard>
-      <PageShell title="Settings" subtitle="Manage your preferences">
-        <div className="max-w-2xl mx-auto space-y-6 stagger-children">
-          <SettingsSection 
-            title="Organization" 
-            description="Basic information about your business"
-          >
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Name</label>
+      <PageShell
+        title="Settings"
+        eyebrow="Console"
+        subtitle="Everything here saves itself as you leave the field."
+      >
+        <div className="max-w-2xl space-y-12">
+          {/* ── Organisation ─────────────────────────────────── */}
+          <section className="space-y-5">
+            <Rule label="Organisation" />
+            <div className="reveal space-y-5">
+              <Field label="Name">
                 <AutoSaveInput
                   value={name}
                   onChange={(v) => { setName(v); debouncedSave("name", v); }}
-                  label="Organization Name"
-                  placeholder="Your Company"
+                  label="Organisation name"
+                  placeholder="Your company"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Address</label>
+              </Field>
+              <Field label="Address">
                 <AutoSaveInput
                   value={address}
                   onChange={(v) => { setAddress(v); debouncedSave("address", v); }}
-                  label="Business Address"
+                  label="Business address"
                   placeholder="123 Main St"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Phone</label>
+              </Field>
+              <Field label="Phone">
                 <AutoSaveInput
                   value={phone}
                   onChange={(v) => { setPhone(v); debouncedSave("phone", v); }}
-                  label="Phone Number"
-                  placeholder="+1 (555) 000-0000"
+                  label="Phone number"
+                  placeholder="+1 555 000 0000"
                 />
-              </div>
+              </Field>
             </div>
-          </SettingsSection>
+          </section>
 
-          <SettingsSection 
-            title="Inventory" 
-            description="Manage inventory behavior"
-          >
-            <SettingRow label="Low Stock Threshold" description="Alert when items reach this quantity">
-              <input
-                type="number"
-                value={threshold}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value) || 0;
-                  setThreshold(val);
-                  debouncedSave("low_stock_threshold", val);
-                }}
-                min={0}
-                className="w-20 px-3 py-2 rounded-lg border border-border bg-background text-sm text-center"
-              />
-            </SettingRow>
-            <SettingRow label="Reservation Time" description="How long items are held for buyers">
-              <select
-                value={reservationHours}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value);
-                  setReservationHours(val);
-                  debouncedSave("reservation_hours", val);
-                }}
-                className="px-3 py-2 rounded-lg border border-border bg-background text-sm"
+          {/* ── Stock ────────────────────────────────────────── */}
+          <section className="space-y-2">
+            <Rule label="Stock" className="mb-5" />
+            <div className="reveal">
+              <Row label="Low stock threshold" description="Anything at or below this counts as running low.">
+                <Input
+                  type="number"
+                  min={0}
+                  value={threshold}
+                  aria-label="Low stock threshold"
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 0;
+                    setThreshold(val);
+                    debouncedSave("low_stock_threshold", val);
+                  }}
+                  className="w-20 text-center"
+                />
+              </Row>
+              <Row label="Reservation time" description="How long stock is held for a buyer before it goes back.">
+                <Select
+                  value={reservationHours}
+                  aria-label="Reservation time"
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setReservationHours(val);
+                    debouncedSave("reservation_hours", val);
+                  }}
+                  className="w-36"
+                >
+                  <option value={12}>12 hours</option>
+                  <option value={24}>24 hours</option>
+                  <option value={48}>48 hours</option>
+                  <option value={72}>72 hours</option>
+                </Select>
+              </Row>
+            </div>
+          </section>
+
+          {/* ── Orders ───────────────────────────────────────── */}
+          <section className="space-y-2">
+            <Rule label="Orders" className="mb-5" />
+            <div className="reveal">
+              <Row
+                label="Require approval"
+                description={
+                  orderApproval
+                    ? "Every order waits for an admin before it moves."
+                    : "Orders confirm themselves as soon as they arrive."
+                }
               >
-                <option value={12}>12 hours</option>
-                <option value={24}>24 hours</option>
-                <option value={48}>48 hours</option>
-                <option value={72}>72 hours</option>
-              </select>
-            </SettingRow>
-          </SettingsSection>
+                <Toggle
+                  label="Require approval for orders"
+                  value={orderApproval}
+                  onChange={(v) => { setOrderApproval(v); debouncedSave("order_approval_required", v); }}
+                />
+              </Row>
+            </div>
+          </section>
 
-          <SettingsSection 
-            title="Orders" 
-            description="Configure order processing"
-          >
-            <SettingRow 
-              label="Require Approval" 
-              description={orderApproval ? "Orders need admin approval" : "Orders auto-confirm"}
-            >
-              <Toggle 
-                value={orderApproval} 
-                onChange={(v) => { setOrderApproval(v); debouncedSave("order_approval_required", v); }} 
-              />
-            </SettingRow>
-          </SettingsSection>
+          {/* ── Alerts ───────────────────────────────────────── */}
+          <section className="space-y-2">
+            <Rule label="Alerts" className="mb-5" />
+            <div className="reveal">
+              <Row label="Running low" description="When stock drops to the threshold above.">
+                <Toggle
+                  label="Alert on low stock"
+                  value={notifyLowStock}
+                  onChange={(v) => { setNotifyLowStock(v); debouncedSave("notify_low_stock", v); }}
+                />
+              </Row>
+              <Row label="New orders" description="When a buyer places one.">
+                <Toggle
+                  label="Alert on new orders"
+                  value={notifyNewOrders}
+                  onChange={(v) => { setNotifyNewOrders(v); debouncedSave("notify_new_orders", v); }}
+                />
+              </Row>
+              <Row label="Worker submissions" description="When floor staff send something for approval.">
+                <Toggle
+                  label="Alert on worker submissions"
+                  value={notifySubmissions}
+                  onChange={(v) => { setNotifySubmissions(v); debouncedSave("notify_submissions", v); }}
+                />
+              </Row>
+            </div>
+          </section>
 
-          <SettingsSection 
-            title="Notifications" 
-            description="Choose what alerts you receive"
-          >
-            <SettingRow label="Low Stock Alerts">
-              <Toggle 
-                value={notifyLowStock} 
-                onChange={(v) => { setNotifyLowStock(v); debouncedSave("notify_low_stock", v); }} 
-              />
-            </SettingRow>
-            <SettingRow label="New Order Alerts">
-              <Toggle 
-                value={notifyNewOrders} 
-                onChange={(v) => { setNotifyNewOrders(v); debouncedSave("notify_new_orders", v); }} 
-              />
-            </SettingRow>
-            <SettingRow label="Worker Submissions">
-              <Toggle 
-                value={notifySubmissions} 
-                onChange={(v) => { setNotifySubmissions(v); debouncedSave("notify_submissions", v); }} 
-              />
-            </SettingRow>
-          </SettingsSection>
+          {/* ── Appearance ───────────────────────────────────── */}
+          <section className="space-y-2">
+            <Rule label="Appearance" className="mb-5" />
+            <div className="reveal">
+              <Row label="Dark" description="Follows whatever you pick here, on every device you sign in from.">
+                <Toggle label="Dark mode" value={theme === "dark"} onChange={toggleTheme} />
+              </Row>
+              <Row label="Pink accent" description="Swaps the violet for a softer pink throughout.">
+                <Toggle
+                  label="Pink accent"
+                  value={accent === "pink"}
+                  onChange={(v) => setAccent(v ? "pink" : "neutral")}
+                />
+              </Row>
+            </div>
+          </section>
 
-          <SettingsSection 
-            title="Appearance" 
-            description="Customize the interface"
-          >
-            <SettingRow label="Dark Mode" description="Switch between light and dark themes">
-              <button
-                onClick={toggleTheme}
-                className="px-5 py-2.5 rounded-md border border-border bg-secondary text-sm font-medium hover:bg-muted transition-[color,background-color,border-color,box-shadow,transform,opacity] min-w-[80px]"
-              >
-                {theme === "dark" ? "🌙 On" : "☀️ Off"}
-              </button>
-            </SettingRow>
-            <SettingRow label="Pink Theme (#E398CA)" description="Use soft pink accent color">
-              <button
-                onClick={() => setAccent(accent === "pink" ? "neutral" : "pink")}
-                className={`px-5 py-2.5 rounded-md border text-sm font-medium transition-[color,background-color,border-color,box-shadow,transform,opacity] min-w-[80px] ${
-                  accent === "pink" 
-                    ? "bg-[#E398CA] border-[#E398CA] text-[#3d2a35]" 
-                    : "border-border bg-secondary hover:bg-muted"
-                }`}
-              >
-                {accent === "pink" ? "✨ On" : "Off"}
-              </button>
-            </SettingRow>
-          </SettingsSection>
-
-          <SettingsSection
-            title="Two factor authentication"
-            description="Ask for a code from an authenticator app as well as your password."
-          >
-            <MfaSetup />
-          </SettingsSection>
+          {/* ── Security ─────────────────────────────────────── */}
+          <section className="space-y-5">
+            <Rule label="Security" />
+            <div className="reveal">
+              <p className="mb-5 max-w-lg text-sm leading-relaxed text-muted-foreground">
+                Two factor asks for a code from an authenticator app as well as your password.
+                Without it, anyone holding your password holds your floor.
+              </p>
+              <MfaSetup />
+            </div>
+          </section>
         </div>
       </PageShell>
     </AdminGuard>

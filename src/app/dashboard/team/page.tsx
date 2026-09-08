@@ -4,10 +4,11 @@ import AdminGuard from "@/components/AdminGuard";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { Users, Clock, TrendingUp, Monitor, RefreshCw, Loader2 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Users, Clock, RefreshCw } from "lucide-react";
 import PageShell from "@/components/page-shell";
+import EmptyState from "@/components/EmptyState";
+import { Panel, Rule, Figure, ColHead, ListSkeleton } from "@/components/console/surfaces";
+import { Action } from "@/components/console/controls";
 
 interface ActiveUser {
   id: string;
@@ -73,12 +74,6 @@ function formatDuration(minutes: number | null) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-const ROLE_COLORS: Record<string, string> = {
-  admin: "bg-destructive/10 text-destructive",
-  worker: "bg-primary/10 text-primary",
-  buyer: "bg-primary/10 text-primary",
-};
-
 export default function TeamPage() {
   const { orgId } = useAuth();
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
@@ -134,134 +129,121 @@ export default function TeamPage() {
   return (
     <AdminGuard>
       <PageShell
-        title="Team Activity"
-        subtitle="Live team status & shift tracking"
+        title="Team"
+        eyebrow="Console"
+        subtitle="Who is on the floor right now, and what today's shifts add up to."
         actions={
-          <Button variant="outline" onClick={handleRefresh} disabled={refreshing} className="h-10">
-            {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-            Refresh
-          </Button>
+          <Action onClick={handleRefresh} disabled={refreshing}>
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            {refreshing ? "Refreshing" : "Refresh"}
+          </Action>
         }
       >
-        {/* Summary Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[
-            { label: "Active Now", value: activeCount, icon: Users, color: "text-success", bg: "bg-success/10" },
-            { label: "Total Hours Today", value: formatDuration(totalMinutes), icon: Clock, color: "text-primary", bg: "bg-primary/10" },
-            { label: "Avg Shift", value: formatDuration(avgDuration), icon: TrendingUp, color: "text-warning", bg: "bg-warning/10" },
-          ].map((stat) => (
-            <Card key={stat.label}><CardContent className="p-5">
-              <div className="flex items-center gap-3 mb-3">
-                <div className={`w-10 h-10 rounded-md ${stat.bg} flex items-center justify-center`}>
-                  <stat.icon className={`w-5 h-5 ${stat.color}`} />
-                </div>
-                <span className="text-xs font-semibold tracking-wide text-muted-foreground">
-                  {stat.label}
+        <div className="space-y-12">
+          <div className="reveal flex flex-wrap items-baseline gap-x-10 gap-y-4">
+            <Figure
+              label="On the floor"
+              value={activeCount}
+              tone={activeCount ? "brand" : undefined}
+            />
+            <Figure label="Hours today" value={formatDuration(totalMinutes)} />
+            <Figure label="Average shift" value={formatDuration(avgDuration)} />
+          </div>
+
+          {/* ── Active ─────────────────────────────────────────── */}
+          <section className="space-y-5">
+            <Rule
+              label="Active now"
+              action={
+                <span className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                  {activeUsers.length}
                 </span>
-              </div>
-              <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-            </CardContent></Card>
-          ))}
-        </div>
-
-        {/* Currently Active */}
-        <Card className="rounded-md overflow-hidden"><CardContent className="p-0">
-          <div className="px-5 py-4 flex items-center gap-2 border-b border-border">
-            <Users className="w-4 h-4 text-success" />
-            <h2 className="font-semibold">Currently Active</h2>
-            <span className="ml-auto text-xs font-medium px-2 py-0.5 rounded-sm bg-success/10 text-success">
-              {activeUsers.length}
-            </span>
-          </div>
-          {loading ? (
-            <div className="flex items-center justify-center p-10">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            </div>
-          ) : activeUsers.length > 0 ? (
-            <div className="divide-y">
-              {activeUsers.map((u) => (
-                <div key={u.id} className="px-5 py-3.5 flex items-center gap-3">
-                  <div className="relative">
-                    <div className="w-2.5 h-2.5 rounded-full bg-success animate-pulse" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm truncate">{u.name || u.email}</span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${ROLE_COLORS[u.role] || "bg-gray-500/10 text-gray-500"}`}>
-                        {u.role.toUpperCase()}
-                      </span>
+              }
+            />
+            {loading ? (
+              <ListSkeleton rows={3} />
+            ) : activeUsers.length === 0 ? (
+              <EmptyState
+                icon={Users}
+                title="Nobody signed in"
+                description="People show up here while they are using the app or the portal."
+              />
+            ) : (
+              <Panel className="reveal">
+                {activeUsers.map((u) => (
+                  <div key={u.id} className="row-line flex items-center gap-4 px-5 py-3.5">
+                    {/* One dot for presence. The role and the screen are words. */}
+                    <span className="pulse-dot h-1.5 w-1.5 shrink-0 rounded-full bg-success" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{u.name || u.email}</p>
+                      <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                        {u.role}
+                        {u.currentScreen ? ` · ${u.currentScreen}` : ""}
+                        {` · ${relativeTime(u.lastActiveAt)}`}
+                      </p>
                     </div>
-                    <div className="flex items-center gap-3 mt-0.5">
-                      {u.currentScreen && (
-                        <span className="text-xs flex items-center gap-1 text-muted-foreground">
-                          <Monitor className="w-3 h-3" />
-                          {u.currentScreen}
-                        </span>
-                      )}
-                      <span className="text-xs text-muted-foreground">
-                        {relativeTime(u.lastActiveAt)}
+                    {u.isClockedIn && (
+                      <span className="mono shrink-0 text-[11px] uppercase tracking-[0.16em] text-success">
+                        Clocked in
                       </span>
-                    </div>
-                  </div>
-                  {u.isClockedIn && (
-                    <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-success/10 text-success">
-                      Clocked in
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center py-10">
-              <Users className="w-8 h-8 mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">No active users right now</p>
-            </div>
-          )}
-        </CardContent></Card>
-
-        {/* Today's Shifts */}
-        <Card className="rounded-md overflow-hidden"><CardContent className="p-0">
-          <div className="px-5 py-4 flex items-center gap-2 border-b border-border">
-            <Clock className="w-4 h-4 text-primary" />
-            <h2 className="font-semibold">Today&apos;s Shifts</h2>
-            <span className="ml-auto text-xs font-medium px-2 py-0.5 rounded-sm bg-primary/10 text-primary">
-              {todayShifts.length}
-            </span>
-          </div>
-          {loading ? (
-            <div className="flex items-center justify-center p-10">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            </div>
-          ) : todayShifts.length > 0 ? (
-            <div>
-              {todayShifts.map((shift) => (
-                <div key={shift.id} className="flex items-center gap-4 px-5 py-3 border-b border-border/60 last:border-0">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{shift.userName || "Unknown"}</div>
-                    {shift.userEmail && <div className="text-xs text-muted-foreground truncate">{shift.userEmail}</div>}
-                  </div>
-                  <div className="text-sm text-muted-foreground shrink-0 hidden sm:block whitespace-nowrap">
-                    {formatTime(shift.clockIn)}
-                    {" → "}
-                    {shift.clockOut ? formatTime(shift.clockOut) : <span className="text-success font-medium">now</span>}
-                  </div>
-                  <div className="text-sm font-semibold shrink-0 w-16 text-right">
-                    {shift.durationMinutes ? (
-                      <span className="text-primary">{formatDuration(shift.durationMinutes)}</span>
-                    ) : (
-                      <span className="text-success">Active</span>
                     )}
                   </div>
+                ))}
+              </Panel>
+            )}
+          </section>
+
+          {/* ── Shifts ─────────────────────────────────────────── */}
+          <section className="space-y-5">
+            <Rule
+              label="Today's shifts"
+              action={
+                <span className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                  {todayShifts.length}
+                </span>
+              }
+            />
+            {loading ? (
+              <ListSkeleton rows={4} />
+            ) : todayShifts.length === 0 ? (
+              <EmptyState
+                icon={Clock}
+                title="No shifts today"
+                description="Clock-ins from the app land here as they happen."
+              />
+            ) : (
+              <Panel className="reveal">
+                <div className="hidden items-center gap-4 border-b border-border px-5 py-2.5 md:flex">
+                  <ColHead className="min-w-0 flex-1">Person</ColHead>
+                  <ColHead className="w-44 shrink-0">In and out</ColHead>
+                  <ColHead className="w-20 shrink-0 text-right">Length</ColHead>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center py-10">
-              <Clock className="w-8 h-8 mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">No shifts recorded today</p>
-            </div>
-          )}
-        </CardContent></Card>
+                {todayShifts.map((shift) => (
+                  <div key={shift.id} className="row-line flex items-center gap-4 px-5 py-3.5">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{shift.userName || "Unknown"}</p>
+                      {shift.userEmail && (
+                        <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                          {shift.userEmail}
+                        </p>
+                      )}
+                    </div>
+                    <span className="mono hidden w-44 shrink-0 text-[11px] text-muted-foreground sm:block">
+                      {formatTime(shift.clockIn)} → {shift.clockOut ? formatTime(shift.clockOut) : "now"}
+                    </span>
+                    <span
+                      className={`mono w-20 shrink-0 text-right text-sm font-semibold tabular-nums ${
+                        shift.durationMinutes ? "" : "text-success"
+                      }`}
+                    >
+                      {shift.durationMinutes ? formatDuration(shift.durationMinutes) : "Open"}
+                    </span>
+                  </div>
+                ))}
+              </Panel>
+            )}
+          </section>
+        </div>
       </PageShell>
     </AdminGuard>
   );
