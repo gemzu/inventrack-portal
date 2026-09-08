@@ -3,17 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { 
-  Sparkles, CheckCircle, AlertCircle, Clock, 
-  Search, RefreshCw, ExternalLink,
-  BrainCircuit, Database, Shield
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 import PageShell from "@/components/page-shell";
+import { Panel, Rule, Figure, ListSkeleton } from "@/components/console/surfaces";
+import { Action, SearchInput, Select } from "@/components/console/controls";
 import { useToast } from "@/components/Toast";
 import Link from "next/link";
-import { ListSkeleton } from "@/components/console/surfaces";
 
 interface EnrichmentStats {
   totalProducts: number;
@@ -163,187 +158,166 @@ export default function EnrichmentDashboardPage() {
            p.brand?.toLowerCase().includes(s);
   });
 
-  function getConfidenceColor(confidence: number) {
-    if (confidence >= 0.8) return "text-success bg-success";
-    if (confidence >= 0.5) return "text-warning bg-warning";
-    return "text-destructive bg-destructive";
-  }
-
   if (loading) {
     return (
-      <ListSkeleton />
+      <PageShell title="Enrichment" subtitle="Reading the queue." eyebrow="Console">
+        <ListSkeleton rows={6} />
+      </PageShell>
     );
   }
 
   return (
     <PageShell
-      title={<span className="flex items-center gap-2"><Sparkles className="w-6 h-6 text-primary" /> AI Enrichment</span>}
-      subtitle="Manage AI-enriched product data and verification queue"
+      title="Enrichment"
+      eyebrow="Console"
+      subtitle="Product detail filled in automatically, and the queue of guesses still waiting on a human."
       actions={
-        <Button onClick={loadData} variant="outline" size="sm">
-          <RefreshCw className="w-4 h-4 mr-2" /> Refresh
-        </Button>
+        <Action onClick={loadData}>
+          <RefreshCw className="h-3.5 w-3.5" /> Refresh
+        </Action>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
-              <Database className="w-4 h-4" /> Total Products
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalProducts || 0}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
-              <BrainCircuit className="w-4 h-4" /> AI Enriched
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">{stats?.enrichedCount || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats?.avgConfidence ? `${Math.round(stats.avgConfidence * 100)}% avg confidence` : "No data"}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
-              <Shield className="w-4 h-4" /> Verified
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success">{stats?.verifiedCount || 0}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
-              <Clock className="w-4 h-4" /> Pending Queue
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between">
-            <div className="text-2xl font-bold text-warning">{stats?.queueCount || 0}</div>
-            {(stats?.queueCount ?? 0) > 0 && (
-              <Button 
-                onClick={processQueue} 
-                disabled={processing}
-                size="sm"
-              >
-                {processing ? "Processing..." : "Process"}
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      <div className="space-y-12">
+        <section className="space-y-5">
+          <Rule label="Where it stands" />
+          <div className="reveal grid grid-cols-2 gap-px overflow-hidden rounded-md bg-border lg:grid-cols-4">
+            <div className="bg-background p-5">
+              <Figure label="Products" value={stats?.totalProducts || 0} />
+            </div>
+            <div className="bg-background p-5">
+              <Figure
+                label="Filled in"
+                value={stats?.enrichedCount || 0}
+                note={
+                  stats?.avgConfidence
+                    ? `${Math.round(stats.avgConfidence * 100)}% average confidence`
+                    : undefined
+                }
+              />
+            </div>
+            <div className="bg-background p-5">
+              <Figure label="Checked by a person" value={stats?.verifiedCount || 0} />
+            </div>
+            <div className="bg-background p-5">
+              <Figure
+                label="Queued"
+                value={stats?.queueCount || 0}
+                tone={(stats?.queueCount ?? 0) > 0 ? "warning" : undefined}
+              />
+              {(stats?.queueCount ?? 0) > 0 && (
+                <button
+                  onClick={processQueue}
+                  disabled={processing}
+                  className="mono mt-3 text-[11px] uppercase tracking-[0.16em] text-[var(--brand-2)] transition-colors duration-300 hover:text-foreground disabled:opacity-40"
+                >
+                  {processing ? "Processing" : "Process now"}
+                </button>
+              )}
+            </div>
+          </div>
+        </section>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Clock className="w-4 h-4" /> Enrichment Queue
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="grid gap-12 lg:grid-cols-3">
+          {/* ── Queue ────────────────────────────────────────── */}
+          <section className="space-y-5 lg:col-span-1">
+            <Rule label="Waiting" />
             {queue.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <CheckCircle className="w-8 h-8 mx-auto mb-2 text-success" />
-                <p className="text-sm">Queue is empty</p>
-              </div>
+              <p className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                Queue is empty
+              </p>
             ) : (
-              <div className="space-y-3 max-h-96 overflow-y-auto">
+              <Panel className="reveal max-h-96 overflow-y-auto">
                 {queue.map((item) => (
-                  <div key={item.id} className="p-3 rounded-lg border bg-card">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-sm font-medium">{item.modelId}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-sm bg-warning/15 text-warning">
-                        #{item.priority}
+                  <div key={item.id} className="row-line px-5 py-3">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="mono truncate text-sm font-medium">{item.modelId}</span>
+                      <span className="mono shrink-0 text-[11px] text-warning">
+                        {item.priority}
                       </span>
                     </div>
-                    {item.nameHint && (
-                      <p className="text-xs text-muted-foreground mt-1">{item.nameHint}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Queued {new Date(item.createdAt).toLocaleDateString()}
+                    <p className="mono mt-1 truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                      {item.nameHint ? `${item.nameHint} · ` : ""}
+                      {new Date(item.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                 ))}
-              </div>
+              </Panel>
             )}
-          </CardContent>
-        </Card>
+          </section>
 
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <CardTitle className="text-base flex items-center gap-2">
-                <AlertCircle className="w-4 h-4" /> Needs Verification
-                <span className="text-sm font-normal text-muted-foreground">
-                  ({filteredProducts.length})
+          {/* ── Needs a human ────────────────────────────────── */}
+          <section className="space-y-5 lg:col-span-2">
+            <Rule
+              label="Needs checking"
+              action={
+                <span className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                  {filteredProducts.length}
                 </span>
-              </CardTitle>
-              <div className="flex gap-2">
-                <div className="relative">
-                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-8 pr-3 py-1.5 text-sm rounded-md border bg-background"
-                  />
-                </div>
-                <select
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                  className="text-sm rounded-md border bg-background px-3 py-1.5"
-                >
-                  <option value="all">All</option>
-                  <option value="high-confidence">High Confidence</option>
-                  <option value="needs-review">Needs Review</option>
-                </select>
-              </div>
+              }
+            />
+
+            <div className="flex flex-wrap gap-3">
+              <SearchInput
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onClear={() => setSearch("")}
+                placeholder="Name, model, or brand"
+                aria-label="Search products needing verification"
+                className="min-w-[14rem] flex-1"
+              />
+              <Select
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                aria-label="Filter by confidence"
+                className="w-48"
+              >
+                <option value="all">Any confidence</option>
+                <option value="high-confidence">Confident</option>
+                <option value="needs-review">Unsure</option>
+              </Select>
             </div>
-          </CardHeader>
-          <CardContent>
+
             {filteredProducts.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <CheckCircle className="w-8 h-8 mx-auto mb-2 text-success" />
-                <p className="text-sm">All products verified!</p>
-              </div>
+              <p className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                Nothing waiting on a person
+              </p>
             ) : (
-              <div className="space-y-2 max-h-96 overflow-y-auto">
+              <Panel className="reveal max-h-96 overflow-y-auto">
                 {filteredProducts.map((product) => (
-                  <div 
-                    key={product.id} 
-                    className="flex items-center justify-between p-3 rounded-lg border hover:border-primary transition"
+                  <Link
+                    key={product.id}
+                    href={`/dashboard/products/${product.id}/verify`}
+                    className="row-line group flex items-center justify-between gap-4 px-5 py-3.5"
                   >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm truncate">{product.name}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-sm ${getConfidenceColor(product.enrichmentConfidence)}`}>
-                          {Math.round(product.enrichmentConfidence * 100)}%
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {product.modelId} {product.brand && `• ${product.brand}`} {product.category && `• ${product.category}`}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{product.name}</p>
+                      <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                        {product.modelId}
+                        {product.brand ? ` · ${product.brand}` : ""}
+                        {product.category ? ` · ${product.category}` : ""}
                       </p>
                     </div>
-                    <Link
-                      href={`/dashboard/products/${product.id}/verify`}
-                      className="ml-4 flex items-center gap-1 text-xs text-primary hover:underline whitespace-nowrap"
+                    {/* Confidence is a number, so it is printed as one. */}
+                    <span
+                      className={`mono shrink-0 text-sm font-semibold tabular-nums ${
+                        product.enrichmentConfidence >= 0.8
+                          ? "text-success"
+                          : product.enrichmentConfidence >= 0.5
+                            ? "text-warning"
+                            : "text-destructive"
+                      }`}
                     >
-                      Review <ExternalLink className="w-3 h-3" />
-                    </Link>
-                  </div>
+                      {Math.round(product.enrichmentConfidence * 100)}%
+                    </span>
+                    <span className="mono shrink-0 text-[11px] uppercase tracking-[0.16em] text-muted-foreground transition-colors duration-300 group-hover:text-[var(--brand-2)]">
+                      Check
+                    </span>
+                  </Link>
                 ))}
-              </div>
+              </Panel>
             )}
-          </CardContent>
-        </Card>
+          </section>
+        </div>
       </div>
     </PageShell>
   );
