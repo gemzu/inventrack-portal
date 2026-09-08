@@ -14,7 +14,7 @@ export default function GlassCard({ className, children, style }: GlassCardProps
     <div
       style={style}
       className={cn(
-        "relative overflow-hidden rounded-xl border border-border bg-card/60 backdrop-blur-sm",
+        "relative overflow-hidden rounded-md border border-border bg-card/60 backdrop-blur-sm",
         "p-6",
         className
       )}

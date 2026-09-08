@@ -159,7 +159,7 @@ export default function CycleCountPage() {
               <button
                 key={c.key}
                 onClick={() => { setScope(c.key); setCounts({}); }}
-                className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-[background-color,color,border-color] duration-200 ease-[cubic-bezier(0.16,1,0.30,1)] ${
+                className={`rounded-sm px-3.5 py-1.5 text-sm font-medium transition-[background-color,color,border-color] duration-200 ease-[cubic-bezier(0.16,1,0.30,1)] ${
                   scope === c.key
                     ? "bg-primary text-primary-foreground"
                     : "border border-border text-muted-foreground hover:text-foreground"

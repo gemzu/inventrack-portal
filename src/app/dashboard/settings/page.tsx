@@ -282,7 +282,7 @@ export default function SettingsPage() {
             <SettingRow label="Dark Mode" description="Switch between light and dark themes">
               <button
                 onClick={toggleTheme}
-                className="px-5 py-2.5 rounded-xl border border-border bg-secondary text-sm font-medium hover:bg-muted transition-[color,background-color,border-color,box-shadow,transform,opacity] min-w-[80px]"
+                className="px-5 py-2.5 rounded-md border border-border bg-secondary text-sm font-medium hover:bg-muted transition-[color,background-color,border-color,box-shadow,transform,opacity] min-w-[80px]"
               >
                 {theme === "dark" ? "🌙 On" : "☀️ Off"}
               </button>
@@ -290,7 +290,7 @@ export default function SettingsPage() {
             <SettingRow label="Pink Theme (#E398CA)" description="Use soft pink accent color">
               <button
                 onClick={() => setAccent(accent === "pink" ? "neutral" : "pink")}
-                className={`px-5 py-2.5 rounded-xl border text-sm font-medium transition-[color,background-color,border-color,box-shadow,transform,opacity] min-w-[80px] ${
+                className={`px-5 py-2.5 rounded-md border text-sm font-medium transition-[color,background-color,border-color,box-shadow,transform,opacity] min-w-[80px] ${
                   accent === "pink" 
                     ? "bg-[#E398CA] border-[#E398CA] text-[#3d2a35]" 
                     : "border-border bg-secondary hover:bg-muted"

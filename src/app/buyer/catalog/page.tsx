@@ -142,7 +142,7 @@ export default function BuyerCatalogPage() {
               placeholder="Search by name, model, brand, barcode..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-14 pl-12 pr-4 rounded-2xl border border-border bg-card/80 backdrop-blur-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-[color,background-color,border-color,box-shadow,transform,opacity]"
+              className="w-full h-14 pl-12 pr-4 rounded-md border border-border bg-card/80 backdrop-blur-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[var(--brand-2)] focus:shadow-[0_0_0_1px_color-mix(in_oklab,var(--brand-2)_60%,transparent)] transition-[color,background-color,border-color,box-shadow,transform,opacity]"
             />
             {search && (
               <button onClick={() => setSearch("")} className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -170,7 +170,7 @@ export default function BuyerCatalogPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div className="aspect-square bg-muted rounded-2xl" />
+                <div className="aspect-square bg-muted rounded-md" />
                 <div className="h-4 bg-muted mt-3 rounded w-3/4" />
                 <div className="h-3 bg-muted mt-2 rounded w-1/2" />
               </div>
@@ -189,7 +189,7 @@ export default function BuyerCatalogPage() {
               <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
                 <button
                   onClick={() => setCategoryFilter(null)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,transform,opacity] ${
+                  className={`px-4 py-2 rounded-sm text-sm font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,transform,opacity] ${
                     !categoryFilter 
                       ? "bg-primary text-primary-foreground shadow-[0_4px_12px_-4px_var(--brand-1)]"
                       : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -201,7 +201,7 @@ export default function BuyerCatalogPage() {
                   <button
                     key={cat}
                     onClick={() => setCategoryFilter(categoryFilter === cat ? null : cat)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,transform,opacity] ${
+                    className={`px-4 py-2 rounded-sm text-sm font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,transform,opacity] ${
                       categoryFilter === cat
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -218,7 +218,7 @@ export default function BuyerCatalogPage() {
               {filtered.map((item, index) => (
                 <div
                   key={item.id}
-                  className="group relative bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/50 transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-300 hover:shadow-lg hover:shadow-primary/10"
+                  className="group relative bg-card border border-border rounded-md overflow-hidden hover:border-primary/50 transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-300 hover:shadow-lg hover:shadow-primary/10"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   {/* Image */}
@@ -231,14 +231,14 @@ export default function BuyerCatalogPage() {
                     
                     {/* Quantity Badge */}
                     {item.quantity !== undefined && item.quantity > 0 && (
-                      <div className="absolute top-3 right-3 px-2 py-1 bg-success/90 text-white text-xs font-bold rounded-full">
+                      <div className="absolute top-3 right-3 px-2 py-1 bg-success/90 text-white text-xs font-bold rounded-sm">
                         {item.quantity} in stock
                       </div>
                     )}
                     
                     {/* Category Tag */}
                     {item.category && (
-                      <div className="absolute bottom-3 left-3 flex items-center gap-1 px-2 py-1 bg-background/80 backdrop-blur-sm rounded-full text-xs font-medium">
+                      <div className="absolute bottom-3 left-3 flex items-center gap-1 px-2 py-1 bg-background/80 backdrop-blur-sm rounded-sm text-xs font-medium">
                         <Tag className="w-3 h-3" />
                         {item.category}
                       </div>

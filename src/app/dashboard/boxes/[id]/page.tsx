@@ -212,7 +212,7 @@ export default function BoxDetailPage() {
     return (
       <AdminGuard>
         <PageShell>
-          <div className="h-48 rounded-2xl bg-muted/40 animate-pulse" />
+          <div className="h-48 rounded-md bg-muted/40 animate-pulse" />
         </PageShell>
       </AdminGuard>
     );
@@ -258,7 +258,7 @@ export default function BoxDetailPage() {
         <GlassCard style={{ borderColor: (box.color || "#6366f1") + "66" }}>
           <div className="flex items-start gap-4">
             <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0"
+              className="w-16 h-16 rounded-md flex items-center justify-center shrink-0"
               style={{ backgroundColor: (box.color || "#6366f1") + "33", color: box.color || "#6366f1" }}
             >
               <Layers className="w-8 h-8" />
@@ -303,7 +303,7 @@ export default function BoxDetailPage() {
 
         {/* Bulk-action bar (appears when items are selected) */}
         {selected.size > 0 && (
-          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-primary/10 border border-primary/25 sticky top-2 z-10 backdrop-blur-xl">
+          <div className="flex items-center gap-3 px-4 py-3 rounded-md bg-primary/10 border border-primary/25 sticky top-2 z-10 backdrop-blur-xl">
             <span className="text-sm font-semibold">{selected.size} selected</span>
             <div className="ml-auto flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={bulkRemove}><PackageMinus className="w-4 h-4" /> Remove from box</Button>
@@ -339,7 +339,7 @@ export default function BoxDetailPage() {
                       onChange={() => toggleSelect(it.id)}
                       className="w-4 h-4 shrink-0 accent-[var(--primary)] cursor-pointer"
                     />
-                    <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded-md border border-border flex items-center justify-center shrink-0 text-muted-foreground">
                       <Package className="w-4 h-4 text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">

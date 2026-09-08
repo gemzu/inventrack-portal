@@ -14,6 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PageShell from "@/components/page-shell";
+import { ListSkeleton } from "@/components/console/surfaces";
 
 interface Storefront {
   id: string;
@@ -157,7 +158,7 @@ export default function StorefrontsPage() {
     }
   };
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+  if (loading) return <ListSkeleton />;
 
   return (
     <AdminGuard>
@@ -171,7 +172,7 @@ export default function StorefrontsPage() {
             <Card key={sf.id} className="relative overflow-hidden group border-border">
               <CardContent className="p-5 space-y-4">
                 <div className="flex items-start justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center">
                     <ShoppingBag className="w-5 h-5 text-primary" />
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -10,6 +10,7 @@ import { useToast } from "@/components/Toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import PageShell from "@/components/page-shell";
+import { ListSkeleton } from "@/components/console/surfaces";
 
 interface Facility {
   id: string;
@@ -96,9 +97,7 @@ export default function FacilitiesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
+      <ListSkeleton />
     );
   }
 
@@ -116,7 +115,7 @@ export default function FacilitiesPage() {
         {facilities.map((fac) => (
           <Card key={fac.id}><CardContent className="p-5">
             <div className="flex items-start justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center">
                 <Building2 className="w-5 h-5 text-primary" />
               </div>
               <div className="flex gap-1">
@@ -158,7 +157,7 @@ export default function FacilitiesPage() {
                 <input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
+                  className="w-full px-4 py-2.5 rounded-md border text-sm outline-none focus:border-[var(--brand-2)] focus:shadow-[0_0_0_1px_color-mix(in_oklab,var(--brand-2)_60%,transparent)] transition bg-input border-border text-foreground"
                   placeholder="Warehouse A"
                 />
               </div>
@@ -167,7 +166,7 @@ export default function FacilitiesPage() {
                 <input
                   value={form.state}
                   onChange={(e) => setForm({ ...form, state: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
+                  className="w-full px-4 py-2.5 rounded-md border text-sm outline-none focus:border-[var(--brand-2)] focus:shadow-[0_0_0_1px_color-mix(in_oklab,var(--brand-2)_60%,transparent)] transition bg-input border-border text-foreground"
                   placeholder="California"
                 />
               </div>
@@ -176,7 +175,7 @@ export default function FacilitiesPage() {
                 <input
                   value={form.address}
                   onChange={(e) => setForm({ ...form, address: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
+                  className="w-full px-4 py-2.5 rounded-md border text-sm outline-none focus:border-[var(--brand-2)] focus:shadow-[0_0_0_1px_color-mix(in_oklab,var(--brand-2)_60%,transparent)] transition bg-input border-border text-foreground"
                   placeholder="123 Main St"
                 />
               </div>

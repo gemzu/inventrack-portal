@@ -89,7 +89,7 @@ export default function CatalogPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search UPC, brand, part #, name..."
-          className="w-full h-11 pl-10 pr-10 rounded-xl border border-border bg-background text-sm outline-none focus:ring-2 focus:ring-primary/40"
+          className="w-full h-11 pl-10 pr-10 rounded-md border border-border bg-background text-sm outline-none focus:ring-2 focus:ring-primary/40"
         />
         {search && (
           <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
@@ -125,7 +125,7 @@ export default function CatalogPage() {
                   </div>
                   <div className="text-xs font-semibold text-primary mt-1 font-mono">UPC {str(r.barcode)}</div>
                 </div>
-                <span className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold ${inStock ? "bg-success/15 text-success" : "bg-warning/15 text-warning"}`}>
+                <span className={`shrink-0 px-2.5 py-1 rounded-sm text-[10px] font-bold ${inStock ? "bg-success/15 text-success" : "bg-warning/15 text-warning"}`}>
                   {inStock ? "IN STOCK" : "HISTORY"}
                 </span>
               </div>

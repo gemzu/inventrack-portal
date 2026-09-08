@@ -65,7 +65,7 @@ export default function BuyerFavoritesPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
         <div className="relative max-w-7xl mx-auto px-4 py-12">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center">
               <Heart className="w-5 h-5 text-primary fill-primary" />
             </div>
             <h1 className="text-4xl font-bold tracking-tight">
@@ -85,7 +85,7 @@ export default function BuyerFavoritesPage() {
         {loading ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...Array(6)].map((_, i) => (
-              <Skeleton key={i} className="h-36 rounded-2xl" />
+              <Skeleton key={i} className="h-36 rounded-md" />
             ))}
           </div>
         ) : items.length === 0 ? (
@@ -106,10 +106,10 @@ export default function BuyerFavoritesPage() {
             {items.map((it) => (
               <div
                 key={it.id}
-                className="group bg-card border border-border rounded-2xl p-5 hover:border-primary/50 hover:shadow-lg transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-300"
+                className="group bg-card border border-border rounded-md p-5 hover:border-primary/50 hover:shadow-lg transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-300"
               >
                 <div className="flex items-start gap-3 mb-4">
-                  <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <div className="w-11 h-11 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
                     <Package className="w-5 h-5 text-primary" />
                   </div>
                   <div className="min-w-0 flex-1">

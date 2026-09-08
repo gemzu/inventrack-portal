@@ -121,7 +121,7 @@ export default function InvitesPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-muted/30 px-5 py-4 flex items-center justify-between gap-3">
+          <div className="rounded-md border border-border bg-muted/30 px-5 py-4 flex items-center justify-between gap-3">
             <code className="font-mono text-xl sm:text-2xl tracking-wider truncate">
               {loading ? "…" : currentCode}
             </code>

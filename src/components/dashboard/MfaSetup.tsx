@@ -196,7 +196,7 @@ export default function MfaSetup() {
               alt="QR code for your authenticator app"
               width={168}
               height={168}
-              className="rounded-xl border border-border bg-white p-2"
+              className="rounded-md border border-border bg-white p-2"
             />
           )}
 

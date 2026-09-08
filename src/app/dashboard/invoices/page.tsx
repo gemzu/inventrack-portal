@@ -222,7 +222,7 @@ export default function InvoicesPage() {
           <Card className="overflow-hidden"><CardContent className="p-0">
             {invoices.map((inv) => (
               <div key={inv.id} className="flex items-center gap-4 px-4 py-3.5 border-b border-border/60 last:border-0 hover:bg-primary/[0.03] transition-colors">
-                <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-md border border-border flex items-center justify-center shrink-0 text-muted-foreground">
                   <FileText className="w-4 h-4 text-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -236,7 +236,7 @@ export default function InvoicesPage() {
                 <button
                   onClick={() => toggleStatus(inv)}
                   disabled={inv.status === "paid"}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold capitalize shrink-0 ${STATUS_STYLES[inv.status]} ${inv.status !== "paid" ? "cursor-pointer hover:opacity-80" : ""}`}
+                  className={`px-3 py-1.5 rounded-sm text-xs font-semibold capitalize shrink-0 ${STATUS_STYLES[inv.status]} ${inv.status !== "paid" ? "cursor-pointer hover:opacity-80" : ""}`}
                   title={inv.status !== "paid" ? "Advance status" : "Paid"}
                 >
                   {inv.status}
@@ -251,7 +251,7 @@ export default function InvoicesPage() {
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
             <div
-              className="rounded-2xl p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto bg-background border border-border"
+              className="rounded-md p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto bg-background border border-border"
             >
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-lg font-bold">Create Invoice</h2>
@@ -270,7 +270,7 @@ export default function InvoicesPage() {
               <select
                 value={selectedOrderId}
                 onChange={(e) => handleSelectOrder(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl text-sm mb-4 outline-none bg-muted border border-border text-foreground"
+                className="w-full px-3 py-2.5 rounded-md text-sm mb-4 outline-none bg-muted border border-border text-foreground"
               >
                 <option value="">Select an order...</option>
                 {orders.map((o) => (
@@ -290,7 +290,7 @@ export default function InvoicesPage() {
                 value={buyerName}
                 onChange={(e) => setBuyerName(e.target.value)}
                 placeholder="Enter buyer name"
-                className="w-full px-3 py-2.5 rounded-xl text-sm mb-4 outline-none bg-muted border border-border text-foreground"
+                className="w-full px-3 py-2.5 rounded-md text-sm mb-4 outline-none bg-muted border border-border text-foreground"
               />
 
               {/* Items */}
@@ -374,14 +374,14 @@ export default function InvoicesPage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 transition border border-border"
+                  className="flex-1 px-4 py-2.5 rounded-md text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 transition border border-border"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveInvoice}
                   disabled={!buyerName.trim() || saving}
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary-dark transition disabled:opacity-40"
+                  className="flex-1 px-4 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary-dark transition disabled:opacity-40"
                 >
                   {saving ? "Saving..." : "Save Invoice"}
                 </button>

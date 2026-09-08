@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import PageShell from "@/components/page-shell";
 import { useToast } from "@/components/Toast";
 import Link from "next/link";
+import { ListSkeleton } from "@/components/console/surfaces";
 
 interface EnrichmentStats {
   totalProducts: number;
@@ -170,9 +171,7 @@ export default function EnrichmentDashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
+      <ListSkeleton />
     );
   }
 
@@ -260,7 +259,7 @@ export default function EnrichmentDashboardPage() {
                   <div key={item.id} className="p-3 rounded-lg border bg-card">
                     <div className="flex items-center justify-between">
                       <span className="font-mono text-sm font-medium">{item.modelId}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-warning/15 text-warning">
+                      <span className="text-xs px-2 py-0.5 rounded-sm bg-warning/15 text-warning">
                         #{item.priority}
                       </span>
                     </div>
@@ -325,7 +324,7 @@ export default function EnrichmentDashboardPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-sm truncate">{product.name}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${getConfidenceColor(product.enrichmentConfidence)}`}>
+                        <span className={`text-xs px-2 py-0.5 rounded-sm ${getConfidenceColor(product.enrichmentConfidence)}`}>
                           {Math.round(product.enrichmentConfidence * 100)}%
                         </span>
                       </div>

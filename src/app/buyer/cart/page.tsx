@@ -91,7 +91,7 @@ export default function BuyerCartPage() {
               {items.map((item, index) => (
                 <div
                   key={item.id}
-                  className="group relative bg-card border border-border rounded-2xl p-4 hover:border-primary/50 transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-300"
+                  className="group relative bg-card border border-border rounded-md p-4 hover:border-primary/50 transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-300"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <div className="flex items-center justify-between gap-4">
@@ -104,7 +104,7 @@ export default function BuyerCartPage() {
                     
                     <div className="flex items-center gap-3">
                       {/* Quantity Controls */}
-                      <div className="flex items-center gap-1 bg-muted rounded-xl p-1">
+                      <div className="flex items-center gap-1 bg-muted rounded-md p-1">
                         <button
                           onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
                           className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-background transition-colors"
@@ -136,7 +136,7 @@ export default function BuyerCartPage() {
 
             {/* Summary */}
             <div className="lg:col-span-1">
-              <div className="sticky top-6 bg-card border border-border rounded-2xl p-6 space-y-4">
+              <div className="sticky top-6 bg-card border border-border rounded-md p-6 space-y-4">
                 <h2 className="text-xl font-bold">Order Summary</h2>
                 
                 <div className="space-y-2 border-b border-border pb-4">

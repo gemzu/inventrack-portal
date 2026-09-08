@@ -152,7 +152,7 @@ export default function TeamPage() {
           ].map((stat) => (
             <Card key={stat.label}><CardContent className="p-5">
               <div className="flex items-center gap-3 mb-3">
-                <div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center`}>
+                <div className={`w-10 h-10 rounded-md ${stat.bg} flex items-center justify-center`}>
                   <stat.icon className={`w-5 h-5 ${stat.color}`} />
                 </div>
                 <span className="text-xs font-semibold tracking-wide text-muted-foreground">
@@ -165,11 +165,11 @@ export default function TeamPage() {
         </div>
 
         {/* Currently Active */}
-        <Card className="rounded-2xl overflow-hidden"><CardContent className="p-0">
+        <Card className="rounded-md overflow-hidden"><CardContent className="p-0">
           <div className="px-5 py-4 flex items-center gap-2 border-b border-border">
             <Users className="w-4 h-4 text-success" />
             <h2 className="font-semibold">Currently Active</h2>
-            <span className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full bg-success/10 text-success">
+            <span className="ml-auto text-xs font-medium px-2 py-0.5 rounded-sm bg-success/10 text-success">
               {activeUsers.length}
             </span>
           </div>
@@ -220,11 +220,11 @@ export default function TeamPage() {
         </CardContent></Card>
 
         {/* Today's Shifts */}
-        <Card className="rounded-2xl overflow-hidden"><CardContent className="p-0">
+        <Card className="rounded-md overflow-hidden"><CardContent className="p-0">
           <div className="px-5 py-4 flex items-center gap-2 border-b border-border">
             <Clock className="w-4 h-4 text-primary" />
             <h2 className="font-semibold">Today&apos;s Shifts</h2>
-            <span className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+            <span className="ml-auto text-xs font-medium px-2 py-0.5 rounded-sm bg-primary/10 text-primary">
               {todayShifts.length}
             </span>
           </div>

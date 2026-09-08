@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/Toast";
 import Link from "next/link";
+import { ListSkeleton } from "@/components/console/surfaces";
 
 interface GlobalProduct {
   id: string;
@@ -196,9 +197,7 @@ export default function ProductVerificationPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
+      <ListSkeleton />
     );
   }
 
@@ -269,7 +268,7 @@ export default function ProductVerificationPage() {
               {(product.aiSuggestedFields as string[]).map((field: string) => (
                 <span 
                   key={field} 
-                  className="text-xs px-2 py-0.5 rounded-full bg-black/10"
+                  className="text-xs px-2 py-0.5 rounded-sm bg-black/10"
                 >
                   {field}
                 </span>

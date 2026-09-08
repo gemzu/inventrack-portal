@@ -127,7 +127,7 @@ export default function PlatformAnalyticsPage() {
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <Card><CardContent className="p-10 max-w-md text-center">
-          <div className="w-16 h-16 rounded-2xl bg-danger/10 flex items-center justify-center mx-auto mb-5">
+          <div className="w-16 h-16 rounded-md bg-danger/10 flex items-center justify-center mx-auto mb-5">
             <TrendingUp className="w-8 h-8 text-danger" />
           </div>
           <h2 className="text-xl font-bold mb-2">Access Denied</h2>
@@ -170,7 +170,7 @@ export default function PlatformAnalyticsPage() {
         {kpis.map((kpi) => (
           <Card key={kpi.label}><CardContent className="p-5">
             <div className="flex items-center justify-between mb-3">
-              <div className={`w-10 h-10 rounded-xl ${kpi.bg} flex items-center justify-center`}>
+              <div className={`w-10 h-10 rounded-md ${kpi.bg} flex items-center justify-center`}>
                 <kpi.icon className={`w-5 h-5 ${kpi.color}`} />
               </div>
               <TrendingUp className="w-4 h-4 text-muted-foreground" />
@@ -221,7 +221,7 @@ export default function PlatformAnalyticsPage() {
               <div key={org.id} className="flex items-center gap-4 py-2.5 border-b border-border/60 last:border-0">
                 <div className="w-6 shrink-0 font-bold text-muted-foreground tabular-nums">{i + 1}</div>
                 <div className="flex-1 min-w-0 font-semibold truncate">{org.name}</div>
-                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary shrink-0">
+                <span className="px-2.5 py-1 rounded-sm text-xs font-semibold bg-primary/10 text-primary shrink-0">
                   {org.itemCount} items
                 </span>
                 <div className="text-xs text-muted-foreground shrink-0 hidden sm:block whitespace-nowrap">

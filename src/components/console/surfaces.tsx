@@ -150,3 +150,18 @@ export function CrateSkeleton({
     />
   );
 }
+
+/* ── List loading ──────────────────────────────────────────────
+   Seven screens each drew their own spinner in the middle of an
+   empty box. A spinner says only "wait"; empty crates say what is
+   about to be there, and they hold the layout still while it
+   arrives. */
+export function ListSkeleton({ rows = 7 }: { rows?: number }) {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: rows }).map((_, i) => (
+        <CrateSkeleton key={i} className="h-14 w-full" delay={i * 0.06} />
+      ))}
+    </div>
+  );
+}

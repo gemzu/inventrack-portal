@@ -104,7 +104,7 @@ export default function PurchaseOrdersPage() {
                     {po.reference ? `${po.reference} · ` : ""}{po.items.length} line(s) · {units} unit(s)
                   </div>
                 </div>
-                <span className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold ${STATUS_STYLE[po.status] || STATUS_STYLE.draft}`}>
+                <span className={`shrink-0 px-2.5 py-1 rounded-sm text-[10px] font-bold ${STATUS_STYLE[po.status] || STATUS_STYLE.draft}`}>
                   {po.status.toUpperCase()}
                 </span>
                 <div className="flex items-center gap-2 shrink-0">
@@ -129,7 +129,7 @@ export default function PurchaseOrdersPage() {
       {/* Create modal */}
       {showCreate && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowCreate(false)}>
-          <div className="bg-card w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-card w-full sm:max-w-lg rounded-t-2xl sm:rounded-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-border">
               <h2 className="font-bold text-lg">New Purchase Order</h2>
               <button onClick={() => setShowCreate(false)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
@@ -138,12 +138,12 @@ export default function PurchaseOrdersPage() {
               <div>
                 <label className="block text-xs font-medium mb-1 text-muted-foreground">Supplier</label>
                 <input value={supplier} onChange={(e) => setSupplier(e.target.value)} placeholder="e.g. Acme Distributors"
-                  className="w-full px-3 py-2 rounded-xl border text-sm bg-input border-border outline-none focus:ring-2 focus:ring-primary/30" />
+                  className="w-full px-3 py-2 rounded-md border text-sm bg-input border-border outline-none focus:ring-2 focus:ring-primary/30" />
               </div>
               <div>
                 <label className="block text-xs font-medium mb-1 text-muted-foreground">Reference / PO #</label>
                 <input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Optional"
-                  className="w-full px-3 py-2 rounded-xl border text-sm bg-input border-border outline-none focus:ring-2 focus:ring-primary/30" />
+                  className="w-full px-3 py-2 rounded-md border text-sm bg-input border-border outline-none focus:ring-2 focus:ring-primary/30" />
               </div>
 
               <div>
@@ -158,11 +158,11 @@ export default function PurchaseOrdersPage() {
                 ))}
                 <div className="flex gap-2">
                   <input value={lBarcode} onChange={(e) => setLBarcode(e.target.value)} placeholder="Barcode / model"
-                    className="flex-1 px-3 py-2 rounded-xl border text-sm bg-input border-border outline-none focus:ring-2 focus:ring-primary/30" />
+                    className="flex-1 px-3 py-2 rounded-md border text-sm bg-input border-border outline-none focus:ring-2 focus:ring-primary/30" />
                   <input value={lQty} onChange={(e) => setLQty(e.target.value.replace(/[^0-9]/g, ""))} placeholder="Qty"
-                    className="w-16 px-2 py-2 rounded-xl border text-sm text-center bg-input border-border outline-none focus:ring-2 focus:ring-primary/30" />
+                    className="w-16 px-2 py-2 rounded-md border text-sm text-center bg-input border-border outline-none focus:ring-2 focus:ring-primary/30" />
                   <input value={lCost} onChange={(e) => setLCost(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="Cost"
-                    className="w-20 px-2 py-2 rounded-xl border text-sm text-center bg-input border-border outline-none focus:ring-2 focus:ring-primary/30" />
+                    className="w-20 px-2 py-2 rounded-md border text-sm text-center bg-input border-border outline-none focus:ring-2 focus:ring-primary/30" />
                   <Button variant="outline" className="h-auto px-3" onClick={addLine}><Plus className="w-4 h-4" /></Button>
                 </div>
               </div>

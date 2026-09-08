@@ -27,7 +27,7 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
       <div className="flex items-center justify-center h-[60vh]">
         <Card className="max-w-md">
           <CardContent className="p-10 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+            <div className="w-14 h-14 rounded-md bg-destructive/10 flex items-center justify-center mx-auto mb-4">
               <ShieldAlert className="w-7 h-7 text-destructive" />
             </div>
             <h2 className="text-xl font-bold text-foreground mb-2">Access Denied</h2>

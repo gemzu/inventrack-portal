@@ -109,7 +109,7 @@ export default function BuyerProfilePage() {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
         <div className="relative max-w-4xl mx-auto px-4 py-12">
           <div className="flex items-center gap-5">
-            <div className="w-20 h-20 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-2xl font-bold text-primary flex-shrink-0">
+            <div className="w-20 h-20 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-2xl font-bold text-primary flex-shrink-0">
               {initials}
             </div>
             <div className="min-w-0">
@@ -128,7 +128,7 @@ export default function BuyerProfilePage() {
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-5">
         {/* Account */}
-        <div className="bg-card border border-border rounded-2xl p-6">
+        <div className="bg-card border border-border rounded-md p-6">
           <div className="flex items-center gap-2 mb-4">
             <UserIcon className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-semibold">Account</h2>
@@ -150,7 +150,7 @@ export default function BuyerProfilePage() {
         </div>
 
         {/* Storefronts */}
-        <div className="bg-card border border-border rounded-2xl p-6">
+        <div className="bg-card border border-border rounded-md p-6">
           <div className="flex items-center gap-2 mb-4">
             <Store className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-semibold">Connected storefronts</h2>
@@ -188,7 +188,7 @@ export default function BuyerProfilePage() {
         </div>
 
         {/* Security */}
-        <div className="bg-card border border-border rounded-2xl p-6">
+        <div className="bg-card border border-border rounded-md p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-primary" />
@@ -220,7 +220,7 @@ export default function BuyerProfilePage() {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="flex flex-col items-center gap-3 p-4 bg-muted/40 rounded-xl">
+              <div className="flex flex-col items-center gap-3 p-4 bg-muted/40 rounded-md">
                 <Image
                   src={qr}
                   alt="MFA QR Code"

@@ -11,6 +11,7 @@ import { useToast } from "@/components/Toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import PageShell from "@/components/page-shell";
+import { ListSkeleton } from "@/components/console/surfaces";
 
 interface BlacklistItem {
   id: string;
@@ -88,7 +89,7 @@ export default function BlacklistPage() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+    return <ListSkeleton />;
   }
 
   return (<AdminGuard>
@@ -104,7 +105,7 @@ export default function BlacklistPage() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search barcodes..."
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
+          className="w-full pl-10 pr-4 py-2.5 rounded-md border text-sm outline-none focus:border-[var(--brand-2)] focus:shadow-[0_0_0_1px_color-mix(in_oklab,var(--brand-2)_60%,transparent)] transition bg-input border-border text-foreground"
         />
       </div>
 
@@ -143,17 +144,17 @@ export default function BlacklistPage() {
               <div>
                 <label className="block text-sm font-medium mb-1">Barcode</label>
                 <input value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground" placeholder="Enter barcode" />
+                  className="w-full px-4 py-2.5 rounded-md border text-sm outline-none focus:border-[var(--brand-2)] focus:shadow-[0_0_0_1px_color-mix(in_oklab,var(--brand-2)_60%,transparent)] transition bg-input border-border text-foreground" placeholder="Enter barcode" />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Label (optional)</label>
                 <input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground" placeholder="Item name" />
+                  className="w-full px-4 py-2.5 rounded-md border text-sm outline-none focus:border-[var(--brand-2)] focus:shadow-[0_0_0_1px_color-mix(in_oklab,var(--brand-2)_60%,transparent)] transition bg-input border-border text-foreground" placeholder="Item name" />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Reason (optional)</label>
                 <input value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground" placeholder="Why is this blocked?" />
+                  className="w-full px-4 py-2.5 rounded-md border text-sm outline-none focus:border-[var(--brand-2)] focus:shadow-[0_0_0_1px_color-mix(in_oklab,var(--brand-2)_60%,transparent)] transition bg-input border-border text-foreground" placeholder="Why is this blocked?" />
               </div>
               <Button variant="destructive" onClick={handleAdd} className="w-full h-11">
                 Add to Blacklist

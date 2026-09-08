@@ -32,17 +32,17 @@ function NavItem({
     <Link
       href={href}
       onClick={onNavigate}
-      className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
+      className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors ${
         active ? "text-white font-semibold" : "text-muted-foreground hover:text-foreground"
       }`}
     >
       {active && (
-        <motion.span layoutId={layoutId} transition={spring} className="absolute inset-0 rounded-xl bg-primary shadow-[0_8px_20px_-8px_var(--brand-1)]" />
+        <motion.span layoutId={layoutId} transition={spring} className="absolute inset-0 rounded-md bg-primary shadow-[0_8px_20px_-8px_var(--brand-1)]" />
       )}
-      {!active && <span className="absolute inset-0 rounded-xl group-hover:bg-secondary transition-colors" />}
+      {!active && <span className="absolute inset-0 rounded-md group-hover:bg-secondary transition-colors" />}
       <span className="relative"><Icon className="w-[18px] h-[18px] transition-transform group-hover:scale-110" /></span>
       <span className="relative flex-1">{label}</span>
-      {badge ? <span className="relative text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-destructive text-white">{badge}</span> : null}
+      {badge ? <span className="relative text-[10px] font-bold px-1.5 py-0.5 rounded-sm bg-destructive text-white">{badge}</span> : null}
     </Link>
   );
 }
@@ -53,7 +53,7 @@ function Sidebar({ pathname, onNavigate, unread, cartCount }: { pathname: string
     <div className="flex flex-col h-full bg-sidebar border-r border-sidebar-border">
       <div className="h-16 flex items-center px-5 shrink-0">
         <Link href="/buyer/catalog" className="flex items-center gap-3 group" onClick={onNavigate}>
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-[0_6px_16px_-6px_var(--brand-1)]">
+          <div className="w-9 h-9 rounded-md bg-primary flex items-center justify-center shadow-[0_6px_16px_-6px_var(--brand-1)]">
             <Mark className="h-6 w-6 text-white" />
           </div>
           <span className="font-display font-bold text-lg tracking-tight">Invems</span>
@@ -74,7 +74,7 @@ function Sidebar({ pathname, onNavigate, unread, cartCount }: { pathname: string
       <div className="p-3 border-t border-sidebar-border">
         <button
           onClick={toggleTheme}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-secondary w-full transition-colors"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-secondary w-full transition-colors"
         >
           {theme === "dark" ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
           {theme === "dark" ? "Light Mode" : "Dark Mode"}
@@ -97,7 +97,7 @@ function MobileNav({ pathname, unread, cartCount }: { pathname: string; unread: 
             <Link key={l.href} href={l.href} className={`relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${active ? "text-primary" : "text-muted-foreground"}`}>
               <div className="relative">
                 <l.icon className="w-5 h-5" />
-                {badge ? <span className="absolute -top-1.5 -right-2 text-[8px] font-bold px-1 py-px rounded-full bg-destructive text-white min-w-[14px] text-center">{badge}</span> : null}
+                {badge ? <span className="absolute -top-1.5 -right-2 text-[8px] font-bold px-1 py-px rounded-sm bg-destructive text-white min-w-[14px] text-center">{badge}</span> : null}
               </div>
               {l.label}
             </Link>

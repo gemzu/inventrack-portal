@@ -37,7 +37,7 @@ export default class ErrorBoundary extends React.Component<Props, State> {
         <div className="flex items-center justify-center h-[60vh]">
           <Card className="max-w-md">
             <CardContent className="p-10 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-warning/15 flex items-center justify-center mx-auto mb-4">
+              <div className="w-14 h-14 rounded-md bg-warning/15 flex items-center justify-center mx-auto mb-4">
                 <AlertTriangle className="w-7 h-7 text-warning" />
               </div>
               <h2 className="text-xl font-bold text-foreground mb-2">Something went wrong</h2>

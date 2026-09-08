@@ -35,7 +35,7 @@ export default function ConnectStorefrontPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
         <div className="relative max-w-7xl mx-auto px-4 py-12">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center">
               <Store className="w-5 h-5 text-primary" />
             </div>
             <h1 className="text-4xl font-bold tracking-tight">
@@ -60,7 +60,7 @@ export default function ConnectStorefrontPage() {
                 <Link
                   key={(sf as {storefront?: {id?: string}}).storefront?.id}
                   href="/buyer/catalog"
-                  className="flex items-center gap-2 px-4 py-3 rounded-xl border bg-card hover:border-primary/50 hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity]"
+                  className="flex items-center gap-2 px-4 py-3 rounded-md border bg-card hover:border-primary/50 hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity]"
                 >
                   <Check className="w-4 h-4 text-success" />
                   <span className="font-medium">{(sf as {storefront?: {name?: string}}).storefront?.name}</span>
@@ -125,9 +125,9 @@ export default function ConnectStorefrontPage() {
               </div>
 
               {preview ? (
-                <div className="rounded-xl border p-5 bg-card/50">
+                <div className="rounded-md border p-5 bg-card/50">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-md bg-primary/10 flex items-center justify-center">
                       <Store className="w-6 h-6 text-primary" />
                     </div>
                     <div>
@@ -162,7 +162,7 @@ export default function ConnectStorefrontPage() {
             <Card className="hover:border-primary/50 hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] cursor-pointer">
               <CardContent className="p-5 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center">
                     <Store className="w-5 h-5 text-primary" />
                   </div>
                   <div>

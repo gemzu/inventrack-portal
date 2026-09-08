@@ -152,7 +152,7 @@ export default function ReceivePo({
         role="dialog"
         aria-modal="true"
         aria-label="Receive delivery"
-        className="animate-in-scale relative flex max-h-[86vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-glow"
+        className="animate-in-scale relative flex max-h-[86vh] w-full max-w-2xl flex-col overflow-hidden rounded-md border border-border bg-card shadow-glow"
       >
         <header className="flex items-start justify-between gap-4 border-b border-border px-6 py-4">
           <div>

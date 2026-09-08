@@ -223,7 +223,7 @@ export default function ReportsPage() {
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <Card><CardContent className="p-10 max-w-md text-center">
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-5">
+          <div className="w-16 h-16 rounded-md bg-primary/10 flex items-center justify-center mx-auto mb-5">
             <FileBarChart className="w-8 h-8 text-primary" />
           </div>
           <h2 className="text-xl font-bold mb-2">No Organization</h2>
@@ -300,7 +300,7 @@ export default function ReportsPage() {
           {statCards.map((card) => (
             <Card key={card.label}><CardContent className="p-5">
               <div className="flex items-center justify-between mb-3">
-                <div className={`w-10 h-10 rounded-xl ${card.bg} flex items-center justify-center`}>
+                <div className={`w-10 h-10 rounded-md ${card.bg} flex items-center justify-center`}>
                   <card.icon className={`w-5 h-5 ${card.color}`} />
                 </div>
               </div>
@@ -323,19 +323,19 @@ export default function ReportsPage() {
             <div className="text-xs text-muted-foreground">Total Orders</div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-warning/10 text-warning">
+            <span className="px-3 py-1 rounded-sm text-xs font-semibold bg-warning/10 text-warning">
               {snapshot.ordersPending} pending
             </span>
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-success/10 text-success">
+            <span className="px-3 py-1 rounded-sm text-xs font-semibold bg-success/10 text-success">
               {snapshot.ordersFulfilled} fulfilled
             </span>
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-destructive/10 text-destructive">
+            <span className="px-3 py-1 rounded-sm text-xs font-semibold bg-destructive/10 text-destructive">
               {snapshot.ordersRejected} rejected
             </span>
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary">
+            <span className="px-3 py-1 rounded-sm text-xs font-semibold bg-primary/10 text-primary">
               {snapshot.fulfillmentRate}% fulfillment
             </span>
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary">
+            <span className="px-3 py-1 rounded-sm text-xs font-semibold bg-primary/10 text-primary">
               {snapshot.pendingApprovals} approvals queued
             </span>
           </div>
@@ -373,7 +373,7 @@ export default function ReportsPage() {
                   <span className="text-sm font-medium">{item.modelId}</span>
                   <span className="text-xs ml-2 text-muted-foreground">{item.brand}</span>
                 </div>
-                <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-warning/10 text-warning">
+                <span className="text-xs px-2.5 py-1 rounded-sm font-semibold bg-warning/10 text-warning">
                   Qty: {item.quantity}
                 </span>
               </div>
@@ -396,7 +396,7 @@ export default function ReportsPage() {
         <div className="grid sm:grid-cols-4 gap-4">
           {reportCards.map((report) => (
             <Card key={report.type}><CardContent className="p-5">
-              <div className={`w-10 h-10 rounded-xl ${report.bg} flex items-center justify-center mb-4`}>
+              <div className={`w-10 h-10 rounded-md ${report.bg} flex items-center justify-center mb-4`}>
                 <report.icon className={`w-5 h-5 ${report.color}`} />
               </div>
               <h4 className="font-semibold text-sm mb-1">{report.title}</h4>
@@ -406,7 +406,7 @@ export default function ReportsPage() {
               <button
                 onClick={() => generateReport(report.type)}
                 disabled={generating === report.type}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium w-full justify-center hover:border-primary transition"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-md border text-sm font-medium w-full justify-center hover:border-primary transition"
               >
                 {generating === report.type ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

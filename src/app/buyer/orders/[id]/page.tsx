@@ -156,7 +156,7 @@ export default function BuyerOrderDetailPage() {
         ) : (
           <>
             {/* Status timeline */}
-            <div className="bg-card border border-border rounded-2xl p-6">
+            <div className="bg-card border border-border rounded-md p-6">
               <h2 className="text-lg font-semibold mb-5">Order status</h2>
               {cancelled ? (
                 <div className="flex items-center gap-3 text-destructive">
@@ -209,7 +209,7 @@ export default function BuyerOrderDetailPage() {
             </div>
 
             {/* Items */}
-            <div className="bg-card border border-border rounded-2xl overflow-hidden">
+            <div className="bg-card border border-border rounded-md overflow-hidden">
               <div className="p-6 border-b border-border flex items-center justify-between">
                 <h2 className="text-lg font-semibold">Items</h2>
                 <div className="text-sm text-muted-foreground">
@@ -257,7 +257,7 @@ export default function BuyerOrderDetailPage() {
 
             {/* Shipping / tracking */}
             {(order.trackingNumber || order.carrier || order.packingNotes) && (
-              <div className="bg-card border border-border rounded-2xl p-6 space-y-3">
+              <div className="bg-card border border-border rounded-md p-6 space-y-3">
                 <h2 className="text-lg font-semibold">Shipping</h2>
                 {order.carrier && (
                   <div className="flex justify-between text-sm">

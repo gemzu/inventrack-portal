@@ -7,12 +7,13 @@ import { useAuth } from "@/context/AuthContext";
 import { Users as UsersIcon, Search, UserCheck, UserX, Trash2 } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import PageShell from "@/components/page-shell";
+import Status from "@/components/Status";
+import { Panel, ListSkeleton } from "@/components/console/surfaces";
+import { Modal } from "@/components/console/controls";
 import { canManage, isOwner, roleBadgeLabel } from "@/lib/roles";
 import { adminCreateUser } from "@/lib/dataService";
 
@@ -166,9 +167,7 @@ export default function UsersPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
+      <ListSkeleton />
     );
   }
 
@@ -207,26 +206,20 @@ export default function UsersPage() {
         </Select>
       </div>
 
-      <Card className="overflow-hidden"><CardContent className="p-0">
+      <Panel className="reveal">
         {filtered.length === 0 ? (
           <EmptyState icon={UsersIcon} title="No users found" description="Team members who join your organization will appear here." />
         ) : (
           filtered.map((user) => {
             const manageable = canManage({ id: currentUser?.id || null, role: userRole, permissions: userPermissions }, user);
             return (
-              <div key={user.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3.5 border-b border-border/60 last:border-0 hover:bg-primary/[0.03] transition-colors">
+              <div key={user.id} className="row-line flex flex-wrap items-center gap-x-4 gap-y-3 px-5 py-3.5">
                 {/* Identity */}
-                <div className="flex items-center gap-3 flex-1 min-w-[200px]">
-                  <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold shrink-0">
-                    {user.name?.charAt(0).toUpperCase() || "?"}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-semibold truncate flex items-center gap-2">
-                      {user.name || "Unnamed"}
-                      <Badge variant="secondary" className="hidden sm:inline-flex">{roleBadgeLabel(user.role, user.permissions)}</Badge>
-                    </div>
-                    <div className="text-xs text-muted-foreground truncate">{user.email}</div>
-                  </div>
+                <div className="min-w-[200px] flex-1">
+                  <p className="truncate text-sm font-medium">{user.name || "Unnamed"}</p>
+                  <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                    {roleBadgeLabel(user.role, user.permissions)} · {user.email}
+                  </p>
                 </div>
 
                 {/* Inline controls — wrap onto next line instead of scrolling off */}
@@ -256,12 +249,10 @@ export default function UsersPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                    user.active ? "bg-success/10 text-success border border-success/20" : "bg-destructive/10 text-destructive border border-destructive/20"
-                  }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${user.active ? "bg-success" : "bg-destructive"}`} />
-                    {user.active ? "Active" : "Inactive"}
-                  </span>
+                  <Status
+                    status={user.active ? "active" : "blocked"}
+                    label={user.active ? "Active" : "Inactive"}
+                  />
                   {/* Actions — always visible */}
                   {canEditDeleteAccess && user.role !== "buyer" && !isOwner(user.permissions) && (
                     <Button
@@ -287,13 +278,11 @@ export default function UsersPage() {
             );
           })
         )}
-      </CardContent></Card>
+      </Panel>
     </PageShell>
     {showAdd && (
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowAdd(false)}>
-        <Card className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-          <CardContent className="p-6 space-y-4">
-            <h3 className="text-lg font-semibold">Add User</h3>
+      <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Add a person" subtitle="They can sign in straight away">
+        <div className="space-y-4">
             <Input placeholder="Full name" value={newUser.name} onChange={(e) => setNewUser((p) => ({ ...p, name: e.target.value }))} />
             <Input placeholder="Email" type="email" value={newUser.email} onChange={(e) => setNewUser((p) => ({ ...p, email: e.target.value }))} />
             <Input placeholder="Temporary password (min 6)" type="password" value={newUser.password} onChange={(e) => setNewUser((p) => ({ ...p, password: e.target.value }))} />
@@ -360,9 +349,8 @@ export default function UsersPage() {
                 {creating ? "Creating..." : "Create User"}
               </Button>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+        </div>
+      </Modal>
     )}
   </AdminGuard>);
 }

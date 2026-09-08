@@ -195,7 +195,7 @@ export default function SupportPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-sm">{t.category || "general"}</span>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs border ${STATUS_STYLE[t.status || "open"] || STATUS_STYLE.open}`}>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-sm text-xs border ${STATUS_STYLE[t.status || "open"] || STATUS_STYLE.open}`}>
                         {t.status || "open"}
                       </span>
                       {t.priority && t.priority !== "normal" && (

@@ -5,13 +5,14 @@ import AdminGuard from "@/components/AdminGuard";
 import PageShell from "@/components/page-shell";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { Search, Download, Package, Boxes, ChevronDown, ChevronRight, Upload, Loader2, X, FileSpreadsheet, Save, Trash2, Clock } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { spring } from "@/lib/motion";
+import { Download, Package, Boxes, ChevronRight, Upload, Loader2, X, FileSpreadsheet, Save, Trash2 } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import Status from "@/components/Status";
+import { Panel, Figure, Rule, ColHead, CrateSkeleton } from "@/components/console/surfaces";
+import {
+  Action, Chip, Drawer, Field, Input, Modal, SearchInput, Segmented, Select,
+} from "@/components/console/controls";
 
 interface Item {
   id: string;
@@ -37,12 +38,6 @@ interface Item {
   createdAt: unknown;
   updatedAt: unknown;
 }
-
-const STATUS_DOT: Record<string, string> = {
-  available: "bg-success",
-  reserved: "bg-warning",
-  sold: "bg-primary",
-};
 
 function mapItem(row: Record<string, unknown>): Item {
   return {
@@ -478,565 +473,623 @@ export default function InventoryPage() {
     setEditItem(null);
   };
 
+  /* Waiting looks like empty racks, not a spinner in the middle of nothing. */
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
+      <AdminGuard>
+        <PageShell title="Inventory" subtitle="Reading the floor." eyebrow="Console">
+          <div className="space-y-3">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <CrateSkeleton key={i} className="h-14 w-full" delay={i * 0.06} />
+            ))}
+          </div>
+        </PageShell>
+      </AdminGuard>
     );
   }
 
   const facilityName = (id?: string) => (facilities || []).find((f) => f.id === id)?.name;
   const boxCode = (id?: string) => (id ? String(boxes.find((b) => b.id === id)?.code || "") : "");
 
+  const shown = filtered.length;
+  const units = filtered.reduce((n, i) => n + (i.quantity || 0), 0);
+  const allSelected = selected.size === shown && shown > 0;
+
   return (
-    <AdminGuard><PageShell
-      title="Inventory"
-      subtitle={`${filtered.length} item${filtered.length !== 1 ? "s" : ""}`}
-      actions={
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={exportCsv} className="h-10 px-4">
-            <Download className="w-4 h-4" /> Export
-          </Button>
-          <Button variant="brand" onClick={() => setShowImport(true)} className="h-10 px-4">
-            <Upload className="w-4 h-4" /> Import CSV
-          </Button>
-        </div>
-      }
-    >
-      {/* View toggle */}
-      <div className="inline-flex rounded-xl border border-border p-1 bg-muted/40">
-        {(["items", "boxes"] as const).map((v) => (
-          <button
-            key={v}
-            onClick={() => setView(v)}
-            className={`relative px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors ${
-              view === v ? "text-white" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {view === v && (
-              <motion.span layoutId="inv-view" transition={spring} className="absolute inset-0 rounded-lg bg-primary shadow-[0_4px_12px_-4px_var(--brand-1)]" />
+    <AdminGuard>
+      <PageShell
+        title="Inventory"
+        eyebrow="Console"
+        subtitle="Every unit on the floor. Open a line to change it; edits save as you leave each field."
+        actions={
+          <>
+            <Action onClick={exportCsv}>
+              <Download className="h-3.5 w-3.5" /> Export
+            </Action>
+            <Action solid onClick={() => setShowImport(true)}>
+              <Upload className="h-3.5 w-3.5" /> Import CSV
+            </Action>
+          </>
+        }
+      >
+        <div className="space-y-8">
+          {/* What the filters currently add up to. The count is the headline of
+              this screen, so it is set like one rather than hidden in a caption. */}
+          <div className="reveal flex flex-wrap items-baseline gap-x-10 gap-y-4">
+            <Figure label="Lines shown" value={shown} />
+            <Figure label="Units" value={units} />
+            {selected.size > 0 && (
+              <Figure label="Selected" value={selected.size} tone="brand" />
             )}
-            <span className="relative">{v}</span>
-          </button>
-        ))}
-      </div>
+          </div>
 
-      {/* Filters — wrap, never overflow */}
-      <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[220px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by model, barcode, name..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
+          <Segmented
+            value={view}
+            onChange={setView}
+            options={[
+              { value: "items", label: "Items" },
+              { value: "boxes", label: "Boxes" },
+            ]}
           />
-        </div>
-        <div className="relative">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border text-sm outline-none cursor-pointer bg-input border-border text-foreground h-full"
-          >
-            <option value="all">All Status</option>
-            <option value="available">Available</option>
-            <option value="reserved">Reserved</option>
-            <option value="sold">Sold</option>
-          </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />
-        </div>
-        {(facilities || []).length > 0 && (
-          <div className="relative">
-            <select
-              value={facilityFilter}
-              onChange={(e) => setFacilityFilter(e.target.value)}
-              className="appearance-none pl-4 pr-10 py-2.5 rounded-xl border text-sm outline-none cursor-pointer bg-input border-border text-foreground h-full"
-              title="Filter by facility"
-            >
-              <option value="all">All Facilities</option>
-              {(facilities || []).map((f) => (
-                <option key={f.id} value={f.id}>{f.name}</option>
+
+          {/* ── Filters ─────────────────────────────────────────── */}
+          <div className="space-y-4">
+            <SearchInput
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onClear={() => setSearch("")}
+              placeholder="Model, barcode, or name"
+              aria-label="Search inventory"
+            />
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="mono mr-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                Status
+              </span>
+              {["all", "available", "reserved", "sold"].map((s) => (
+                <Chip key={s} on={statusFilter === s} onClick={() => setStatusFilter(s)}>
+                  {s === "all" ? "Any" : s}
+                </Chip>
               ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />
-          </div>
-        )}
-      </div>
 
-      {/* Bulk-action bar (items view, when rows are selected) */}
-      {view === "items" && selected.size > 0 && (
-        <div className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-2xl bg-primary/10 border border-primary/25 sticky top-2 z-20 backdrop-blur-xl">
-          <span className="text-sm font-semibold">{selected.size} selected</span>
-          <div className="ml-auto flex flex-wrap items-center gap-2">
-            {["available", "reserved", "sold"].map((s) => (
-              <button key={s} onClick={() => bulkStatus(s)} className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-border hover:border-primary transition capitalize">
-                {s}
-              </button>
-            ))}
-            <select
-              value={bulkBoxId}
-              onChange={(e) => { const v = e.target.value; if (v === "__loose__") bulkMoveToBox(null); else if (v) bulkMoveToBox(v); }}
-              className="appearance-none px-3 py-1.5 rounded-lg border text-xs bg-input border-border text-foreground cursor-pointer"
-            >
-              <option value="">Move to box…</option>
-              <option value="__loose__">Loose (remove from box)</option>
-              {boxes.map((b) => <option key={String(b.id)} value={String(b.id)}>{String(b.code || "Box")}</option>)}
-            </select>
-            <Button variant="destructive" size="sm" onClick={bulkDelete}><Trash2 className="w-4 h-4" /> Delete</Button>
-            <Button variant="ghost" size="sm" onClick={clearSelection}>Clear</Button>
+              {(facilities || []).length > 0 && (
+                <>
+                  <span className="mono ml-4 mr-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                    Site
+                  </span>
+                  <Chip on={facilityFilter === "all"} onClick={() => setFacilityFilter("all")}>
+                    Any
+                  </Chip>
+                  {(facilities || []).map((f) => (
+                    <Chip
+                      key={f.id}
+                      on={facilityFilter === f.id}
+                      onClick={() => setFacilityFilter(f.id)}
+                    >
+                      {f.name}
+                    </Chip>
+                  ))}
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      )}
 
-      {view === "items" ? (
-      <Card className="overflow-hidden"><CardContent className="p-0">
-        {/* Header (desktop only) */}
-        <div className="hidden md:flex items-center gap-4 px-4 py-2.5 border-b border-border text-xs font-semibold text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={selected.size === filtered.length && filtered.length > 0}
-            onChange={(e) => setSelected(e.target.checked ? new Set(filtered.map((i) => i.id)) : new Set())}
-            className="w-4 h-4 shrink-0 accent-[var(--primary)] cursor-pointer"
-            title="Select all"
-          />
-          <div className="flex-1 min-w-0">Item</div>
-          <div className="w-28 shrink-0">Status</div>
-          <div className="w-14 shrink-0 text-right">Qty</div>
-          <div className="w-40 shrink-0">Location</div>
-          <div className="w-9 shrink-0" />
-        </div>
-        {/* Row list — flex, always fits, edit affordance pinned right */}
-        <div>
-          {filtered.map((item) => (
-            <div
-              key={item.id}
-              onClick={() => openPanel(item)}
-              role="button"
-              className={`group w-full flex items-center gap-4 px-4 py-3 text-left border-b border-border/60 last:border-0 cursor-pointer transition-colors ${selected.has(item.id) ? "bg-primary/[0.07]" : "hover:bg-primary/[0.05]"}`}
-            >
-              <input
-                type="checkbox"
-                checked={selected.has(item.id)}
-                onClick={(e) => e.stopPropagation()}
-                onChange={() => toggleSelect(item.id)}
-                className="w-4 h-4 shrink-0 accent-[var(--primary)] cursor-pointer"
-              />
-              {/* Item identity */}
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                {item.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={item.imageUrl} alt="" className="w-9 h-9 rounded-lg object-cover border border-border shrink-0" />
-                ) : (
-                  <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                    <Package className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                )}
-                <div className="min-w-0">
-                  {(() => {
-                    const id = itemIdentity(item);
-                    return (
-                      <>
-                        <div className={`truncate font-medium ${id.unnamed ? "mono text-[13px]" : ""}`}>
-                          {id.title}
-                        </div>
-                        {id.subtitle ? (
-                          <div className="mono truncate text-xs text-muted-foreground">{id.subtitle}</div>
-                        ) : (
-                          <div className="truncate text-xs text-muted-foreground">Unnamed item</div>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
-              {/* Status. A dot and a word, not a filled pill. */}
-              <div className="hidden w-28 shrink-0 md:block">
-                <span className="inline-flex items-center gap-2 text-sm">
-                  <span className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT[item.status] || "bg-muted-foreground"}`} />
-                  <span className="text-muted-foreground">{item.status}</span>
-                </span>
-              </div>
-              {/* Qty */}
-              <div className="mono hidden w-14 shrink-0 text-right text-sm font-semibold tabular-nums md:block">{item.quantity}</div>
-              {/* Location */}
-              <div className="hidden w-40 min-w-0 shrink-0 md:block">
-                <div className="truncate text-sm">{facilityName(item.facilityId) || "No facility"}</div>
-                <div className="mono truncate text-xs text-muted-foreground">
-                  {item.boxId ? `Box ${boxCode(item.boxId)}` : "Loose"}
-                </div>
-              </div>
-              {/* Edit affordance — always visible, pinned right */}
-              <div className="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center text-muted-foreground bg-secondary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+          {/* ── Bulk bar ────────────────────────────────────────── */}
+          {view === "items" && selected.size > 0 && (
+            <div className="panel panel-live sticky top-16 z-20 flex flex-wrap items-center gap-3 bg-background/90 px-4 py-3 backdrop-blur-xl">
+              <span className="mono text-[11px] uppercase tracking-[0.18em] text-[var(--brand-2)]">
+                {selected.size} selected
+              </span>
+              <div className="ml-auto flex flex-wrap items-center gap-2">
+                {["available", "reserved", "sold"].map((s) => (
+                  <Chip key={s} onClick={() => bulkStatus(s)}>
+                    Mark {s}
+                  </Chip>
+                ))}
+                <Select
+                  value={bulkBoxId}
+                  aria-label="Move selection to a box"
+                  className="w-auto py-1.5 text-xs"
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === "__loose__") bulkMoveToBox(null);
+                    else if (v) bulkMoveToBox(v);
+                  }}
+                >
+                  <option value="">Move to box…</option>
+                  <option value="__loose__">Loose (remove from box)</option>
+                  {boxes.map((b) => (
+                    <option key={String(b.id)} value={String(b.id)}>
+                      {String(b.code || "Box")}
+                    </option>
+                  ))}
+                </Select>
+                <button
+                  onClick={bulkDelete}
+                  className="mono rounded-md border border-destructive/40 px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-destructive transition-colors duration-300 hover:bg-destructive/10"
+                >
+                  Delete
+                </button>
+                <button
+                  onClick={clearSelection}
+                  className="mono px-2 py-1.5 text-[11px] uppercase tracking-[0.16em] text-muted-foreground transition-colors duration-300 hover:text-foreground"
+                >
+                  Clear
+                </button>
               </div>
             </div>
-          ))}
-          {filtered.length === 0 && (
-            <EmptyState icon={Package} title="No items found" description="Import a CSV or add items from the mobile app to get started." />
           )}
-          {histResults.length > 0 && (
-            <div className="mt-6 pt-5 border-t border-warning/30">
-              <div className="flex items-center gap-2 mb-3 text-warning text-xs font-bold tracking-wide">
-                <Clock className="w-3.5 h-3.5" />
-                FROM HISTORY · NO LONGER IN INVENTORY ({histResults.length})
+
+          {view === "items" ? (
+            <Panel className="reveal">
+              {/* Column heads. Mono and quiet — the data is the loud part. */}
+              <div className="hidden items-center gap-4 border-b border-border px-5 py-2.5 md:flex">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={(e) =>
+                    setSelected(e.target.checked ? new Set(filtered.map((i) => i.id)) : new Set())
+                  }
+                  aria-label="Select every shown line"
+                  className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-[var(--brand-2)]"
+                />
+                <ColHead className="min-w-0 flex-1">Item</ColHead>
+                <ColHead className="w-28 shrink-0">Status</ColHead>
+                <ColHead className="w-14 shrink-0 text-right">Qty</ColHead>
+                <ColHead className="w-40 shrink-0">Location</ColHead>
+                <span className="w-4 shrink-0" />
               </div>
-              <div className="space-y-2">
+
+              {filtered.map((item) => {
+                const id = itemIdentity(item);
+                const picked = selected.has(item.id);
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => openPanel(item)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        openPanel(item);
+                      }
+                    }}
+                    className={`row-line group flex cursor-pointer items-center gap-4 px-5 py-3 text-left ${
+                      picked ? "bg-[color-mix(in_oklab,var(--brand-2)_8%,transparent)]" : ""
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={picked}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={() => toggleSelect(item.id)}
+                      aria-label={`Select ${id.title}`}
+                      className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-[var(--brand-2)]"
+                    />
+
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      {item.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={item.imageUrl}
+                          alt=""
+                          className="h-9 w-9 shrink-0 rounded-md border border-border object-cover"
+                        />
+                      ) : (
+                        /* No photo is a hairline square, not a grey chip with an
+                           icon in it — the row should stay quiet. */
+                        <span className="h-9 w-9 shrink-0 rounded-md border border-border" />
+                      )}
+                      <div className="min-w-0">
+                        <p className={`truncate text-sm font-medium ${id.unnamed ? "mono" : ""}`}>
+                          {id.title}
+                        </p>
+                        <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                          {id.subtitle || "Unnamed"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="hidden w-28 shrink-0 md:block">
+                      <Status status={item.status} />
+                    </div>
+                    <div className="mono hidden w-14 shrink-0 text-right text-sm font-semibold tabular-nums md:block">
+                      {item.quantity}
+                    </div>
+                    <div className="hidden w-40 min-w-0 shrink-0 md:block">
+                      <p className="truncate text-sm">{facilityName(item.facilityId) || "No site"}</p>
+                      <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                        {item.boxId ? `Box ${boxCode(item.boxId)}` : "Loose"}
+                      </p>
+                    </div>
+
+                    <ChevronRight className="h-3.5 w-3.5 shrink-0 -translate-x-1 text-muted-foreground opacity-0 transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.16,1,0.30,1)] group-hover:translate-x-0 group-hover:opacity-100" />
+                  </div>
+                );
+              })}
+
+              {filtered.length === 0 && (
+                <EmptyState
+                  icon={Package}
+                  title="Nothing matches"
+                  description="Clear a filter, or import a CSV to put stock on the floor."
+                />
+              )}
+            </Panel>
+          ) : (
+            <div className="reveal grid gap-px overflow-hidden rounded-md bg-border sm:grid-cols-2 lg:grid-cols-3">
+              <div className="bg-background p-5">
+                <p className="mono text-[11px] uppercase tracking-[0.16em] text-[var(--brand-2)]">
+                  Loose
+                </p>
+                <p className="font-display mt-2 text-3xl font-bold tabular-nums tracking-[-0.03em]">
+                  {boxCounts.loose || 0}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">Not assigned to a box</p>
+              </div>
+              {boxes.map((b) => (
+                <div key={String(b.id)} className="bg-background p-5">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="mono truncate text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                      {String(b.code || "Box")}
+                    </p>
+                    <span className="mono shrink-0 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                      {String(b.category || "general")}
+                    </span>
+                  </div>
+                  <p className="font-display mt-2 text-3xl font-bold tabular-nums tracking-[-0.03em]">
+                    {boxCounts[String(b.id)] || 0}
+                  </p>
+                  <p className="mt-1 truncate text-xs text-muted-foreground">
+                    {String(b.label || "No label")}
+                  </p>
+                </div>
+              ))}
+              {boxes.length === 0 && (
+                <div className="col-span-full bg-background">
+                  <EmptyState
+                    icon={Boxes}
+                    title="No boxes yet"
+                    description="Create boxes under Boxes, then assign stock into them."
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Known products that are no longer in stock. Kept apart from the
+              live list so a search result can never be mistaken for stock. */}
+          {histResults.length > 0 && (
+            <section className="space-y-4">
+              <Rule index={9} label="Seen before, not in stock" />
+              <div className="grid gap-px overflow-hidden rounded-md bg-border sm:grid-cols-2">
                 {histResults.map((h) => (
-                  <div key={String(h.id)} className="rounded-xl border border-warning/30 bg-warning/5 p-3">
-                    <div className="font-semibold truncate">
+                  <div key={String(h.id)} className="bg-background p-4">
+                    <p className="truncate text-sm font-medium">
                       {String(h.display_name || h.model_id || h.part_number || "Known product")}
-                    </div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      {String(h.brand || "Unknown brand")}{h.category ? ` · ${String(h.category)}` : ""}
-                    </div>
-                    <div className="text-xs font-semibold text-warning mt-1 font-mono">UPC {String(h.barcode)}</div>
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {String(h.brand || "Unknown brand")}
+                      {h.category ? ` · ${String(h.category)}` : ""}
+                    </p>
+                    <p className="mono mt-1.5 text-[11px] uppercase tracking-[0.16em] text-warning">
+                      UPC {String(h.barcode)}
+                    </p>
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
           )}
         </div>
-      </CardContent></Card>
-      ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Card className="border-dashed border-primary/40 bg-primary/5">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-2 font-semibold text-primary"><Boxes className="w-4 h-4" /> Loose Inventory</div>
-              <p className="text-2xl font-bold mt-2">{boxCounts.loose || 0}</p>
-              <p className="text-xs text-muted-foreground mt-1">Items not assigned to a box</p>
-            </CardContent>
-          </Card>
-          {boxes.map((b) => (
-            <Card key={String(b.id)}>
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between">
-                  <div className="font-semibold">{String(b.code || "Box")}</div>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-primary/15 text-primary">{String(b.category || "general")}</span>
-                </div>
-                <p className="text-2xl font-bold mt-2">{boxCounts[String(b.id)] || 0}</p>
-                <p className="text-xs text-muted-foreground mt-1">{String(b.label || "No label")}</p>
-              </CardContent>
-            </Card>
-          ))}
-          {boxes.length === 0 && (
-            <div className="col-span-full">
-              <EmptyState icon={Boxes} title="No boxes yet" description="Create boxes from the Boxes section, then assign inventory into them." />
-            </div>
-          )}
-        </div>
-      )}
 
-      {/* Import CSV Modal */}
-      {showImport && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => { setShowImport(false); setImportData([]); setImportResult(null); }}>
-          <Card className="w-full max-w-lg max-h-[80vh] overflow-y-auto"><CardContent className="p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold">Import CSV</h3>
-              <button onClick={() => { setShowImport(false); setImportData([]); setImportResult(null); }}><X className="w-5 h-5" /></button>
-            </div>
-
-            {importResult ? (
-              <div className="text-center py-6">
-                <div className="w-14 h-14 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-4">
-                  <FileSpreadsheet className="w-7 h-7 text-success" />
-                </div>
-                <h4 className="text-lg font-bold mb-2">Import Complete</h4>
-                <div className="space-y-1 text-sm text-muted-foreground">
-                  <p><strong className="text-success">{importResult.added}</strong> items added</p>
-                  <p><strong className="text-primary">{importResult.updated}</strong> items updated</p>
-                  {importResult.errors > 0 && <p><strong className="text-danger">{importResult.errors}</strong> errors</p>}
-                </div>
-                <Button onClick={() => { setShowImport(false); setImportData([]); setImportResult(null); }} className="mt-6 px-6 py-2.5">
-                  Done
-                </Button>
+        {/* ── Import ─────────────────────────────────────────────── */}
+        <Modal
+          open={showImport}
+          onClose={() => {
+            setShowImport(false);
+            setImportData([]);
+            setImportResult(null);
+          }}
+          title="Import CSV"
+          subtitle="Model ID required · Qty optional"
+        >
+          {importResult ? (
+            <div className="space-y-6">
+              <div className="flex flex-wrap gap-x-10 gap-y-4">
+                <Figure label="Added" value={importResult.added} tone="brand" />
+                <Figure label="Updated" value={importResult.updated} />
+                <Figure
+                  label="Errors"
+                  value={importResult.errors}
+                  tone={importResult.errors ? "destructive" : undefined}
+                />
               </div>
-            ) : importData.length > 0 ? (
+              <Action
+                solid
+                onClick={() => {
+                  setShowImport(false);
+                  setImportData([]);
+                  setImportResult(null);
+                }}
+              >
+                Done
+              </Action>
+            </div>
+          ) : importData.length > 0 ? (
+            <div className="space-y-5">
+              <p className="text-sm text-muted-foreground">
+                {importData.length} lines ready. First twenty shown.
+              </p>
+              <div className="panel max-h-64 overflow-y-auto">
+                <div className="flex gap-4 border-b border-border px-4 py-2.5">
+                  <ColHead className="flex-1">Model ID</ColHead>
+                  <ColHead className="w-16 text-right">Qty</ColHead>
+                </div>
+                {importData.slice(0, 20).map((r, i) => (
+                  <div key={i} className="row-line flex gap-4 px-4 py-2">
+                    <span className="mono flex-1 truncate text-xs">{r.modelId}</span>
+                    <span className="mono w-16 text-right text-xs tabular-nums">{r.quantity}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-3">
+                <Action onClick={() => setImportData([])} className="flex-1">
+                  Cancel
+                </Action>
+                <Action solid onClick={runImport} disabled={importing} className="flex-1">
+                  {importing ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Upload className="h-3.5 w-3.5" />
+                  )}
+                  {importing ? "Importing" : `Import ${importData.length}`}
+                </Action>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4 text-center">
+              <FileSpreadsheet className="mx-auto h-8 w-8 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                A CSV with a Model ID column. Qty is optional and defaults to one.
+              </p>
+              <label className="mono inline-flex cursor-pointer items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-[11px] uppercase tracking-[0.18em] text-primary-foreground shadow-[var(--btn-shadow)] transition-[transform,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.30,1)] hover:-translate-y-0.5 hover:bg-primary-dark">
+                <Upload className="h-3.5 w-3.5" /> Choose file
+                <input type="file" accept=".csv" onChange={handleCsvFile} className="hidden" />
+              </label>
+            </div>
+          )}
+        </Modal>
+
+        {/* ── Line detail ────────────────────────────────────────── */}
+        <Drawer
+          open={!!editItem}
+          onClose={closePanel}
+          title={editItem ? itemIdentity(editItem).title : ""}
+          subtitle={editItem?.barcode || ""}
+          footer={
+            editItem ? (
               <>
-                <p className="text-sm mb-4 text-muted-foreground">
-                  Found <strong>{importData.length}</strong> items to import. Preview:
-                </p>
-                <div className="max-h-60 overflow-y-auto rounded-xl border mb-4">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-border">
-                        <th className="text-left px-3 py-2 text-xs text-muted-foreground">Model ID</th>
-                        <th className="text-left px-3 py-2 text-xs text-muted-foreground">Qty</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {importData.slice(0, 20).map((r, i) => (
-                        <tr key={i} className="border-b border-border">
-                          <td className="px-3 py-2 font-mono text-xs">{r.modelId}</td>
-                          <td className="px-3 py-2">{r.quantity}</td>
-                        </tr>
-                      ))}
-                      {importData.length > 20 && (
-                        <tr><td colSpan={2} className="px-3 py-2 text-xs text-muted-foreground">...and {importData.length - 20} more</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => setImportData([])} className="flex-1 py-2.5 rounded-xl border text-sm font-medium hover:border-primary transition">
-                    Cancel
-                  </button>
-                  <button onClick={runImport} disabled={importing} className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark transition flex items-center justify-center gap-2 disabled:opacity-60">
-                    {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                    {importing ? "Importing..." : `Import ${importData.length} Items`}
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-8">
-                <FileSpreadsheet className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
-                <p className="text-sm mb-1 font-medium">Upload a CSV file</p>
-                <p className="text-xs mb-4 text-muted-foreground">
-                  Must have a &quot;Model ID&quot; column. &quot;Qty&quot; column is optional.
-                </p>
-                <label className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium cursor-pointer hover:bg-primary-dark transition">
-                  <Upload className="w-4 h-4" /> Choose File
-                  <input type="file" accept=".csv" onChange={handleCsvFile} className="hidden" />
-                </label>
-              </div>
-            )}
-          </CardContent></Card>
-        </div>
-      )}
-
-      {/* Item editor — right-side drawer. Stays pinned; edits save on change. */}
-      <AnimatePresence>
-      {editItem && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={closePanel}
-          />
-          <motion.div
-            initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
-            transition={spring}
-            className="relative w-full max-w-md h-full flex flex-col bg-background border-l border-border shadow-2xl"
-          >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-                <div className="min-w-0">
-                  <h3 className="text-lg font-display font-bold truncate">{editItem.displayName || editItem.modelId}</h3>
-                  <p className="text-xs text-muted-foreground font-mono truncate">{editItem.barcode}</p>
-                </div>
-                <button onClick={closePanel} className="p-2 rounded-lg hover:bg-secondary transition shrink-0">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-6 space-y-5">
-                {/* Photos - multiple, first is cover */}
-                <div>
-                  <label className="block text-xs font-medium mb-2 text-muted-foreground">
-                    Photos {(editItem.imageUrls || []).length > 0 ? `(${(editItem.imageUrls || []).length})` : ""}
-                  </label>
-                  <div className="flex gap-2 flex-wrap">
-                    {(editItem.imageUrls || []).map((url, i) => (
-                      <div key={`${url}-${i}`} className="relative group">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={url} alt="item" className="w-20 h-20 rounded-lg object-cover border border-border" />
-                        {i === 0 && <span className="absolute bottom-1 left-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-black/60 text-white">COVER</span>}
-                        <button onClick={() => removeImage(url)} className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-danger text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                    <label className="w-20 h-20 rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-primary/10 transition">
-                      {uploadingImg ? <Loader2 className="w-5 h-5 text-primary animate-spin" /> : <><Upload className="w-4 h-4 text-primary" /><span className="text-[10px] text-primary font-medium">Add</span></>}
-                      <input type="file" accept="image/*" onChange={handleUploadImage} className="hidden" disabled={uploadingImg} />
-                    </label>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium mb-1 text-muted-foreground">Name</label>
-                  <input
-                    key={`name-${editItem.id}`}
-                    defaultValue={editItem.displayName || ""}
-                    onBlur={(e) => saveField("display_name", e.target.value.trim())}
-                    placeholder="Product name"
-                    className="w-full px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium mb-1 text-muted-foreground">Make / Brand</label>
-                    <input
-                      key={`brand-${editItem.id}`}
-                      defaultValue={editItem.brand || ""}
-                      onBlur={(e) => saveField("brand", e.target.value.trim())}
-                      placeholder="Brand"
-                      className="w-full px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium mb-1 text-muted-foreground">Model</label>
-                    <input
-                      key={`part-${editItem.id}`}
-                      defaultValue={editItem.partNumber || ""}
-                      onBlur={(e) => saveField("part_number", e.target.value.trim())}
-                      placeholder="Model / part #"
-                      className="w-full px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium mb-1 text-muted-foreground">Reorder point</label>
-                  <input
-                    key={`reorder-${editItem.id}`}
-                    type="number"
-                    min={0}
-                    defaultValue={editItem.reorderPoint ?? ""}
-                    onBlur={(e) => saveReorderPoint(e.target.value)}
-                    placeholder="Alert when qty drops to this (blank = org default)"
-                    className="w-full px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium mb-1 text-muted-foreground">Expiry date</label>
-                    <input
-                      key={`expiry-${editItem.id}`}
-                      type="date"
-                      defaultValue={editItem.expiryDate ?? ""}
-                      onBlur={(e) => saveTracking("expiry_date", "expiryDate", e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium mb-1 text-muted-foreground">Lot / batch</label>
-                    <input
-                      key={`lot-${editItem.id}`}
-                      defaultValue={editItem.lotNumber ?? ""}
-                      onBlur={(e) => saveTracking("lot_number", "lotNumber", e.target.value)}
-                      placeholder="Optional"
-                      className="w-full px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium mb-1 text-muted-foreground">Serial #</label>
-                    <input
-                      key={`serial-${editItem.id}`}
-                      defaultValue={editItem.serialNumber ?? ""}
-                      onBlur={(e) => saveTracking("serial_number", "serialNumber", e.target.value)}
-                      placeholder="Optional"
-                      className="w-full px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
-                    />
-                  </div>
-                </div>
-                {(editItem.costPrice != null || editItem.sellingPrice != null) && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-medium mb-1 text-muted-foreground">Cost</label>
-                      <div className="text-sm">{editItem.costPrice != null ? `$${editItem.costPrice}` : "-"}</div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium mb-1 text-muted-foreground">Sell Price</label>
-                      <div className="text-sm">{editItem.sellingPrice != null ? `$${editItem.sellingPrice}` : "-"}</div>
-                    </div>
-                  </div>
-                )}
-                {editItem.description && (
-                  <div>
-                    <label className="block text-xs font-medium mb-1 text-muted-foreground">Description</label>
-                    <div className="text-sm">{editItem.description}</div>
-                  </div>
-                )}
-                <div>
-                  <label className="block text-xs font-medium mb-1.5 text-muted-foreground">Quantity</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      value={editQty}
-                      onChange={(e) => setEditQty(parseInt(e.target.value) || 0)}
-                      min={0}
-                      className="w-24 px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-input border-border text-foreground"
-                    />
-                    {editQty !== editItem.quantity && (
-                      <button onClick={saveQuantity} className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition">
-                        <Save className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium mb-1.5 text-muted-foreground">Facility</label>
-                  <div className="relative">
-                    <select
-                      value={editItem.facilityId || ""}
-                      onChange={(e) => moveToFacility(e.target.value || null)}
-                      className="w-full appearance-none px-3 py-2 pr-9 rounded-xl border text-sm outline-none cursor-pointer bg-input border-border text-foreground"
-                    >
-                      <option value="">No facility</option>
-                      {(facilities || []).map((f) => (
-                        <option key={f.id} value={f.id}>{f.name}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium mb-1.5 text-muted-foreground">Box</label>
-                  <div className="relative">
-                    <select
-                      value={editItem.boxId || ""}
-                      onChange={(e) => moveToBox(e.target.value || null)}
-                      className="w-full appearance-none px-3 py-2 pr-9 rounded-xl border text-sm outline-none cursor-pointer bg-input border-border text-foreground"
-                    >
-                      <option value="">Loose (no box)</option>
-                      {boxes
-                        .filter((b) => !editItem.facilityId || !b.facility_id || b.facility_id === editItem.facilityId)
-                        .map((b) => (
-                          <option key={String(b.id)} value={String(b.id)}>
-                            {String(b.code || "Box")}{b.label ? ` - ${String(b.label)}` : ""}
-                          </option>
-                        ))}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium mb-1.5 text-muted-foreground">Status</label>
-                  <div className="flex gap-2">
-                    {["available", "reserved", "sold"].map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => updateStatus(editItem, s)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition capitalize ${
-                          editItem.status === s ? "bg-primary text-primary-foreground border-transparent" : "hover:border-primary"
-                        }`}
-                        style={editItem.status !== s ? { borderColor: "var(--border)" } : undefined}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${editItem.status === s ? "bg-white" : STATUS_DOT[s] || "bg-gray-400"}`} />
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div className="px-6 py-4 border-t border-border flex items-center gap-2 shrink-0">
                 {canDelete && (
                   <button
                     onClick={deleteItem}
-                    title="Delete item"
-                    className="w-11 h-11 shrink-0 rounded-xl border border-destructive/40 text-destructive flex items-center justify-center hover:bg-destructive/10 transition"
+                    aria-label="Delete this item"
+                    className="shrink-0 rounded-md border border-destructive/40 p-2.5 text-destructive transition-colors duration-300 hover:bg-destructive/10"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 )}
-                <Button variant="brand" onClick={closePanel} className="flex-1 h-11">
+                <Action solid onClick={closePanel} className="flex-1">
                   Done
-                </Button>
+                </Action>
+              </>
+            ) : null
+          }
+        >
+          {editItem && (
+            <div className="space-y-6">
+              <Field label={`Photos${(editItem.imageUrls || []).length ? ` (${(editItem.imageUrls || []).length})` : ""}`}>
+                <div className="flex flex-wrap gap-2">
+                  {(editItem.imageUrls || []).map((url, i) => (
+                    <div key={`${url}-${i}`} className="group relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={url}
+                        alt=""
+                        className="h-20 w-20 rounded-md border border-border object-cover"
+                      />
+                      {i === 0 && (
+                        <span className="mono absolute bottom-1 left-1 rounded-sm bg-background/80 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.14em]">
+                          Cover
+                        </span>
+                      )}
+                      <button
+                        onClick={() => removeImage(url)}
+                        aria-label="Remove photo"
+                        className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-background text-destructive opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                  <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed border-border transition-colors duration-300 hover:border-[var(--brand-2)]">
+                    {uploadingImg ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-[var(--brand-2)]" />
+                    ) : (
+                      <>
+                        <Upload className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                          Add
+                        </span>
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleUploadImage}
+                      className="hidden"
+                      disabled={uploadingImg}
+                    />
+                  </label>
+                </div>
+              </Field>
+
+              <Field label="Name">
+                <Input
+                  key={`name-${editItem.id}`}
+                  defaultValue={editItem.displayName || ""}
+                  onBlur={(e) => saveField("display_name", e.target.value.trim())}
+                  placeholder="Product name"
+                />
+              </Field>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Make">
+                  <Input
+                    key={`brand-${editItem.id}`}
+                    defaultValue={editItem.brand || ""}
+                    onBlur={(e) => saveField("brand", e.target.value.trim())}
+                    placeholder="Brand"
+                  />
+                </Field>
+                <Field label="Model">
+                  <Input
+                    key={`part-${editItem.id}`}
+                    defaultValue={editItem.partNumber || ""}
+                    onBlur={(e) => saveField("part_number", e.target.value.trim())}
+                    placeholder="Part number"
+                  />
+                </Field>
               </div>
-            </motion.div>
-          </div>
-      )}
-      </AnimatePresence>
-    </PageShell></AdminGuard>
+
+              <Field label="Reorder point" hint="Blank uses the organisation default.">
+                <Input
+                  key={`reorder-${editItem.id}`}
+                  type="number"
+                  min={0}
+                  defaultValue={editItem.reorderPoint ?? ""}
+                  onBlur={(e) => saveReorderPoint(e.target.value)}
+                  placeholder="Alert below this quantity"
+                />
+              </Field>
+
+              <div className="grid grid-cols-3 gap-3">
+                <Field label="Expiry">
+                  <Input
+                    key={`expiry-${editItem.id}`}
+                    type="date"
+                    defaultValue={editItem.expiryDate ?? ""}
+                    onBlur={(e) => saveTracking("expiry_date", "expiryDate", e.target.value)}
+                  />
+                </Field>
+                <Field label="Lot">
+                  <Input
+                    key={`lot-${editItem.id}`}
+                    defaultValue={editItem.lotNumber ?? ""}
+                    onBlur={(e) => saveTracking("lot_number", "lotNumber", e.target.value)}
+                    placeholder="Optional"
+                  />
+                </Field>
+                <Field label="Serial">
+                  <Input
+                    key={`serial-${editItem.id}`}
+                    defaultValue={editItem.serialNumber ?? ""}
+                    onBlur={(e) => saveTracking("serial_number", "serialNumber", e.target.value)}
+                    placeholder="Optional"
+                  />
+                </Field>
+              </div>
+
+              {(editItem.costPrice != null || editItem.sellingPrice != null) && (
+                <div className="flex gap-10 border-t border-border pt-5">
+                  <Figure
+                    label="Cost"
+                    value={editItem.costPrice != null ? `$${editItem.costPrice}` : "—"}
+                    className="[&_.figure-value]:text-2xl"
+                  />
+                  <Figure
+                    label="Sells for"
+                    value={editItem.sellingPrice != null ? `$${editItem.sellingPrice}` : "—"}
+                    className="[&_.figure-value]:text-2xl"
+                  />
+                </div>
+              )}
+
+              {editItem.description && (
+                <Field label="Description">
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    {editItem.description}
+                  </p>
+                </Field>
+              )}
+
+              <Field label="Quantity">
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    value={editQty}
+                    onChange={(e) => setEditQty(parseInt(e.target.value) || 0)}
+                    className="w-28"
+                    aria-label="Quantity"
+                  />
+                  {editQty !== editItem.quantity && (
+                    <Action onClick={saveQuantity} className="px-3 py-2">
+                      <Save className="h-3.5 w-3.5" /> Save
+                    </Action>
+                  )}
+                </div>
+              </Field>
+
+              <Field label="Site">
+                <Select
+                  value={editItem.facilityId || ""}
+                  onChange={(e) => moveToFacility(e.target.value || null)}
+                >
+                  <option value="">No site</option>
+                  {(facilities || []).map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+
+              <Field label="Box">
+                <Select
+                  value={editItem.boxId || ""}
+                  onChange={(e) => moveToBox(e.target.value || null)}
+                >
+                  <option value="">Loose (no box)</option>
+                  {boxes
+                    .filter(
+                      (b) => !editItem.facilityId || !b.facility_id || b.facility_id === editItem.facilityId
+                    )
+                    .map((b) => (
+                      <option key={String(b.id)} value={String(b.id)}>
+                        {String(b.code || "Box")}
+                        {b.label ? ` — ${String(b.label)}` : ""}
+                      </option>
+                    ))}
+                </Select>
+              </Field>
+
+              <Field label="Status">
+                <div className="flex flex-wrap gap-2">
+                  {["available", "reserved", "sold"].map((s) => (
+                    <Chip
+                      key={s}
+                      on={editItem.status === s}
+                      onClick={() => updateStatus(editItem, s)}
+                    >
+                      {s}
+                    </Chip>
+                  ))}
+                </div>
+              </Field>
+            </div>
+          )}
+        </Drawer>
+      </PageShell>
+    </AdminGuard>
   );
 }

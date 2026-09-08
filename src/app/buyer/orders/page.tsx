@@ -100,7 +100,7 @@ export default function BuyerOrdersPage() {
         {loading ? (
           <div className="grid gap-4 mt-6">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-24 animate-pulse bg-muted/30 rounded-2xl" />
+              <div key={i} className="h-24 animate-pulse bg-muted/30 rounded-md" />
             ))}
           </div>
         ) : orders.length === 0 ? (
@@ -133,12 +133,12 @@ export default function BuyerOrdersPage() {
                   className="group block"
                 >
                   <div 
-                    className="relative bg-card border border-border rounded-2xl p-6 hover:border-primary/50 transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-300 hover:shadow-lg hover:shadow-primary/10"
+                    className="relative bg-card border border-border rounded-md p-6 hover:border-primary/50 transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-300 hover:shadow-lg hover:shadow-primary/10"
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
                     {/* Status Badge */}
                     <div className="absolute top-4 right-4">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${config.color}`}>
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold border ${config.color}`}>
                         <StatusIcon className="w-3.5 h-3.5" />
                         {config.label}
                       </span>

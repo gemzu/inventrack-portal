@@ -37,7 +37,7 @@ function SelectTrigger({
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       className={cn(
-        "flex w-full items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2.5 text-sm shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] hover:border-foreground/30 hover:bg-secondary focus:border-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20 disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground",
+        "flex w-full items-center justify-between gap-2 rounded-md border border-border bg-input px-3 py-2.5 text-sm transition-[color,background-color,border-color,box-shadow] duration-300 ease-[cubic-bezier(0.16,1,0.30,1)] hover:border-[var(--brand-2)] focus:border-[var(--brand-2)] focus:outline-none focus:shadow-[0_0_0_1px_color-mix(in_oklab,var(--brand-2)_60%,transparent)] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground",
         className
       )}
       {...props}
@@ -74,7 +74,7 @@ function SelectContent({
         <SelectPrimitive.Popup
           data-slot="select-content"
           className={cn(
-            "relative z-50 max-h-72 min-w-[8rem] overflow-hidden rounded-xl border border-border bg-card p-1 shadow-xl animate-in fade-in zoom-in-95 duration-150",
+            "relative z-50 max-h-72 min-w-[8rem] overflow-hidden rounded-md border border-border bg-card p-1 shadow-[0_18px_44px_-24px_rgba(0,0,0,0.6)] animate-in fade-in duration-200",
             className
           )}
           {...props}
@@ -112,7 +112,7 @@ function SelectItem({
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "relative flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-sm outline-none transition-colors select-none hover:bg-secondary hover:text-foreground focus:bg-secondary focus:text-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
+        "relative flex w-full cursor-pointer items-center gap-2 rounded-sm px-2.5 py-2 text-sm outline-none transition-colors select-none hover:bg-secondary hover:text-foreground focus:bg-secondary focus:text-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
         className
       )}
       {...props}
