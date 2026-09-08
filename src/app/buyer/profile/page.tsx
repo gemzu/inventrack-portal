@@ -6,19 +6,13 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { getMyStorefronts } from "@/lib/dataService";
 import { supabase } from "@/lib/supabase";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 import { useToast } from "@/components/Toast";
-import {
-  User as UserIcon,
-  Mail,
-  Store,
-  Shield,
-  LogOut,
-  CheckCircle2,
-  QrCode,
-} from "lucide-react";
+import PageShell from "@/components/page-shell";
+import Status from "@/components/Status";
+import { Panel, Rule, ColHead, ListSkeleton } from "@/components/console/surfaces";
+import { Action, Input } from "@/components/console/controls";
+import { LogOut, QrCode } from "lucide-react";
 
 interface Storefront {
   storefrontId?: string;
@@ -48,13 +42,6 @@ export default function BuyerProfilePage() {
       setMfaEnrolled(Boolean(data?.totp && data.totp.length > 0));
     });
   }, [user]);
-
-  const initials = (userName || user?.email || "?")
-    .split(" ")
-    .map((s) => s[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
 
   const handleEnroll = async () => {
     try {
@@ -103,163 +90,150 @@ export default function BuyerProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero */}
-      <div className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
-        <div className="relative max-w-4xl mx-auto px-4 py-12">
-          <div className="flex items-center gap-5">
-            <div className="w-20 h-20 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-2xl font-bold text-primary flex-shrink-0">
-              {initials}
+    <div className="mx-auto max-w-3xl px-5 py-8 lg:px-8 lg:py-10">
+      <PageShell
+        title={userName || "Your profile"}
+        eyebrow="Buying"
+        subtitle={user?.email || undefined}
+        actions={
+          <Action onClick={handleLogout}>
+            <LogOut className="h-3.5 w-3.5" /> Sign out
+          </Action>
+        }
+      >
+        <div className="space-y-12">
+          {/* ── Account ──────────────────────────────────────── */}
+          <section className="space-y-5">
+            <Rule label="Account" />
+            <div className="reveal">
+              <div className="row-line flex items-center justify-between gap-6 py-3">
+                <ColHead>Name</ColHead>
+                <span className="truncate text-sm">{userName || "—"}</span>
+              </div>
+              <div className="row-line flex items-center justify-between gap-6 py-3">
+                <ColHead>Email</ColHead>
+                <span className="truncate text-sm">{user?.email}</span>
+              </div>
+              <div className="row-line flex items-center justify-between gap-6 py-3">
+                <ColHead>Role</ColHead>
+                <span className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                  Buyer
+                </span>
+              </div>
             </div>
-            <div className="min-w-0">
-              <h1 className="text-3xl font-bold tracking-tight truncate">
-                {userName || user?.email || "Buyer"}
-              </h1>
-              <p className="text-muted-foreground mt-1 flex items-center gap-2">
-                <Mail className="w-4 h-4" />
-                <span className="truncate">{user?.email}</span>
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+          </section>
 
-      {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8 space-y-5">
-        {/* Account */}
-        <div className="bg-card border border-border rounded-md p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <UserIcon className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold">Account</h2>
-          </div>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Name</span>
-              <span>{userName || "—"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Email</span>
-              <span className="truncate max-w-[60%]">{user?.email}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Role</span>
-              <Badge variant="outline">Buyer</Badge>
-            </div>
-          </div>
-        </div>
-
-        {/* Storefronts */}
-        <div className="bg-card border border-border rounded-md p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Store className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold">Connected storefronts</h2>
-          </div>
-          {loadingStorefronts ? (
-            <div className="text-sm text-muted-foreground">Loading…</div>
-          ) : storefronts.length === 0 ? (
-            <div className="text-sm text-muted-foreground">
-              You haven&apos;t connected to any storefront yet.{" "}
-              <a href="/buyer/catalog/connect" className="text-primary hover:underline">
-                Connect one
-              </a>
-              .
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {storefronts.map((s, i) => (
-                <div
-                  key={s.storefrontId || i}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/40"
+          {/* ── Storefronts ──────────────────────────────────── */}
+          <section className="space-y-5">
+            <Rule label="Connected suppliers" />
+            {loadingStorefronts ? (
+              <ListSkeleton rows={2} />
+            ) : storefronts.length === 0 ? (
+              <p className="reveal text-sm leading-relaxed text-muted-foreground">
+                None yet. A supplier gives you a join code —{" "}
+                <Link
+                  href="/buyer/catalog/connect"
+                  className="text-[var(--brand-2)] transition-colors duration-300 hover:text-foreground"
                 >
-                  <div>
-                    <div className="font-medium">{s.storefronts?.name || "Storefront"}</div>
-                    {s.storefronts?.code ? (
-                      <div className="text-xs text-muted-foreground font-mono">
-                        {s.storefronts.code}
-                      </div>
-                    ) : null}
-                  </div>
-                  <CheckCircle2 className="w-5 h-5 text-success" />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Security */}
-        <div className="bg-card border border-border rounded-md p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-primary" />
-              <h2 className="text-lg font-semibold">Two-factor authentication</h2>
-            </div>
-            {mfaEnrolled ? (
-              <Badge className="bg-success/10 text-success border-success/30">
-                Enabled
-              </Badge>
-            ) : (
-              <Badge variant="outline">Not enabled</Badge>
-            )}
-          </div>
-
-          {mfaEnrolled ? (
-            <p className="text-sm text-muted-foreground">
-              Your account is protected by an authenticator app.
-            </p>
-          ) : !qr ? (
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <p className="text-sm text-muted-foreground flex-1 min-w-[200px]">
-                Add an extra layer of security with a TOTP authenticator app
-                (Google Authenticator, 1Password, etc.).
+                  enter it here
+                </Link>
+                .
               </p>
-              <Button onClick={handleEnroll}>
-                <QrCode className="w-4 h-4 mr-2" />
-                Enable 2FA
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex flex-col items-center gap-3 p-4 bg-muted/40 rounded-md">
-                <Image
-                  src={qr}
-                  alt="MFA QR Code"
-                  width={192}
-                  height={192}
-                  unoptimized
-                  className="rounded border border-border"
-                />
-                <p className="text-xs text-muted-foreground text-center">
-                  Scan this QR code in your authenticator app, then enter the 6-digit code below.
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={handleChallenge} disabled={!factorId}>
-                  Request code
-                </Button>
-                <Input
-                  placeholder="6-digit code"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  maxLength={6}
-                  className="flex-1"
-                />
-                <Button onClick={handleVerify} disabled={!challengeId || code.length !== 6}>
-                  Verify
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
+            ) : (
+              <Panel className="reveal">
+                {storefronts.map((s, i) => (
+                  <div
+                    key={s.storefrontId || i}
+                    className="row-line flex items-center justify-between gap-4 px-5 py-3.5"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">
+                        {s.storefronts?.name || "Storefront"}
+                      </p>
+                      {s.storefronts?.code ? (
+                        <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                          {s.storefronts.code}
+                        </p>
+                      ) : null}
+                    </div>
+                    <Status status="active" label="Connected" className="shrink-0" />
+                  </div>
+                ))}
+              </Panel>
+            )}
+          </section>
 
-        {/* Logout */}
-        <div className="flex justify-end">
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="w-4 h-4 mr-2" />
-            Sign out
-          </Button>
+          {/* ── Security ─────────────────────────────────────── */}
+          <section className="space-y-5">
+            <Rule
+              label="Two factor"
+              action={
+                <Status
+                  status={mfaEnrolled ? "active" : "inactive"}
+                  label={mfaEnrolled ? "On" : "Off"}
+                  emphasis
+                />
+              }
+            />
+
+            <div className="reveal">
+              {mfaEnrolled ? (
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  Signing in asks for a code from your authenticator as well as your password.
+                </p>
+              ) : !qr ? (
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <p className="min-w-[16rem] flex-1 text-sm leading-relaxed text-muted-foreground">
+                    Without it, anyone holding your password can order as you. Any TOTP app works —
+                    Google Authenticator, 1Password, whatever you already use.
+                  </p>
+                  <Action solid onClick={handleEnroll}>
+                    <QrCode className="h-3.5 w-3.5" /> Turn it on
+                  </Action>
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  <div className="panel flex flex-col items-center gap-3 p-6">
+                    <Image
+                      src={qr}
+                      alt="QR code for your authenticator app"
+                      width={176}
+                      height={176}
+                      unoptimized
+                      className="rounded-md border border-border bg-white p-2"
+                    />
+                    <p className="max-w-xs text-center text-sm leading-relaxed text-muted-foreground">
+                      Scan this, then type the six digit code it shows.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <Action onClick={handleChallenge} disabled={!factorId}>
+                      Request code
+                    </Action>
+                    <Input
+                      value={code}
+                      onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ""))}
+                      maxLength={6}
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      placeholder="000000"
+                      aria-label="Six digit code"
+                      className="mono w-36 flex-none tracking-[0.3em]"
+                    />
+                    <Action
+                      solid
+                      onClick={handleVerify}
+                      disabled={!challengeId || code.length !== 6}
+                    >
+                      Confirm
+                    </Action>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
         </div>
-      </div>
+      </PageShell>
     </div>
   );
 }

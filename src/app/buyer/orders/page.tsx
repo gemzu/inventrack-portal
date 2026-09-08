@@ -2,25 +2,20 @@
 
 import Link from "next/link";
 import { useEffect, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
-import { Button } from "@/components/ui/button";
-import { ClipboardList, Package, Clock, CheckCircle, XCircle, ArrowRight, ShoppingBag } from "lucide-react";
+import { ClipboardList, ArrowRight } from "lucide-react";
 import { useToast } from "@/components/Toast";
-
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock }> = {
-  pending_approval: { label: "Pending", color: "bg-warning/20 text-warning border-warning/30", icon: Clock },
-  confirmed: { label: "Confirmed", color: "bg-primary/20 text-primary border-primary/30", icon: Clock },
-  processing: { label: "Processing", color: "bg-primary/20 text-primary border-primary/30", icon: Package },
-  shipped: { label: "Shipped", color: "bg-primary/20 text-primary border-primary/30", icon: Package },
-  delivered: { label: "Delivered", color: "bg-success/20 text-success border-success/30", icon: CheckCircle },
-  cancelled: { label: "Cancelled", color: "bg-destructive/20 text-destructive border-destructive/30", icon: XCircle },
-  rejected: { label: "Rejected", color: "bg-destructive/20 text-destructive border-destructive/30", icon: XCircle },
-};
+import PageShell from "@/components/page-shell";
+import EmptyState from "@/components/EmptyState";
+import Status from "@/components/Status";
+import { Panel, Figure, ColHead, ListSkeleton } from "@/components/console/surfaces";
 
 export default function BuyerOrdersPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
   const [orders, setOrders] = useState<{id?: string; status?: string; createdAt?: string; created_at?: string; totalQty?: number; total_qty?: number; items?: unknown[]}[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -76,122 +71,95 @@ export default function BuyerOrdersPage() {
       return dateB - dateA;
     });
   }, [orders]);
+  const openCount = useMemo(
+    () =>
+      orders.filter(
+        (o) => !["delivered", "cancelled", "rejected"].includes(String(o.status || "").toLowerCase())
+      ).length,
+    [orders]
+  );
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
-        
-        <div className="relative max-w-7xl mx-auto px-4 py-12">
-          <h1 className="text-4xl font-bold tracking-tight">
-            <span className="text-brand-gradient">
-              My Orders
-            </span>
-          </h1>
-          <p className="text-muted-foreground mt-2 text-lg">
-            {orders.length} order{orders.length !== 1 ? "s" : ""}
-          </p>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 pb-20">
+    <div className="mx-auto max-w-5xl px-5 py-8 lg:px-8 lg:py-10">
+      <PageShell
+        title="Your orders"
+        eyebrow="Buying"
+        subtitle="Everything you have sent, newest first."
+      >
         {loading ? (
-          <div className="grid gap-4 mt-6">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-24 animate-pulse bg-muted/30 rounded-md" />
-            ))}
-          </div>
+          <ListSkeleton rows={4} />
         ) : orders.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
-              <ClipboardList className="w-12 h-12 text-muted-foreground/30" />
-            </div>
-            <h2 className="text-2xl font-bold mb-2">No orders yet</h2>
-            <p className="text-muted-foreground mb-6">Submit your first order from the cart.</p>
-            <Link href="/buyer/catalog">
-              <Button variant="brand" size="lg">
-                <ShoppingBag className="w-5 h-5 mr-2" />
-                Browse Catalog
-              </Button>
-            </Link>
-          </div>
+          <EmptyState
+            icon={ClipboardList}
+            title="Nothing ordered yet"
+            description="Pick something from the catalog and send it from your cart."
+            actionLabel="Browse the catalog"
+            onAction={() => router.push("/buyer/catalog")}
+          />
         ) : (
-          <div className="grid gap-4 mt-6">
-            {sortedOrders.map((order, index) => {
-              const status = String(order.status || "pending_approval").toLowerCase();
-              const config = STATUS_CONFIG[status] || STATUS_CONFIG.pending_approval;
-              const StatusIcon = config.icon;
-              const createdDate = new Date(String(order.createdAt || order.created_at || Date.now()));
-              const totalQty = Number(order.totalQty || order.total_qty || 0);
-              
-              return (
-                <Link
-                  key={String(order.id)}
-                  href={`/buyer/orders/${String(order.id)}`}
-                  className="group block"
-                >
-                  <div 
-                    className="relative bg-card border border-border rounded-md p-6 hover:border-primary/50 transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-300 hover:shadow-lg hover:shadow-primary/10"
-                    style={{ animationDelay: `${index * 100}ms` }}
+          <div className="space-y-8">
+            <div className="reveal flex flex-wrap items-baseline gap-x-10 gap-y-4">
+              <Figure label="Orders placed" value={orders.length} />
+              <Figure label="Still moving" value={openCount} tone={openCount ? "brand" : undefined} />
+            </div>
+
+            <Panel className="reveal">
+              <div className="hidden items-center gap-4 border-b border-border px-5 py-2.5 md:flex">
+                <ColHead className="w-28 shrink-0">Order</ColHead>
+                <ColHead className="min-w-0 flex-1">What is on it</ColHead>
+                <ColHead className="w-16 shrink-0 text-right">Units</ColHead>
+                <ColHead className="w-32 shrink-0">State</ColHead>
+              </div>
+
+              {sortedOrders.map((order) => {
+                const status = String(order.status || "pending_approval").toLowerCase();
+                const created = new Date(String(order.createdAt || order.created_at || Date.now()));
+                const totalQty = Number(order.totalQty || order.total_qty || 0);
+                const lines = Array.isArray(order.items) ? (order.items as unknown[]) : [];
+                const preview = (lines.slice(0, 3) as Array<{ displayName?: string; modelId?: string }>)
+                  .map((i) => i.displayName || i.modelId || "Item")
+                  .join(", ");
+
+                return (
+                  <Link
+                    key={String(order.id)}
+                    href={`/buyer/orders/${String(order.id)}`}
+                    className="row-line group flex items-center gap-4 px-5 py-3.5"
                   >
-                    {/* Status Badge */}
-                    <div className="absolute top-4 right-4">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold border ${config.color}`}>
-                        <StatusIcon className="w-3.5 h-3.5" />
-                        {config.label}
-                      </span>
+                    {/* The reference is what you quote when you ask about it,
+                        so it is set as a code rather than as a heading. */}
+                    <span className="mono w-28 shrink-0 truncate text-sm font-semibold tracking-[0.04em]">
+                      {String(order.id || "").slice(0, 8).toUpperCase()}
+                    </span>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm">
+                        {preview || "No lines recorded"}
+                        {lines.length > 3 ? ` +${lines.length - 3} more` : ""}
+                      </p>
+                      <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                        {created.toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </p>
                     </div>
 
-                    {/* Order Info */}
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-3 mb-3">
-                          <span className="text-2xl font-bold font-mono">
-                            #{String(order.id || "").slice(0, 8).toUpperCase()}
-                          </span>
-                          {totalQty > 0 && (
-                            <span className="px-2 py-1 bg-muted rounded-lg text-xs font-medium">
-                              {totalQty} item{totalQty !== 1 ? "s" : ""}
-                            </span>
-                          )}
-                        </div>
-                        
-                        <div className="text-sm text-muted-foreground">
-                          Created {createdDate.toLocaleDateString("en-US", { 
-                            month: "short", 
-                            day: "numeric", 
-                            year: "numeric",
-                            hour: "numeric",
-                            minute: "2-digit"
-                          })}
-                        </div>
-
-                        {/* Items Preview */}
-                        {order.items && Array.isArray(order.items) && order.items.length > 0 && (
-                          <div className="flex items-center gap-2 mt-4 text-sm">
-                            <Package className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">
-                              {((order.items as unknown[]).slice(0, 3) as Array<{displayName?: string; modelId?: string}>).map((i) => i.displayName || i.modelId || "Item").join(", ")}
-                              {((order.items as unknown[]).length > 3) ? ` +${(order.items as unknown[]).length - 3} more` : ''}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Arrow */}
-                      <div className="hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-muted group-hover:bg-primary/10 group-hover:text-primary transition-[color,background-color,border-color,box-shadow,transform,opacity]">
-                        <ArrowRight className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" />
-                      </div>
+                    <span className="mono hidden w-16 shrink-0 text-right text-sm font-semibold tabular-nums md:block">
+                      {totalQty || "—"}
+                    </span>
+                    <div className="hidden w-32 shrink-0 md:block">
+                      <Status status={status} />
                     </div>
-                  </div>
-                </Link>
-              );
-            })}
+                    <ArrowRight className="h-3.5 w-3.5 shrink-0 -translate-x-1 text-muted-foreground opacity-0 transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.16,1,0.30,1)] group-hover:translate-x-0 group-hover:opacity-100" />
+                  </Link>
+                );
+              })}
+            </Panel>
           </div>
         )}
-      </div>
+      </PageShell>
     </div>
   );
 }

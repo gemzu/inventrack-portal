@@ -2,14 +2,15 @@
 
 import { itemIdentity } from "@/lib/itemIdentity";
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { getFavorites, toggleFavorite } from "@/lib/dataService";
 import { useCart } from "@/context/CartContext";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Heart, Package, ShoppingCart, Trash2 } from "lucide-react";
+import { Heart, Trash2 } from "lucide-react";
 import { useToast } from "@/components/Toast";
+import PageShell from "@/components/page-shell";
+import EmptyState from "@/components/EmptyState";
+import { Panel, Figure, ListSkeleton } from "@/components/console/surfaces";
 
 interface FavItem {
   id: string;
@@ -23,6 +24,7 @@ interface FavItem {
 export default function BuyerFavoritesPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
   const { addToCart } = useCart();
   const [items, setItems] = useState<FavItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,99 +61,63 @@ export default function BuyerFavoritesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero */}
-      <div className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
-        <div className="relative max-w-7xl mx-auto px-4 py-12">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center">
-              <Heart className="w-5 h-5 text-primary fill-primary" />
-            </div>
-            <h1 className="text-4xl font-bold tracking-tight">
-              <span className="text-brand-gradient">
-                Favorites
-              </span>
-            </h1>
-          </div>
-          <p className="text-muted-foreground text-lg">
-            {items.length} saved item{items.length !== 1 ? "s" : ""}
-          </p>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="mx-auto max-w-5xl px-5 py-8 lg:px-8 lg:py-10">
+      <PageShell
+        title="Saved"
+        eyebrow="Buying"
+        subtitle="Things you kept for later. Saving one does not hold any stock."
+      >
         {loading ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...Array(6)].map((_, i) => (
-              <Skeleton key={i} className="h-36 rounded-md" />
-            ))}
-          </div>
+          <ListSkeleton rows={5} />
         ) : items.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
-              <Heart className="w-12 h-12 text-muted-foreground/30" />
-            </div>
-            <h2 className="text-2xl font-bold mb-2">No favorites yet</h2>
-            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Browse the catalog and tap the heart to save items for later.
-            </p>
-            <Link href="/buyer/catalog">
-              <Button size="lg">Browse catalog</Button>
-            </Link>
-          </div>
+          <EmptyState
+            icon={Heart}
+            title="Nothing saved"
+            description="Tap the heart on anything in the catalog and it waits here."
+            actionLabel="Browse the catalog"
+            onAction={() => router.push("/buyer/catalog")}
+          />
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {items.map((it) => (
-              <div
-                key={it.id}
-                className="group bg-card border border-border rounded-md p-5 hover:border-primary/50 hover:shadow-lg transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-300"
-              >
-                <div className="flex items-start gap-3 mb-4">
-                  <div className="w-11 h-11 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Package className="w-5 h-5 text-primary" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="font-semibold truncate">
-                      {itemIdentity(it).title}
+          <div className="space-y-8">
+            <div className="reveal flex flex-wrap items-baseline gap-x-10 gap-y-4">
+              <Figure label="Saved" value={items.length} />
+            </div>
+
+            <Panel className="reveal">
+              {items.map((it) => {
+                const id = itemIdentity(it);
+                return (
+                  <div key={it.id} className="row-line group flex items-center gap-4 px-5 py-3.5">
+                    <div className="min-w-0 flex-1">
+                      <p className={`truncate text-sm font-medium ${id.unnamed ? "mono" : ""}`}>
+                        {id.title}
+                      </p>
+                      <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                        {[id.subtitle, it.brand].filter(Boolean).join(" · ") || "No detail"}
+                      </p>
                     </div>
-                    {it.brand ? (
-                      <div className="text-xs text-muted-foreground truncate">
-                        {it.brand}
-                      </div>
-                    ) : null}
-                    {itemIdentity(it).subtitle ? (
-                      <div className="text-xs text-muted-foreground font-mono truncate mt-0.5">
-                        {itemIdentity(it).subtitle}
-                      </div>
-                    ) : null}
+                    <div className="flex shrink-0 items-center gap-4">
+                      <button
+                        onClick={() => onAddToCart(it)}
+                        className="mono text-[11px] uppercase tracking-[0.16em] text-[var(--brand-2)] transition-colors duration-300 hover:text-foreground"
+                      >
+                        Add to cart
+                      </button>
+                      <button
+                        onClick={() => onRemove(it.id)}
+                        aria-label={`Unsave ${id.title}`}
+                        className="text-muted-foreground opacity-0 transition-[opacity,color] duration-300 hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="brand"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => onAddToCart(it)}
-                  >
-                    <ShoppingCart className="w-4 h-4 mr-1.5" />
-                    Add
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onRemove(it.id)}
-                    className="text-muted-foreground hover:text-destructive"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
+                );
+              })}
+            </Panel>
           </div>
         )}
-      </div>
+      </PageShell>
     </div>
   );
 }

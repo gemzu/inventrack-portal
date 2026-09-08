@@ -7,10 +7,12 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { createOrder } from "@/lib/dataService";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, ShoppingBag } from "lucide-react";
+import { ShoppingCart, Trash2, Plus, Minus, ArrowRight } from "lucide-react";
 import { useToast } from "@/components/Toast";
+import PageShell from "@/components/page-shell";
+import EmptyState from "@/components/EmptyState";
+import { Panel, Figure, ColHead } from "@/components/console/surfaces";
+import { Action } from "@/components/console/controls";
 
 export default function BuyerCartPage() {
   const { user, orgId, userName } = useAuth();
@@ -53,137 +55,117 @@ export default function BuyerCartPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
-        
-        <div className="relative max-w-7xl mx-auto px-4 py-12">
-          <h1 className="text-4xl font-display font-extrabold tracking-tight">
-            <span className="text-brand-gradient">Cart</span>
-          </h1>
-          <p className="text-muted-foreground mt-2 text-lg">
-            {count} item{count !== 1 ? "s" : ""} ready to order
-          </p>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 pb-20">
+    <div className="mx-auto max-w-5xl px-5 py-8 lg:px-8 lg:py-10">
+      <PageShell
+        title="Cart"
+        eyebrow="Buying"
+        subtitle="What goes out when you send this. Nothing is reserved until it does."
+      >
         {items.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
-              <ShoppingCart className="w-12 h-12 text-muted-foreground/30" />
-            </div>
-            <h2 className="text-2xl font-bold mb-2">Your cart is empty</h2>
-            <p className="text-muted-foreground mb-6">Add items from the catalog to get started.</p>
-            <Link href="/buyer/catalog">
-              <Button size="lg">
-                <ShoppingBag className="w-5 h-5 mr-2" />
-                Browse Catalog
-              </Button>
-            </Link>
-          </div>
+          <EmptyState
+            icon={ShoppingCart}
+            title="Cart is empty"
+            description="Add something from the catalog and it collects here."
+            actionLabel="Browse the catalog"
+            onAction={() => router.push("/buyer/catalog")}
+          />
         ) : (
-          <div className="grid lg:grid-cols-3 gap-6 mt-6">
-            {/* Cart Items */}
-            <div className="lg:col-span-2 space-y-3">
-              {items.map((item, index) => (
-                <div
-                  key={item.id}
-                  className="group relative bg-card border border-border rounded-md p-4 hover:border-primary/50 transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-300"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="truncate font-medium">{itemIdentity(item).title}</div>
-                      {itemIdentity(item).subtitle && (
-                                              <div className="mono text-xs text-muted-foreground">{itemIdentity(item).subtitle}</div>
-                                            )}
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                      {/* Quantity Controls */}
-                      <div className="flex items-center gap-1 bg-muted rounded-md p-1">
+          <div className="space-y-8">
+            <div className="reveal flex flex-wrap items-baseline gap-x-10 gap-y-4">
+              <Figure label="Lines" value={count} />
+              <Figure label="Units" value={totalQty} />
+            </div>
+
+            <div className="grid gap-8 lg:grid-cols-3">
+              <Panel className="reveal lg:col-span-2">
+                <div className="hidden items-center gap-4 border-b border-border px-5 py-2.5 md:flex">
+                  <ColHead className="min-w-0 flex-1">Item</ColHead>
+                  <ColHead className="w-32 shrink-0 text-center">Quantity</ColHead>
+                  <span className="w-8 shrink-0" />
+                </div>
+
+                {items.map((item) => {
+                  const id = itemIdentity(item);
+                  return (
+                    <div key={item.id} className="row-line group flex items-center gap-4 px-5 py-3.5">
+                      <div className="min-w-0 flex-1">
+                        <p className={`truncate text-sm font-medium ${id.unnamed ? "mono" : ""}`}>
+                          {id.title}
+                        </p>
+                        {id.subtitle && (
+                          <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                            {id.subtitle}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Two hairline buttons and the number between them.
+                          A filled stepper block was the only place in the
+                          product with that shape. */}
+                      <div className="flex w-32 shrink-0 items-center justify-center gap-1">
                         <button
                           onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
-                          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-background transition-colors"
+                          aria-label={`One fewer ${id.title}`}
+                          className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-[border-color,color] duration-300 hover:border-[var(--brand-2)] hover:text-foreground"
                         >
-                          <Minus className="w-4 h-4" />
+                          <Minus className="h-3 w-3" />
                         </button>
-                        <span className="w-10 text-center font-semibold">{item.quantity}</span>
+                        <span className="mono w-10 text-center text-sm font-semibold tabular-nums">
+                          {item.quantity}
+                        </span>
                         <button
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-background transition-colors"
+                          aria-label={`One more ${id.title}`}
+                          className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-[border-color,color] duration-300 hover:border-[var(--brand-2)] hover:text-foreground"
                         >
-                          <Plus className="w-4 h-4" />
+                          <Plus className="h-3 w-3" />
                         </button>
                       </div>
-                      
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
+
+                      <button
                         onClick={() => removeFromCart(item.id)}
-                        className="text-muted-foreground hover:text-destructive"
+                        aria-label={`Remove ${id.title}`}
+                        className="w-8 shrink-0 text-muted-foreground opacity-0 transition-[opacity,color] duration-300 hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </Panel>
 
-            {/* Summary */}
-            <div className="lg:col-span-1">
-              <div className="sticky top-6 bg-card border border-border rounded-md p-6 space-y-4">
-                <h2 className="text-xl font-bold">Order Summary</h2>
-                
-                <div className="space-y-2 border-b border-border pb-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Items</span>
-                    <span>{count}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Total Quantity</span>
-                    <span className="font-semibold">{totalQty}</span>
-                  </div>
-                </div>
+              <div className="lg:col-span-1">
+                <div className="panel panel-live reveal d1 sticky top-20 p-6">
+                  <p className="mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                    Sending
+                  </p>
+                  <p className="figure-value mt-3">{totalQty}</p>
+                  <p className="figure-label mt-2">
+                    units over {count} {count === 1 ? "line" : "lines"}
+                  </p>
 
-                <div className="space-y-3">
-                  <Button
-                    variant="brand"
-                    className="w-full h-12 text-lg"
-                    onClick={handleSubmit}
-                    disabled={submitting}
+                  <div className="mt-6 space-y-3 border-t border-border pt-5">
+                    <Action solid onClick={handleSubmit} disabled={submitting} className="w-full">
+                      {submitting ? "Sending" : "Send order"}
+                      {!submitting && <ArrowRight className="h-3.5 w-3.5" />}
+                    </Action>
+                    <Action onClick={clearCart} className="w-full">
+                      Empty the cart
+                    </Action>
+                  </div>
+
+                  <Link
+                    href="/buyer/catalog"
+                    className="mono mt-5 block text-center text-[11px] uppercase tracking-[0.16em] text-muted-foreground transition-colors duration-300 hover:text-foreground"
                   >
-                    {submitting ? (
-                      <span className="animate-pulse">Submitting...</span>
-                    ) : (
-                      <>
-                        Submit Order
-                        <ArrowRight className="w-5 h-5 ml-2" />
-                      </>
-                    )}
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={clearCart}
-                  >
-                    Clear Cart
-                  </Button>
+                    Keep shopping
+                  </Link>
                 </div>
-
-                <Link href="/buyer/catalog" className="block text-center text-sm text-muted-foreground hover:text-foreground">
-                  Continue Shopping →
-                </Link>
               </div>
             </div>
           </div>
         )}
-      </div>
+      </PageShell>
     </div>
   );
 }
