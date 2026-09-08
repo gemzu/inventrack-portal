@@ -4,16 +4,13 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { 
-  XCircle, ArrowLeft, 
-  Package, Tag, Car, Save,
-  BrainCircuit, Shield
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { XCircle, ArrowLeft, Package, Save } from "lucide-react";
 import { useToast } from "@/components/Toast";
+import PageShell from "@/components/page-shell";
+import EmptyState from "@/components/EmptyState";
+import { ColHead, ListSkeleton } from "@/components/console/surfaces";
+import { Action, Field, Input, Segmented, Textarea } from "@/components/console/controls";
 import Link from "next/link";
-import { ListSkeleton } from "@/components/console/surfaces";
 
 interface GlobalProduct {
   id: string;
@@ -189,287 +186,237 @@ export default function ProductVerificationPage() {
     }));
   }
 
-  function getConfidenceColor(confidence: number) {
-    if (confidence >= 0.8) return "bg-success/15 text-success border-success/30";
-    if (confidence >= 0.5) return "bg-warning/15 text-warning border-warning/30";
-    return "bg-destructive/15 text-destructive border-destructive/30";
-  }
-
   if (loading) {
     return (
-      <ListSkeleton />
+      <PageShell title="Review" subtitle="Reading the record." eyebrow="Product">
+        <ListSkeleton rows={5} />
+      </PageShell>
     );
   }
 
   if (!product) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Product not found</p>
-        <Link href="/dashboard/enrichment" className="text-primary hover:underline mt-2 inline-block">
-          Back to Enrichment
-        </Link>
-      </div>
+      <PageShell
+        title="Not found"
+        eyebrow="Product"
+        breadcrumb={
+          <Link
+            href="/dashboard/enrichment"
+            className="inline-flex items-center gap-1.5 transition-colors duration-300 hover:text-foreground"
+          >
+            <ArrowLeft className="h-3 w-3" /> Enrichment
+          </Link>
+        }
+      >
+        <EmptyState
+          icon={Package}
+          title="No such product"
+          description="It may have been merged or removed since the queue was built."
+        />
+      </PageShell>
     );
   }
 
-  return (
-    <div className="animate-page-enter space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Link 
-            href="/dashboard/enrichment"
-            className="p-2 rounded-lg hover:bg-accent transition"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-display font-bold tracking-tight">Review Product</h1>
-            <p className="text-sm text-muted-foreground">{product.modelId}</p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            onClick={() => handleSave(false)} 
-            variant="outline"
-            disabled={saving}
-          >
-            <Save className="w-4 h-4 mr-2" /> Save Draft
-          </Button>
-          <Button 
-            onClick={() => handleSave(true)}
-            disabled={saving}
-          >
-            <Shield className="w-4 h-4 mr-2" /> Verify & Save
-          </Button>
-        </div>
-      </div>
+  const confidence = Math.round(product.enrichmentConfidence * 100);
+  const confidenceTone =
+    product.enrichmentConfidence >= 0.8
+      ? "text-success"
+      : product.enrichmentConfidence >= 0.5
+        ? "text-warning"
+        : "text-destructive";
 
-      <Card className={`border-l-4 ${getConfidenceColor(product.enrichmentConfidence)}`}>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <BrainCircuit className="w-5 h-5" />
-              <div>
-                <p className="font-medium">AI Enrichment Confidence</p>
-                <p className="text-sm opacity-80">
-                  {product.enrichmentSource} • {product.enrichedAt ? new Date(product.enrichedAt).toLocaleDateString() : "Unknown date"}
-                </p>
-              </div>
-            </div>
-            <div className="text-right">
-              <span className="text-2xl font-bold">
-                {Math.round(product.enrichmentConfidence * 100)}%
-              </span>
-            </div>
+  return (
+    <PageShell
+      title="Review"
+      eyebrow="Product"
+      subtitle={product.modelId}
+      breadcrumb={
+        <Link
+          href="/dashboard/enrichment"
+          className="inline-flex items-center gap-1.5 transition-colors duration-300 hover:text-foreground"
+        >
+          <ArrowLeft className="h-3 w-3" /> Enrichment
+        </Link>
+      }
+      actions={
+        <>
+          <Action onClick={() => handleSave(false)} disabled={saving}>
+            <Save className="h-3.5 w-3.5" /> Save draft
+          </Action>
+          <Action solid onClick={() => handleSave(true)} disabled={saving}>
+            Mark checked
+          </Action>
+        </>
+      }
+    >
+      <div className="space-y-10">
+        {/* How much of this was guessed, and how sure the guess was. */}
+        <div className="reveal flex flex-wrap items-end justify-between gap-6 border-b border-border pb-6">
+          <div>
+            <p className={`figure-value ${confidenceTone}`}>{confidence}%</p>
+            <p className="figure-label mt-2">Confidence</p>
           </div>
-          {product.aiSuggestedFields && product.aiSuggestedFields.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              <span className="text-sm opacity-70">AI detected:</span>
-              {(product.aiSuggestedFields as string[]).map((field: string) => (
-                <span 
-                  key={field} 
-                  className="text-xs px-2 py-0.5 rounded-sm bg-black/10"
+          <div className="min-w-0 text-right">
+            <p className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+              {product.enrichmentSource || "unknown source"}
+            </p>
+            <p className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+              {product.enrichedAt
+                ? new Date(product.enrichedAt).toLocaleDateString()
+                : "date unknown"}
+            </p>
+          </div>
+        </div>
+
+        {product.aiSuggestedFields && product.aiSuggestedFields.length > 0 && (
+          <div className="reveal d1">
+            <ColHead className="mb-2 block">Filled in automatically</ColHead>
+            <div className="flex flex-wrap gap-2">
+              {(product.aiSuggestedFields as string[]).map((field) => (
+                <span
+                  key={field}
+                  className="mono rounded-sm border border-border px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] text-muted-foreground"
                 >
                   {field}
                 </span>
               ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        )}
 
-      <div className="flex gap-2 border-b">
-        {[
-          { id: "basic", label: "Basic Info", Icon: Package },
-          { id: "compatibility", label: "Compatibility", Icon: Car },
-          { id: "specs", label: "Specifications", Icon: Tag },
-        ].map(({ id, label, Icon }) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition ${
-              activeTab === id 
-                ? "border-primary text-primary" 
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Icon className="w-4 h-4" /> {label}
-          </button>
-        ))}
-      </div>
+        <Segmented
+          value={activeTab}
+          onChange={setActiveTab}
+          options={[
+            { value: "basic", label: "Details" },
+            { value: "compatibility", label: "Fits" },
+            { value: "specs", label: "Specs" },
+          ]}
+        />
 
-      <div className="space-y-4">
         {activeTab === "basic" && (
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Product Name</label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => updateField("name", e.target.value)}
-                    className="w-full mt-1 px-3 py-2 rounded-md border bg-background"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Brand</label>
-                  <input
-                    type="text"
-                    value={formData.brand}
-                    onChange={(e) => updateField("brand", e.target.value)}
-                    className="w-full mt-1 px-3 py-2 rounded-md border bg-background"
-                  />
-                </div>
-              </div>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Category</label>
-                  <input
-                    type="text"
-                    value={formData.category}
-                    onChange={(e) => updateField("category", e.target.value)}
-                    className="w-full mt-1 px-3 py-2 rounded-md border bg-background"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Subcategory</label>
-                  <input
-                    type="text"
-                    value={formData.subcategory}
-                    onChange={(e) => updateField("subcategory", e.target.value)}
-                    className="w-full mt-1 px-3 py-2 rounded-md border bg-background"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => updateField("description", e.target.value)}
-                  rows={4}
-                  className="w-full mt-1 px-3 py-2 rounded-md border bg-background"
+          <div className="reveal space-y-5">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Name">
+                <Input value={formData.name} onChange={(e) => updateField("name", e.target.value)} />
+              </Field>
+              <Field label="Brand">
+                <Input value={formData.brand} onChange={(e) => updateField("brand", e.target.value)} />
+              </Field>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Category">
+                <Input
+                  value={formData.category}
+                  onChange={(e) => updateField("category", e.target.value)}
                 />
-              </div>
-              {formData.primaryImageUrl && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground mb-2 block">Product Image</label>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={formData.primaryImageUrl}
-                    alt="Product"
-                    className="w-48 h-48 object-cover rounded-lg border"
-                  />
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              </Field>
+              <Field label="Subcategory">
+                <Input
+                  value={formData.subcategory}
+                  onChange={(e) => updateField("subcategory", e.target.value)}
+                />
+              </Field>
+            </div>
+            <Field label="Description">
+              <Textarea
+                value={formData.description}
+                onChange={(e) => updateField("description", e.target.value)}
+                rows={4}
+              />
+            </Field>
+            {formData.primaryImageUrl && (
+              <Field label="Photo">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={formData.primaryImageUrl}
+                  alt=""
+                  className="h-44 w-44 rounded-md border border-border object-cover"
+                />
+              </Field>
+            )}
+          </div>
         )}
 
         {activeTab === "compatibility" && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Car className="w-4 h-4" /> Vehicle Compatibility
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {formData.compatibility.map((compat, index) => (
-                <div key={index} className="flex gap-2 items-start p-3 rounded-lg border bg-card">
-                  <div className="flex-1 grid grid-cols-3 gap-2">
-                    <input
-                      type="text"
-                      placeholder="Make (e.g., Toyota)"
-                      value={compat.make}
-                      onChange={(e) => updateCompatibility(index, "make", e.target.value)}
-                      className="px-3 py-2 rounded-md border bg-background text-sm"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Model (e.g., Camry)"
-                      value={compat.model}
-                      onChange={(e) => updateCompatibility(index, "model", e.target.value)}
-                      className="px-3 py-2 rounded-md border bg-background text-sm"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Years (e.g., 2018-2024)"
-                      value={compat.years || ""}
-                      onChange={(e) => updateCompatibility(index, "years", e.target.value)}
-                      className="px-3 py-2 rounded-md border bg-background text-sm"
-                    />
-                  </div>
-                  <button
-                    onClick={() => removeCompatibility(index)}
-                    className="p-2 text-destructive hover:bg-destructive rounded-md transition"
-                  >
-                    <XCircle className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-              <Button onClick={addCompatibility} variant="outline" className="w-full">
-                + Add Vehicle
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="reveal space-y-3">
+            {formData.compatibility.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Nothing recorded. Add what this part fits.
+              </p>
+            )}
+            {formData.compatibility.map((compat, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <Input
+                  placeholder="Make"
+                  aria-label="Make"
+                  value={compat.make}
+                  onChange={(e) => updateCompatibility(index, "make", e.target.value)}
+                  className="flex-1"
+                />
+                <Input
+                  placeholder="Model"
+                  aria-label="Model"
+                  value={compat.model}
+                  onChange={(e) => updateCompatibility(index, "model", e.target.value)}
+                  className="flex-1"
+                />
+                <Input
+                  placeholder="Years"
+                  aria-label="Years"
+                  value={compat.years || ""}
+                  onChange={(e) => updateCompatibility(index, "years", e.target.value)}
+                  className="flex-1"
+                />
+                <button
+                  onClick={() => removeCompatibility(index)}
+                  aria-label="Remove this vehicle"
+                  className="shrink-0 px-1 text-muted-foreground transition-colors duration-300 hover:text-destructive"
+                >
+                  <XCircle className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+            <Action onClick={addCompatibility} className="w-full">
+              Add a vehicle
+            </Action>
+          </div>
         )}
 
         {activeTab === "specs" && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Tag className="w-4 h-4" /> Technical Specifications
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {Object.entries(formData.specifications).map(([key, value]) => (
-                <div key={key} className="grid grid-cols-2 gap-4">
-                  <div className="px-3 py-2 rounded-md border bg-muted text-sm font-medium capitalize">
-                    {key}
-                  </div>
-                  <input
-                    type="text"
-                    value={value}
-                    onChange={(e) => updateSpec(key, e.target.value)}
-                    className="px-3 py-2 rounded-md border bg-background text-sm"
-                  />
-                </div>
-              ))}
-              <div className="grid grid-cols-2 gap-4 pt-2 border-t">
-                <input
-                  type="text"
-                  placeholder="New spec name (e.g., Material)"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && e.currentTarget.value) {
-                      updateSpec(e.currentTarget.value, "");
-                      e.currentTarget.value = "";
-                    }
-                  }}
-                  className="px-3 py-2 rounded-md border bg-background text-sm"
-                />
-                <span className="text-sm text-muted-foreground py-2">
-                  Press Enter to add new spec
-                </span>
+          <div className="reveal space-y-3">
+            {Object.entries(formData.specifications).map(([key, value]) => (
+              <div key={key} className="grid grid-cols-[1fr_2fr] items-center gap-4">
+                <ColHead className="truncate">{key}</ColHead>
+                <Input value={value} onChange={(e) => updateSpec(key, e.target.value)} aria-label={key} />
               </div>
-            </CardContent>
-          </Card>
+            ))}
+            <div className="border-t border-border pt-4">
+              <Input
+                placeholder="New spec name, then Enter"
+                aria-label="Add a specification"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && e.currentTarget.value) {
+                    updateSpec(e.currentTarget.value, "");
+                    e.currentTarget.value = "";
+                  }
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {product.enrichmentData != null && (
+          <details className="reveal border-t border-border pt-6">
+            <summary className="mono cursor-pointer text-[11px] uppercase tracking-[0.18em] text-muted-foreground transition-colors duration-300 hover:text-foreground">
+              What the model actually returned
+            </summary>
+            <pre className="mono panel mt-4 max-h-64 overflow-auto p-4 text-[11px] leading-relaxed">
+              {JSON.stringify(product.enrichmentData, null, 2)}
+            </pre>
+          </details>
         )}
       </div>
-
-      {product.enrichmentData != null && (
-        <Card className="bg-muted/50">
-          <CardContent className="p-4">
-            <details>
-              <summary className="cursor-pointer text-sm font-medium text-muted-foreground">
-                View Raw AI Data
-              </summary>
-              <pre className="mt-3 text-xs overflow-auto max-h-64 p-3 rounded bg-black text-success font-mono">
-                {JSON.stringify(product.enrichmentData, null, 2)}
-              </pre>
-            </details>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+    </PageShell>
   );
 }

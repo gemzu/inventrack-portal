@@ -1,181 +1,169 @@
 "use client";
 
+/**
+ * Connect to a supplier.
+ *
+ * The join code is the whole screen, so it is the only thing set large. Look
+ * up first, then connect — the preview exists so you can check you are joining
+ * the right supplier before you are in their system, which is worth two clicks.
+ */
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { connectToStorefront, getStorefrontByCode, getMyStorefronts } from "@/lib/dataService";
 import { useToast } from "@/components/Toast";
-import { Store, Package, MapPin, ArrowRight, Check } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import PageShell from "@/components/page-shell";
+import Status from "@/components/Status";
+import { Panel, Rule, ColHead } from "@/components/console/surfaces";
+import { Action, Field, Input } from "@/components/console/controls";
+
+type Preview = {
+  id?: string;
+  name?: string;
+  description?: string;
+  inviteCode?: string;
+  filterType?: string;
+} | null;
 
 export default function ConnectStorefrontPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   const [code, setCode] = useState("");
-  const [preview, setPreview] = useState<{id?: string; name?: string; description?: string; inviteCode?: string; filterType?: string} | null>(null);
+  const [preview, setPreview] = useState<Preview>(null);
   const [loading, setLoading] = useState(false);
-  const [connectedStorefronts, setConnectedStorefronts] = useState<Array<{storefront?: {id?: string, name?: string}}>>([]);
+  const [connected, setConnected] = useState<Array<{ storefront?: { id?: string; name?: string } }>>([]);
 
-  // Load already connected storefronts
   useEffect(() => {
     if (!user) return;
     getMyStorefronts(user.id)
-      .then((sf) => setConnectedStorefronts(sf as Record<string, unknown>[]))
+      .then((sf) => setConnected(sf as Array<{ storefront?: { id?: string; name?: string } }>))
       .catch(() => {});
   }, [user]);
 
+  const lookUp = async () => {
+    try {
+      setLoading(true);
+      const sf = await getStorefrontByCode(code.trim());
+      setPreview(sf as Preview);
+      if (!sf) toast("No supplier uses that code", "error");
+    } catch (e) {
+      toast((e as Error).message || "Could not look that up", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const connect = async () => {
+    if (!user || !preview?.id) return;
+    try {
+      setLoading(true);
+      await connectToStorefront(user.id, String(preview.id));
+      toast("Connected. Their catalog is open now.", "success");
+      router.push("/buyer/catalog");
+    } catch (e) {
+      toast((e as Error).message || "Could not connect", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero */}
-      <div className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
-        <div className="relative max-w-7xl mx-auto px-4 py-12">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center">
-              <Store className="w-5 h-5 text-primary" />
-            </div>
-            <h1 className="text-4xl font-bold tracking-tight">
-              <span className="text-brand-gradient">
-                Storefronts
-              </span>
-            </h1>
-          </div>
-          <p className="text-muted-foreground text-lg">
-            Connect to storefronts to browse their inventory
-          </p>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Connected Storefronts as Tabs */}
-        {connectedStorefronts.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold mb-4">Your Connected Storefronts</h2>
-            <div className="flex flex-wrap gap-3">
-              {(connectedStorefronts).map((sf) => (
-                <Link
-                  key={(sf as {storefront?: {id?: string}}).storefront?.id}
-                  href="/buyer/catalog"
-                  className="flex items-center gap-2 px-4 py-3 rounded-md border bg-card hover:border-primary/50 hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity]"
-                >
-                  <Check className="w-4 h-4 text-success" />
-                  <span className="font-medium">{(sf as {storefront?: {name?: string}}).storefront?.name}</span>
-                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Connect New */}
-        <div className="max-w-xl">
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Enter invite code</label>
-                <Input 
-                  value={code} 
-                  onChange={(e) => setCode(e.target.value.toUpperCase())} 
-                  placeholder="STORE-XXXX" 
-                  className="text-lg tracking-wider"
+    <div className="mx-auto max-w-3xl px-5 py-8 lg:px-8 lg:py-10">
+      <PageShell
+        title="Suppliers"
+        eyebrow="Buying"
+        subtitle="A supplier gives you a join code. Enter it and their catalog opens."
+      >
+        <div className="space-y-12">
+          {/* ── Connect ──────────────────────────────────────── */}
+          <section className="space-y-5">
+            <Rule label="Join a supplier" />
+            <div className="reveal space-y-5">
+              <Field label="Join code">
+                <Input
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => e.key === "Enter" && lookUp()}
+                  placeholder="STORE-XXXX"
+                  className="mono text-base tracking-[0.14em]"
                 />
-              </div>
-              
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={async () => {
-                    try {
-                      setLoading(true);
-                      const sf = await getStorefrontByCode(code.trim());
-                      setPreview(sf as {id?: string; name?: string; description?: string; inviteCode?: string; filterType?: string} | null);
-                      if (!sf) toast("No storefront found for that code", "error");
-                    } catch (e) {
-                      toast((e as Error).message || "Failed to preview", "error");
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}
-                  disabled={!code.trim() || loading}
-                >
-                  Look Up
-                </Button>
-                <Button
-                  onClick={async () => {
-                    if (!user || !preview?.id) return;
-                    try {
-                      setLoading(true);
-                      await connectToStorefront(user.id, String(preview.id));
-                      toast("Connected! Browse their catalog now", "success");
-                      router.push("/buyer/catalog");
-                    } catch (e) {
-                      toast((e as Error).message || "Failed to connect", "error");
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}
-                  disabled={!preview || loading}
-                >
-                  Connect
-                </Button>
+              </Field>
+
+              <div className="flex flex-wrap gap-3">
+                <Action onClick={lookUp} disabled={!code.trim() || loading}>
+                  Look it up
+                </Action>
+                <Action solid onClick={connect} disabled={!preview || loading}>
+                  Connect <ArrowRight className="h-3.5 w-3.5" />
+                </Action>
               </div>
 
               {preview ? (
-                <div className="rounded-md border p-5 bg-card/50">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 rounded-md bg-primary/10 flex items-center justify-center">
-                      <Store className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-lg">{preview.name || "Storefront"}</div>
-                      <div className="text-sm text-muted-foreground">Code: {preview.inviteCode || code}</div>
-                    </div>
-                  </div>
+                <Panel live className="p-6">
+                  <p className="font-display text-lg font-bold tracking-[-0.02em]">
+                    {preview.name || "Storefront"}
+                  </p>
+                  <p className="mono mt-1 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                    {preview.inviteCode || code}
+                    {preview.filterType ? ` · ${preview.filterType} items` : ""}
+                  </p>
                   {preview.description && (
-                    <p className="text-sm text-muted-foreground mb-3">{preview.description}</p>
+                    <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                      {preview.description}
+                    </p>
                   )}
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Package className="w-4 h-4" />
-                      {String(preview.filterType || "all")} items
-                    </span>
-                  </div>
-                </div>
+                </Panel>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Store className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p>Enter a storefront invite code to connect</p>
-                </div>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  Look a code up before connecting, so you can check it is the supplier you meant.
+                </p>
               )}
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </section>
 
-        {/* Messages section */}
-        <div className="mt-10">
-          <h2 className="text-lg font-semibold mb-4">Messages</h2>
-          <Link href="/buyer/messages">
-            <Card className="hover:border-primary/50 hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] cursor-pointer">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center">
-                    <Store className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <div className="font-medium">Chat with storefront owners</div>
-                    <div className="text-sm text-muted-foreground">Message connected storefront owners</div>
-                  </div>
-                </div>
-                <ArrowRight className="w-5 h-5 text-muted-foreground" />
-              </CardContent>
-            </Card>
-          </Link>
+          {/* ── Already joined ───────────────────────────────── */}
+          {connected.length > 0 && (
+            <section className="space-y-5">
+              <Rule label="Already joined" />
+              <Panel className="reveal">
+                {connected.map((sf, i) => (
+                  <Link
+                    key={sf.storefront?.id || i}
+                    href="/buyer/catalog"
+                    className="row-line group flex items-center justify-between gap-4 px-5 py-3.5"
+                  >
+                    <span className="truncate text-sm font-medium">
+                      {sf.storefront?.name || "Storefront"}
+                    </span>
+                    <div className="flex shrink-0 items-center gap-4">
+                      <Status status="active" label="Connected" />
+                      <ArrowRight className="h-3.5 w-3.5 -translate-x-1 text-muted-foreground opacity-0 transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.16,1,0.30,1)] group-hover:translate-x-0 group-hover:opacity-100" />
+                    </div>
+                  </Link>
+                ))}
+              </Panel>
+            </section>
+          )}
+
+          <section className="space-y-5">
+            <Rule label="Talk to them" />
+            <Link
+              href="/buyer/messages"
+              className="panel panel-hover reveal flex items-center justify-between gap-4 p-5"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-medium">Message a supplier</p>
+                <ColHead className="mt-1 block">About an order, or before you place one</ColHead>
+              </div>
+              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            </Link>
+          </section>
         </div>
-      </div>
+      </PageShell>
     </div>
   );
 }

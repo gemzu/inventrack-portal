@@ -6,21 +6,12 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { getOrders } from "@/lib/dataService";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/Toast";
-import {
-  Package,
-  Clock,
-  CheckCircle2,
-  Truck,
-  XCircle,
-  ArrowLeft,
-  Hash,
-  Calendar,
-  MessageSquare,
-} from "lucide-react";
+import PageShell from "@/components/page-shell";
+import EmptyState from "@/components/EmptyState";
+import Status from "@/components/Status";
+import { Panel, Rule, ColHead, CrateSkeleton } from "@/components/console/surfaces";
+import { Package, Clock, CheckCircle2, Truck, ArrowLeft } from "lucide-react";
 
 interface OrderItem {
   modelId?: string;
@@ -61,15 +52,6 @@ function statusIndex(status?: string) {
   return i === -1 ? 0 : i;
 }
 
-function statusColor(status?: string) {
-  if (status === "cancelled") return "text-destructive bg-destructive/10 border-destructive/30";
-  if (status === "delivered") return "text-success bg-success/10 border-success/30";
-  if (status === "shipped") return "text-primary bg-primary/10 border-primary/30";
-  if (status === "processing" || status === "confirmed")
-    return "text-warning bg-warning/10 border-warning/30";
-  return "text-muted-foreground bg-muted border-border";
-}
-
 export default function BuyerOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { user, orgId } = useAuth();
@@ -92,211 +74,183 @@ export default function BuyerOrderDetailPage() {
   const activeStep = statusIndex(order?.status);
   const cancelled = order?.status === "cancelled";
   const items = useMemo(() => order?.items ?? [], [order]);
+  const units = order?.totalQty ?? items.reduce((a, i) => a + (i.quantity ?? 0), 0);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero */}
-      <div className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
-        <div className="relative max-w-5xl mx-auto px-4 py-10">
+    <div className="mx-auto max-w-4xl px-5 py-8 lg:px-8 lg:py-10">
+      <PageShell
+        title={
+          loading
+            ? "Order"
+            : !order
+              ? "Not found"
+              : order.orderName || String(order.id).slice(0, 8).toUpperCase()
+        }
+        eyebrow="Order"
+        subtitle={
+          order?.createdAt ? new Date(order.createdAt).toLocaleString() : undefined
+        }
+        breadcrumb={
           <Link
             href="/buyer/orders"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4"
+            className="inline-flex items-center gap-1.5 transition-colors duration-300 hover:text-foreground"
           >
-            <ArrowLeft className="w-4 h-4" /> Back to orders
+            <ArrowLeft className="h-3 w-3" /> All orders
           </Link>
-
-          {loading ? (
-            <Skeleton className="h-10 w-64" />
-          ) : !order ? (
-            <h1 className="text-3xl font-bold">Order not found</h1>
-          ) : (
-            <>
-              <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div>
-                  <h1 className="text-3xl font-bold tracking-tight">
-                    {order.orderName || `Order #${order.id.slice(0, 8)}`}
-                  </h1>
-                  <p className="text-muted-foreground mt-1 flex items-center gap-4 flex-wrap">
-                    <span className="inline-flex items-center gap-1.5">
-                      <Calendar className="w-4 h-4" />
-                      {order.createdAt
-                        ? new Date(order.createdAt).toLocaleString()
-                        : "—"}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 font-mono text-xs">
-                      <Hash className="w-3.5 h-3.5" />
-                      {order.id.slice(0, 8)}
-                    </span>
-                  </p>
-                </div>
-                <Badge
-                  variant="outline"
-                  className={`text-sm px-3 py-1 ${statusColor(order.status)}`}
-                >
-                  {(order.status || "pending").replace(/_/g, " ")}
-                </Badge>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+        }
+        actions={
+          order ? <Status status={order.status || "pending_approval"} emphasis /> : undefined
+        }
+      >
         {loading ? (
-          <>
-            <Skeleton className="h-32 w-full" />
-            <Skeleton className="h-64 w-full" />
-          </>
-        ) : !order ? (
-          <div className="text-center py-20 text-muted-foreground">
-            This order doesn&apos;t exist or you don&apos;t have access to it.
+          <div className="space-y-6">
+            <CrateSkeleton className="h-24 w-full" />
+            <CrateSkeleton className="h-64 w-full" delay={0.1} />
           </div>
+        ) : !order ? (
+          <EmptyState
+            icon={Package}
+            title="No such order"
+            description="It may have been removed, or it belongs to a different account."
+          />
         ) : (
-          <>
-            {/* Status timeline */}
-            <div className="bg-card border border-border rounded-md p-6">
-              <h2 className="text-lg font-semibold mb-5">Order status</h2>
+          <div className="space-y-12">
+            {/* ── Where it is ─────────────────────────────────── */}
+            <section className="space-y-5">
+              <Rule label="Progress" />
               {cancelled ? (
-                <div className="flex items-center gap-3 text-destructive">
-                  <XCircle className="w-6 h-6" />
-                  <div>
-                    <div className="font-semibold">Cancelled</div>
-                    <div className="text-sm text-muted-foreground">
-                      This order was cancelled.
-                    </div>
-                  </div>
-                </div>
+                <p className="reveal text-sm leading-relaxed text-destructive">
+                  This order was cancelled. Nothing shipped.
+                </p>
               ) : (
-                <div className="flex items-center gap-0 overflow-x-auto pb-1">
-                  {STATUS_STEPS.map((step, i) => {
-                    const Icon = step.icon;
-                    const done = i <= activeStep;
-                    const current = i === activeStep;
-                    return (
-                      <div key={step.key} className="flex items-center flex-1 min-w-[120px]">
-                        <div className="flex flex-col items-center gap-2 flex-shrink-0">
-                          <div
-                            className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors ${
-                              done
-                                ? "bg-primary border-primary text-primary-foreground"
-                                : "bg-background border-border text-muted-foreground"
-                            } ${current ? "ring-4 ring-primary/20" : ""}`}
-                          >
-                            <Icon className="w-4 h-4" />
-                          </div>
+                /* A rail with ticks on it, not a row of filled circles with a
+                   glow ring. The line is the journey; the ticks are where it
+                   has got to. */
+                <div className="reveal">
+                  <div className="relative flex items-start justify-between gap-2">
+                    <span className="absolute left-0 right-0 top-[7px] h-px bg-border" />
+                    <span
+                      className="absolute left-0 top-[7px] h-px bg-[linear-gradient(to_right,var(--brand-1),var(--brand-3))] transition-[width] duration-700 ease-[cubic-bezier(0.16,1,0.30,1)]"
+                      style={{
+                        width: `${(activeStep / Math.max(STATUS_STEPS.length - 1, 1)) * 100}%`,
+                      }}
+                    />
+                    {STATUS_STEPS.map((step, i) => {
+                      const done = i <= activeStep;
+                      return (
+                        <div
+                          key={step.key}
+                          className="relative flex min-w-0 flex-1 flex-col items-center gap-2.5 text-center"
+                        >
                           <span
-                            className={`text-xs text-center whitespace-nowrap ${
-                              done ? "text-foreground font-medium" : "text-muted-foreground"
+                            className={`h-3.5 w-3.5 shrink-0 rounded-sm border transition-colors duration-500 ${
+                              done
+                                ? "border-[var(--brand-2)] bg-[var(--brand-2)]"
+                                : "border-border bg-background"
+                            }`}
+                          />
+                          <span
+                            className={`mono text-[10px] uppercase tracking-[0.14em] ${
+                              done ? "text-foreground" : "text-muted-foreground"
                             }`}
                           >
                             {step.label}
                           </span>
                         </div>
-                        {i < STATUS_STEPS.length - 1 && (
-                          <div
-                            className={`flex-1 h-0.5 mx-1 ${
-                              i < activeStep ? "bg-primary" : "bg-border"
-                            }`}
-                          />
-                        )}
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </section>
+
+            {/* ── What is on it ───────────────────────────────── */}
+            <section className="space-y-5">
+              <Rule
+                label="Lines"
+                action={
+                  <span className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                    {items.length} · {units} units
+                  </span>
+                }
+              />
+              {items.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No lines recorded on this order.</p>
+              ) : (
+                <Panel className="reveal">
+                  {items.map((item, i) => {
+                    const id = itemIdentity(item);
+                    return (
+                      <div
+                        key={i}
+                        className="row-line flex items-center justify-between gap-4 px-5 py-3.5"
+                      >
+                        <div className="min-w-0">
+                          <p className={`truncate text-sm font-medium ${id.unnamed ? "mono" : ""}`}>
+                            {id.title}
+                          </p>
+                          {id.subtitle && (
+                            <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                              {id.subtitle}
+                            </p>
+                          )}
+                        </div>
+                        <span className="mono shrink-0 text-sm font-semibold tabular-nums">
+                          {item.quantity ?? 1}
+                        </span>
                       </div>
                     );
                   })}
-                </div>
+                </Panel>
               )}
-            </div>
+            </section>
 
-            {/* Items */}
-            <div className="bg-card border border-border rounded-md overflow-hidden">
-              <div className="p-6 border-b border-border flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Items</h2>
-                <div className="text-sm text-muted-foreground">
-                  {items.length} line{items.length !== 1 ? "s" : ""} ·{" "}
-                  <span className="font-semibold text-foreground">
-                    {order.totalQty ?? items.reduce((a, i) => a + (i.quantity ?? 0), 0)}
-                  </span>{" "}
-                  unit{(order.totalQty ?? 0) !== 1 ? "s" : ""}
-                </div>
-              </div>
-              {items.length === 0 ? (
-                <div className="p-8 text-center text-sm text-muted-foreground">
-                  No items on this order.
-                </div>
-              ) : (
-                <div className="divide-y divide-border">
-                  {items.map((item, i) => (
-                    <div
-                      key={i}
-                      className="p-4 flex items-center justify-between gap-4 hover:bg-muted/30"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                          <Package className="w-5 h-5 text-muted-foreground" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-medium truncate">
-                            {itemIdentity(item).title}
-                          </div>
-                          {itemIdentity(item).subtitle ? (
-                            <div className="text-xs text-muted-foreground font-mono">
-                              {itemIdentity(item).subtitle}
-                            </div>
-                          ) : null}
-                        </div>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <div className="text-lg font-semibold">×{item.quantity ?? 1}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Shipping / tracking */}
+            {/* ── Shipping ────────────────────────────────────── */}
             {(order.trackingNumber || order.carrier || order.packingNotes) && (
-              <div className="bg-card border border-border rounded-md p-6 space-y-3">
-                <h2 className="text-lg font-semibold">Shipping</h2>
-                {order.carrier && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Carrier</span>
-                    <span>{order.carrier}</span>
-                  </div>
-                )}
-                {order.trackingNumber && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tracking</span>
-                    <span className="font-mono">{order.trackingNumber}</span>
-                  </div>
-                )}
-                {order.packingNotes && (
-                  <div className="text-sm">
-                    <div className="text-muted-foreground mb-1">Notes</div>
-                    <div className="bg-muted/40 p-3 rounded-md">{order.packingNotes}</div>
-                  </div>
-                )}
-              </div>
+              <section className="space-y-5">
+                <Rule label="Shipping" />
+                <div className="reveal">
+                  {order.carrier && (
+                    <div className="row-line flex items-center justify-between gap-6 py-3">
+                      <ColHead>Carrier</ColHead>
+                      <span className="truncate text-sm">{order.carrier}</span>
+                    </div>
+                  )}
+                  {order.trackingNumber && (
+                    <div className="row-line flex items-center justify-between gap-6 py-3">
+                      <ColHead>Tracking</ColHead>
+                      <span className="mono truncate text-sm">{order.trackingNumber}</span>
+                    </div>
+                  )}
+                  {order.packingNotes && (
+                    <div className="py-3">
+                      <ColHead className="mb-2 block">Notes</ColHead>
+                      <p className="text-sm leading-relaxed text-muted-foreground">
+                        {order.packingNotes}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </section>
             )}
 
-            {/* Actions */}
-            <div className="flex gap-3">
-              <Link href="/buyer/messages" className="flex-1">
-                <Button variant="outline" className="w-full">
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  Message admin
-                </Button>
+            <div className="flex flex-wrap gap-3 border-t border-border pt-6">
+              <Link
+                href="/buyer/messages"
+                className="mono inline-flex items-center gap-2 rounded-md border border-border px-4 py-2.5 text-[11px] uppercase tracking-[0.18em] transition-[border-color,color,transform] duration-300 ease-[cubic-bezier(0.16,1,0.30,1)] hover:-translate-y-0.5 hover:border-[var(--brand-2)] hover:text-[var(--brand-2)]"
+              >
+                Ask about this order
               </Link>
-              <Link href="/buyer/orders" className="flex-1">
-                <Button variant="ghost" className="w-full">
-                  All orders
-                </Button>
+              <Link
+                href="/buyer/orders"
+                className="mono inline-flex items-center px-2 py-2.5 text-[11px] uppercase tracking-[0.18em] text-muted-foreground transition-colors duration-300 hover:text-foreground"
+              >
+                All orders
               </Link>
             </div>
-          </>
+          </div>
         )}
-      </div>
+      </PageShell>
     </div>
   );
 }

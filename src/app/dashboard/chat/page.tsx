@@ -5,8 +5,10 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import AdminGuard from "@/components/AdminGuard";
 import PageShell from "@/components/page-shell";
-import { Send, MessageCircle, Loader2 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import Mark from "@/components/Mark";
+import { Panel, ColHead, CrateSkeleton } from "@/components/console/surfaces";
+import { Action, Input } from "@/components/console/controls";
+import { Send, Loader2 } from "lucide-react";
 
 interface Message {
   id: string;
@@ -180,86 +182,75 @@ export default function ChatPage() {
 
   return (
     <AdminGuard>
-      <PageShell title="Messages">
-        <Card><CardContent className="overflow-hidden flex p-0 h-[calc(100vh-220px)] min-h-[400px]"
-        >
-          {/* Left panel - Conversation list */}
-          <div
-            className="w-1/3 flex flex-col border-r border-border"
-          >
-            <div
-              className="p-4 font-semibold text-sm border-b border-border"
-            >
+      <PageShell
+        title="Messages"
+        eyebrow="Console"
+        subtitle="Whoever is asking, and what they asked."
+      >
+        <div className="grid h-[calc(100vh-22rem)] min-h-[26rem] gap-4 md:grid-cols-[17rem_1fr]">
+          {/* ── Who ────────────────────────────────────────────── */}
+          <Panel className="flex min-h-0 flex-col">
+            <ColHead className="shrink-0 border-b border-border px-4 py-3">
               Conversations
-            </div>
-            <div className="flex-1 overflow-y-auto">
+            </ColHead>
+            <div className="min-h-0 flex-1 overflow-y-auto">
               {loading ? (
-                <div className="flex items-center justify-center h-32">
-                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                <div className="space-y-2 p-3">
+                  {[0, 1, 2].map((i) => (
+                    <CrateSkeleton key={i} className="h-12 w-full border-0" delay={i * 0.08} />
+                  ))}
                 </div>
               ) : conversations.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full px-4 text-center">
-                  <MessageCircle className="w-8 h-8 mb-2 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    No conversations yet
-                  </p>
-                </div>
+                <p className="p-4 text-sm text-muted-foreground">Nobody has written yet.</p>
               ) : (
-                conversations.map((conv) => (
-                  <button
-                    key={conv.userId}
-                    onClick={() => {
-                      setActiveChat(conv.userId);
-                      setActiveChatName(conv.userName);
-                    }}
-                    className={`w-full text-left p-4 transition hover:bg-black/5 dark:hover:bg-white/5 border-b border-border ${
-                      activeChat === conv.userId ? "bg-primary/5" : ""
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-semibold text-sm truncate">
-                        {conv.userName}
-                      </span>
-                      <span
-                        className="text-[10px] shrink-0 ml-2 text-muted-foreground"
-                      >
-                        {formatTime(conv.lastTime)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <p
-                        className="text-xs truncate text-muted-foreground"
-                      >
-                        {conv.lastMessage}
-                      </p>
-                      {conv.unreadCount > 0 && (
-                        <span className="ml-2 shrink-0 bg-primary text-primary-foreground text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                          {conv.unreadCount}
-                        </span>
+                conversations.map((conv) => {
+                  const active = activeChat === conv.userId;
+                  return (
+                    <button
+                      key={conv.userId}
+                      onClick={() => {
+                        setActiveChat(conv.userId);
+                        setActiveChatName(conv.userName);
+                      }}
+                      className={`row-line relative block w-full px-4 py-3 text-left ${
+                        active ? "bg-[color-mix(in_oklab,var(--brand-2)_8%,transparent)]" : ""
+                      }`}
+                    >
+                      {active && (
+                        <span className="absolute inset-y-2 left-0 w-0.5 rounded-sm bg-[linear-gradient(to_bottom,var(--brand-1),var(--brand-3))]" />
                       )}
-                    </div>
-                  </button>
-                ))
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="truncate text-sm font-medium">{conv.userName}</span>
+                        <span className="mono shrink-0 text-[10px] text-muted-foreground">
+                          {formatTime(conv.lastTime)}
+                        </span>
+                      </div>
+                      <div className="mt-0.5 flex items-baseline justify-between gap-2">
+                        <p className="truncate text-[13px] text-muted-foreground">
+                          {conv.lastMessage}
+                        </p>
+                        {conv.unreadCount > 0 && (
+                          <span className="mono shrink-0 text-[11px] tabular-nums text-[var(--brand-2)]">
+                            {conv.unreadCount}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })
               )}
             </div>
-          </div>
+          </Panel>
 
-          {/* Right panel - Active chat */}
-          <div className="flex-1 flex flex-col">
+          {/* ── The thread ─────────────────────────────────────── */}
+          <Panel className="flex min-h-0 flex-col">
             {activeChat ? (
               <>
-                {/* Chat header */}
-                <div
-                  className="p-4 font-semibold text-sm flex items-center gap-2 border-b border-border"
-                >
-                  <div className="w-8 h-8 rounded-full gradient-bg flex items-center justify-center text-white text-xs font-bold">
-                    {activeChatName.charAt(0).toUpperCase()}
-                  </div>
-                  {activeChatName}
+                <div className="shrink-0 border-b border-border px-5 py-3">
+                  <p className="truncate text-sm font-medium">{activeChatName}</p>
                 </div>
 
-                {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto p-5">
                   {activeChatMessages.map((msg) => {
                     const isMine = msg.sender_id === userId;
                     return (
@@ -268,16 +259,18 @@ export default function ChatPage() {
                         className={`flex ${isMine ? "justify-end" : "justify-start"}`}
                       >
                         <div
-                          className={`max-w-[70%] rounded-md px-4 py-2.5 text-sm ${
+                          className={`max-w-[72%] rounded-md px-3.5 py-2.5 text-sm ${
                             isMine
-                              ? "bg-primary text-primary-foreground rounded-br-md"
-                              : "rounded-bl-md bg-muted border border-border text-foreground"
+                              ? "bg-primary text-primary-foreground"
+                              : "border border-border"
                           }`}
                         >
-                          <p>{msg.text}</p>
+                          <p className="whitespace-pre-wrap break-words leading-relaxed">
+                            {msg.text}
+                          </p>
                           <p
-                            className={`text-[10px] mt-1 ${
-                              isMine ? "text-white/60" : "text-muted-foreground"
+                            className={`mono mt-1.5 text-[10px] ${
+                              isMine ? "text-primary-foreground/70" : "text-muted-foreground"
                             }`}
                           >
                             {formatTime(msg.created_at)}
@@ -289,12 +282,8 @@ export default function ChatPage() {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Input bar */}
-                <div
-                  className="p-4 flex items-center gap-3 border-t border-border"
-                >
-                  <input
-                    type="text"
+                <div className="flex shrink-0 gap-2 border-t border-border p-3">
+                  <Input
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyDown={(e) => {
@@ -303,32 +292,40 @@ export default function ChatPage() {
                         handleSend();
                       }
                     }}
-                    placeholder="Type a message..."
-                    className="flex-1 px-4 py-2.5 rounded-md text-sm outline-none bg-muted border border-border text-foreground"
+                    placeholder="Type a message"
+                    aria-label="Message"
+                    className="flex-1"
                   />
-                  <button
+                  <Action
+                    solid
                     onClick={handleSend}
                     disabled={!newMessage.trim() || sending}
-                    className="w-10 h-10 rounded-md bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary-dark transition disabled:opacity-40"
+                    className="px-3.5"
                   >
                     {sending ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
-                      <Send className="w-4 h-4" />
+                      <Send className="h-3.5 w-3.5" />
                     )}
-                  </button>
+                  </Action>
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center">
-                <MessageCircle className="w-12 h-12 mb-3 text-muted-foreground" />
-                <p className="text-sm font-medium text-muted-foreground">
-                  Select a conversation to start messaging
+              <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
+                <Mark
+                  className="h-8 w-8 text-[color-mix(in_oklab,var(--brand-2)_45%,transparent)]"
+                  strokeWidth={14}
+                />
+                <p className="mono mt-5 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                  Nothing open
+                </p>
+                <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
+                  Pick a conversation on the left.
                 </p>
               </div>
             )}
-          </div>
-        </CardContent></Card>
+          </Panel>
+        </div>
       </PageShell>
     </AdminGuard>
   );
