@@ -96,7 +96,6 @@ export default function SupportPage() {
   return (
     <PageShell
       title="Support"
-      eyebrow="Console"
       subtitle="Tickets you have raised, and anything waiting on a reply."
       actions={
         <Action solid onClick={() => setCreateOpen(true)}>
@@ -143,7 +142,7 @@ export default function SupportPage() {
                 <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
                   {t.message}
                 </p>
-                <p className="mono mt-2 truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                <p className="mono mt-2 truncate text-[12px] text-muted-foreground">
                   {t.priority && t.priority !== "normal" ? `${t.priority} · ` : ""}
                   {t.userEmail}
                   {t.createdAt ? ` · ${formatDate(t.createdAt)}` : ""}

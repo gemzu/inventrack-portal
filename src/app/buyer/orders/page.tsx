@@ -137,7 +137,7 @@ export default function BuyerOrdersPage() {
                         {preview || "No lines recorded"}
                         {lines.length > 3 ? ` +${lines.length - 3} more` : ""}
                       </p>
-                      <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                      <p className="mono truncate text-[12px] text-muted-foreground">
                         {created.toLocaleDateString(undefined, {
                           month: "short",
                           day: "numeric",

@@ -130,7 +130,6 @@ export default function TeamPage() {
     <AdminGuard>
       <PageShell
         title="Team"
-        eyebrow="Console"
         subtitle="Who is on the floor right now, and what today's shifts add up to."
         actions={
           <Action onClick={handleRefresh} disabled={refreshing}>
@@ -155,7 +154,7 @@ export default function TeamPage() {
             <Rule
               label="Active now"
               action={
-                <span className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                <span className="text-[12px] text-muted-foreground">
                   {activeUsers.length}
                 </span>
               }
@@ -176,14 +175,14 @@ export default function TeamPage() {
                     <span className="pulse-dot h-1.5 w-1.5 shrink-0 rounded-full bg-success" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{u.name || u.email}</p>
-                      <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                      <p className="mono truncate text-[12px] text-muted-foreground">
                         {u.role}
                         {u.currentScreen ? ` · ${u.currentScreen}` : ""}
                         {` · ${relativeTime(u.lastActiveAt)}`}
                       </p>
                     </div>
                     {u.isClockedIn && (
-                      <span className="mono shrink-0 text-[11px] uppercase tracking-[0.16em] text-success">
+                      <span className="shrink-0 text-[12px] text-success">
                         Clocked in
                       </span>
                     )}
@@ -198,7 +197,7 @@ export default function TeamPage() {
             <Rule
               label="Today's shifts"
               action={
-                <span className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                <span className="text-[12px] text-muted-foreground">
                   {todayShifts.length}
                 </span>
               }
@@ -223,7 +222,7 @@ export default function TeamPage() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{shift.userName || "Unknown"}</p>
                       {shift.userEmail && (
-                        <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                        <p className="mono truncate text-[12px] text-muted-foreground">
                           {shift.userEmail}
                         </p>
                       )}

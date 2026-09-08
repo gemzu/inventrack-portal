@@ -71,7 +71,7 @@ export default function ActivityPage() {
   if (loading) {
     return (
       <AdminGuard>
-        <PageShell title="Activity" subtitle="Reading the log." eyebrow="Console">
+        <PageShell title="Activity" subtitle="Reading the log.">
           <ListSkeleton />
         </PageShell>
       </AdminGuard>
@@ -82,7 +82,7 @@ export default function ActivityPage() {
     <AdminGuard>
       <PageShell
         title="Activity"
-        eyebrow="Console"
+       
         subtitle="Every scan the floor has recorded, newest first."
       >
         <div className="space-y-8">
@@ -131,15 +131,15 @@ export default function ActivityPage() {
             ) : (
               filtered.map((log) => (
                 <div key={log.id} className="row-line flex items-center gap-4 px-5 py-3">
-                  <span className="mono min-w-0 flex-1 truncate text-sm">{log.barcode}</span>
-                  <span className="mono w-28 shrink-0 truncate text-[11px] uppercase tracking-[0.16em] text-[var(--brand-2)]">
+                  <span className="min-w-0 flex-1 truncate text-sm">{log.barcode}</span>
+                  <span className="w-28 shrink-0 truncate text-[12px] text-[var(--brand-2)]">
                     {log.action}
                   </span>
                   <span className="hidden w-40 shrink-0 truncate text-sm text-muted-foreground md:block">
                     {log.scannedBy || "unknown"}
                     {log.result ? ` · ${log.result}` : ""}
                   </span>
-                  <span className="mono hidden w-40 shrink-0 text-right text-[11px] text-muted-foreground sm:block">
+                  <span className="hidden w-40 shrink-0 text-right text-[12px] text-muted-foreground sm:block">
                     {formatDateTime(log.createdAt as string)}
                   </span>
                 </div>

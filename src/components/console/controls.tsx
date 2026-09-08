@@ -9,8 +9,8 @@
  * designed.
  *
  * These are the site's: hairline, square-ish, and the focus state is the brand
- * edge lighting rather than a fat translucent ring. Labels are mono caps, the
- * same caption treatment as everything else in the console.
+ * edge lighting rather than a fat translucent ring. Labels are sentence case in
+ * the body face — they are read, not announced.
  */
 
 import { useEffect, useRef, type ReactNode } from "react";
@@ -27,7 +27,7 @@ export function Label({ children, htmlFor }: { children: ReactNode; htmlFor?: st
   return (
     <label
       htmlFor={htmlFor}
-      className="mono mb-1.5 block text-[11px] uppercase tracking-[0.18em] text-muted-foreground"
+      className="mb-1.5 block text-[12px] text-muted-foreground"
     >
       {children}
     </label>
@@ -160,7 +160,7 @@ export function Chip({
       type="button"
       {...props}
       className={cn(
-        "mono rounded-md border px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] transition-[border-color,color,background-color] duration-300",
+        "rounded-md border px-3 py-1.5 text-[12px] transition-[border-color,color,background-color] duration-300",
         on
           ? "border-[var(--brand-2)] bg-[color-mix(in_oklab,var(--brand-2)_12%,transparent)] text-foreground"
           : "border-border text-muted-foreground hover:border-[var(--brand-2)] hover:text-foreground",
@@ -253,7 +253,7 @@ export function Drawer({
           <div className="min-w-0">
             <h3 className="font-display truncate text-[15px] font-bold tracking-[-0.015em]">{title}</h3>
             {subtitle ? (
-              <p className="mono truncate text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+              <p className="truncate text-[12px] text-muted-foreground">
                 {subtitle}
               </p>
             ) : null}
@@ -332,7 +332,7 @@ export function Modal({
           <div className="min-w-0">
             <h3 className="font-display truncate text-[15px] font-bold tracking-[-0.015em]">{title}</h3>
             {subtitle ? (
-              <p className="mono truncate text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+              <p className="truncate text-[12px] text-muted-foreground">
                 {subtitle}
               </p>
             ) : null}

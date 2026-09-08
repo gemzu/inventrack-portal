@@ -87,7 +87,6 @@ export default function CatalogPage() {
     <AdminGuard>
       <PageShell
         title="Catalog"
-        eyebrow="Console"
         subtitle="Every product this organisation has ever entered, keyed by UPC — including the ones no longer on the floor. Search a code to find out what it was."
         actions={
           <Action onClick={exportCsv}>
@@ -140,7 +139,7 @@ export default function CatalogPage() {
                         <p className="truncate text-sm font-medium">
                           {str(r.display_name) || str(r.model_id) || str(r.part_number) || "Unnamed product"}
                         </p>
-                        <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                        <p className="mono truncate text-[12px] text-muted-foreground">
                           {str(r.brand) || "Unknown brand"}
                           {r.category ? ` · ${str(r.category)}` : ""}
                           {r.part_number ? ` · #${str(r.part_number)}` : ""}

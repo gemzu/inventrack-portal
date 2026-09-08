@@ -92,14 +92,14 @@ export default function BuyerFavoritesPage() {
                       <p className={`truncate text-sm font-medium ${id.unnamed ? "mono" : ""}`}>
                         {id.title}
                       </p>
-                      <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                      <p className="mono truncate text-[12px] text-muted-foreground">
                         {[id.subtitle, it.brand].filter(Boolean).join(" · ") || "No detail"}
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-4">
                       <button
                         onClick={() => onAddToCart(it)}
-                        className="mono text-[11px] uppercase tracking-[0.16em] text-[var(--brand-2)] transition-colors duration-300 hover:text-foreground"
+                        className="text-[12px] text-[var(--brand-2)] transition-colors duration-300 hover:text-foreground"
                       >
                         Add to cart
                       </button>

@@ -217,7 +217,7 @@ export default function UsersPage() {
                 {/* Identity */}
                 <div className="min-w-[200px] flex-1">
                   <p className="truncate text-sm font-medium">{user.name || "Unnamed"}</p>
-                  <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                  <p className="mono truncate text-[12px] text-muted-foreground">
                     {roleBadgeLabel(user.role, user.permissions)} · {user.email}
                   </p>
                 </div>

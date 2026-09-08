@@ -185,10 +185,10 @@ export default function BuyerMessagesPage() {
     <div className="mx-auto flex h-[calc(100vh-7rem)] max-w-6xl flex-col px-5 py-8 md:h-[calc(100vh-3.5rem)] lg:px-8 lg:py-10">
       <header className="shrink-0 space-y-5">
         <div>
-          <p className="mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+          <p className="text-[12px] tracking-[0.22em] text-muted-foreground">
             Buying
           </p>
-          <h1 className="font-display mt-2 text-[1.7rem] font-bold uppercase leading-[1.05] tracking-[-0.03em] sm:text-[2.2rem]">
+          <h1 className="font-display mt-2 text-[1.7rem] font-bold leading-[1.05] tracking-[-0.03em] sm:text-[2.2rem]">
             Messages
           </h1>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
@@ -232,7 +232,7 @@ export default function BuyerMessagesPage() {
                     )}
                     <div className="flex items-baseline justify-between gap-2">
                       <span className="truncate text-sm font-medium">{peerName(c.peerId)}</span>
-                      <span className="mono shrink-0 text-[10px] text-muted-foreground">
+                      <span className="shrink-0 text-[11px] text-muted-foreground">
                         {formatTime(c.last?.createdAt)}
                       </span>
                     </div>
@@ -255,7 +255,7 @@ export default function BuyerMessagesPage() {
           {!peerId ? (
             <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
               <Mark className="h-8 w-8 text-[color-mix(in_oklab,var(--brand-2)_45%,transparent)]" strokeWidth={14} />
-              <p className="mono mt-5 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+              <p className="mt-5 text-[12px] tracking-[0.2em] text-muted-foreground">
                 Nothing open
               </p>
               <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
@@ -267,7 +267,7 @@ export default function BuyerMessagesPage() {
               <div className="shrink-0 border-b border-border px-5 py-3">
                 <p className="truncate text-sm font-medium">{peerName(peerId)}</p>
                 {users[peerId]?.role ? (
-                  <p className="mono truncate text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                  <p className="truncate text-[12px] text-muted-foreground">
                     {users[peerId].role}
                   </p>
                 ) : null}
@@ -294,7 +294,7 @@ export default function BuyerMessagesPage() {
                             {m.text}
                           </p>
                           <p
-                            className={`mono mt-1.5 text-[10px] ${
+                            className={`mt-1.5 text-[11px] ${
                               mine ? "text-primary-foreground/70" : "text-muted-foreground"
                             }`}
                           >

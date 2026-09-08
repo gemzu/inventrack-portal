@@ -89,7 +89,7 @@ export default function ConnectStorefrontPage() {
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
                   onKeyDown={(e) => e.key === "Enter" && lookUp()}
                   placeholder="STORE-XXXX"
-                  className="mono text-base tracking-[0.14em]"
+                  className="mono text-base"
                 />
               </Field>
 
@@ -107,7 +107,7 @@ export default function ConnectStorefrontPage() {
                   <p className="font-display text-lg font-bold tracking-[-0.02em]">
                     {preview.name || "Storefront"}
                   </p>
-                  <p className="mono mt-1 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                  <p className="mt-1 text-[12px] text-muted-foreground">
                     {preview.inviteCode || code}
                     {preview.filterType ? ` · ${preview.filterType} items` : ""}
                   </p>

@@ -131,7 +131,6 @@ export default function BoxesPage() {
     <AdminGuard>
       <PageShell
         title="Boxes"
-        eyebrow="Console"
         subtitle="Containers on the floor, and what is not in one."
         actions={
           <Action solid onClick={() => setOpen(true)}>
@@ -211,7 +210,7 @@ export default function BoxesPage() {
                     <p className="mono truncate text-lg font-semibold tracking-[0.02em]">
                       {box.code}
                     </p>
-                    <p className="mono mt-1 truncate text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                    <p className="mt-1 truncate text-[12px] text-muted-foreground">
                       {box.category || "general"}
                       {box.label ? ` · ${box.label}` : ""}
                     </p>

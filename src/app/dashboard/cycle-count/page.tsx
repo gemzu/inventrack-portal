@@ -155,7 +155,6 @@ export default function CycleCountPage() {
     <AdminGuard>
       <PageShell
         title="Cycle count"
-        eyebrow="Console"
         subtitle="Count what is physically there, then set the system to match. Lines you leave blank are not touched — not counting something is different from counting it as zero."
         actions={
           <>
@@ -229,7 +228,7 @@ export default function CycleCountPage() {
                         {id.title}
                       </p>
                       {id.subtitle && (
-                        <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                        <p className="mono truncate text-[12px] text-muted-foreground">
                           {id.subtitle}
                         </p>
                       )}

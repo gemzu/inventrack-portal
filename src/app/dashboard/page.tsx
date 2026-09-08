@@ -155,7 +155,7 @@ export default function DashboardPage() {
   /* ── Not in an org yet ─────────────────────────────────────── */
   if (!orgId && !loading) {
     return (
-      <PageShell title="Overview" eyebrow="Console">
+      <PageShell title="Overview">
         <div className="flex min-h-[50vh] items-center justify-center">
           <div className="max-w-sm text-center">
             <Mark className="mx-auto h-10 w-10 text-[var(--brand-2)]" />
@@ -184,7 +184,7 @@ export default function DashboardPage() {
   /* ── Loading ───────────────────────────────────────────────── */
   if (loading) {
     return (
-      <PageShell title="Overview" subtitle="Reading the floor." eyebrow="Console">
+      <PageShell title="Overview" subtitle="Reading the floor.">
         <div className="grid grid-cols-2 gap-px overflow-hidden rounded-md bg-border lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="bg-background p-5">
@@ -205,11 +205,10 @@ export default function DashboardPage() {
     <PageShell
       title="Overview"
       subtitle="Everything on the floor, as it stands this minute."
-      eyebrow="Console"
       actions={
         <Link
           href="/dashboard/inventory"
-          className="mono inline-flex items-center gap-2 rounded-md border border-border px-3.5 py-2 text-[11px] uppercase tracking-[0.18em] transition-[border-color,color] duration-300 hover:border-[var(--brand-2)] hover:text-[var(--brand-2)]"
+          className="inline-flex items-center gap-2 rounded-md border border-border px-3.5 py-2 text-[12px] transition-[border-color,color] duration-300 hover:border-[var(--brand-2)] hover:text-[var(--brand-2)]"
         >
           Open inventory <ArrowUpRight className="h-3 w-3" />
         </Link>
@@ -218,7 +217,7 @@ export default function DashboardPage() {
       <div className="space-y-12">
         {announcement && (
           <div className="reveal panel panel-live flex items-start gap-4 p-4">
-            <span className="mono mt-0.5 shrink-0 text-[11px] uppercase tracking-[0.18em] text-[var(--brand-2)]">
+            <span className="mt-0.5 shrink-0 text-[12px] text-[var(--brand-2)]">
               Notice
             </span>
             <div className="min-w-0 flex-1">
@@ -266,7 +265,7 @@ export default function DashboardPage() {
             ))}
           </div>
           {attention && (
-            <p className="mono reveal d1 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+            <p className="reveal d1 text-[12px] text-muted-foreground">
               {stats.lowStock > 0 ? `${stats.lowStock} lines short` : ""}
               {stats.lowStock > 0 && stats.pending > 0 ? " · " : ""}
               {stats.pending > 0 ? `${stats.pending} awaiting approval` : ""}
@@ -303,7 +302,7 @@ export default function DashboardPage() {
               <div className="mt-4 flex gap-6 border-t border-border pt-4">
                 {composition.map((c) => (
                   <div key={c.name} className="min-w-0 flex-1">
-                    <p className="mono truncate text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                    <p className="truncate text-[12px] text-muted-foreground">
                       {c.name}
                     </p>
                     <p className="mono mt-1 text-sm font-semibold tabular-nums">{c.value}</p>
@@ -322,13 +321,13 @@ export default function DashboardPage() {
               {facilities.map((f) => (
                 <div key={f.id} className="reveal bg-background p-5">
                   <p className="truncate text-sm font-semibold">{f.name}</p>
-                  <p className="mono mt-0.5 truncate text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                  <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
                     {f.state || "—"}
                   </p>
                   <p className="mono mt-4 text-2xl font-bold tabular-nums tracking-tight">
                     {byFacility[f.id] ?? 0}
                   </p>
-                  <p className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                  <p className="text-[12px] text-muted-foreground">
                     units held
                   </p>
                 </div>
@@ -344,7 +343,7 @@ export default function DashboardPage() {
               action={
                 <Link
                   href="/dashboard/orders"
-                  className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground transition-colors duration-300 hover:text-[var(--brand-2)]"
+                  className="text-[12px] text-muted-foreground transition-colors duration-300 hover:text-[var(--brand-2)]"
                 >
                   All
                 </Link>
@@ -362,7 +361,7 @@ export default function DashboardPage() {
                   >
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">{o.buyer}</p>
-                      <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                      <p className="mono truncate text-[12px] text-muted-foreground">
                         {o.items} {o.items === 1 ? "line" : "lines"} · {formatDateTime(o.at as string)}
                       </p>
                     </div>
@@ -378,7 +377,7 @@ export default function DashboardPage() {
               action={
                 <Link
                   href="/dashboard/activity"
-                  className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground transition-colors duration-300 hover:text-[var(--brand-2)]"
+                  className="text-[12px] text-muted-foreground transition-colors duration-300 hover:text-[var(--brand-2)]"
                 >
                   All
                 </Link>
@@ -394,7 +393,7 @@ export default function DashboardPage() {
                       <p className="mono truncate text-sm">
                         {itemIdentity({ barcode: l.code, modelId: null, displayName: null }).title}
                       </p>
-                      <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                      <p className="mono truncate text-[12px] text-muted-foreground">
                         {l.action} · {l.by || "unknown"}
                       </p>
                     </div>
@@ -414,7 +413,7 @@ export default function DashboardPage() {
             action={
               <Link
                 href="/dashboard/users"
-                className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground transition-colors duration-300 hover:text-[var(--brand-2)]"
+                className="text-[12px] text-muted-foreground transition-colors duration-300 hover:text-[var(--brand-2)]"
               >
                 Manage
               </Link>
@@ -422,7 +421,7 @@ export default function DashboardPage() {
           />
           <div className="reveal flex flex-wrap items-baseline gap-x-10 gap-y-4">
             <Figure label="Members" value={<AnimatedNumber value={stats.users} />} />
-            <div className="mono flex flex-wrap items-baseline gap-x-6 gap-y-1 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+            <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-[12px] text-muted-foreground">
               <span>{team.admins} admin</span>
               <span>{team.workers} worker</span>
               <span>{team.buyers} buyer</span>

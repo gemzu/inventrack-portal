@@ -114,7 +114,7 @@ export default function BuyerCatalogPage() {
         actions={
           <Link
             href="/buyer/cart"
-            className="mono inline-flex items-center gap-2 rounded-md border border-border px-3.5 py-2 text-[11px] uppercase tracking-[0.18em] transition-[border-color,color] duration-300 hover:border-[var(--brand-2)] hover:text-[var(--brand-2)]"
+            className="inline-flex items-center gap-2 rounded-md border border-border px-3.5 py-2 text-[12px] transition-[border-color,color] duration-300 hover:border-[var(--brand-2)] hover:text-[var(--brand-2)]"
           >
             <ShoppingCart className="h-3 w-3" />
             Cart
@@ -200,7 +200,7 @@ export default function BuyerCatalogPage() {
                         <p className="line-clamp-1 text-sm font-medium">
                           {item.displayName || item.modelId || "Unnamed item"}
                         </p>
-                        <p className="mono mt-1 truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                        <p className="mono mt-1 truncate text-[12px] text-muted-foreground">
                           {item.barcode}
                           {item.brand ? ` · ${item.brand}` : ""}
                         </p>
@@ -211,12 +211,12 @@ export default function BuyerCatalogPage() {
                               ${item.costPrice.toFixed(2)}
                             </span>
                           ) : (
-                            <span className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                            <span className="text-[12px] text-muted-foreground">
                               Ask for a price
                             </span>
                           )}
                           <span
-                            className={`mono shrink-0 text-[11px] uppercase tracking-[0.14em] ${
+                            className={`mono shrink-0 text-[12px] ${
                               inStock ? "text-muted-foreground" : "text-warning"
                             }`}
                           >

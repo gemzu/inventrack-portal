@@ -88,13 +88,13 @@ export default function ConsoleRail({
       {/* Who you are, and the way out. */}
       <div className="shrink-0 border-t border-border px-5 py-4">
         <p className="truncate text-[13px] font-medium">{userName || "Signed in"}</p>
-        <p className="mono truncate text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+        <p className="truncate text-[12px] text-muted-foreground">
           {userRole || "member"}
           {orgName ? ` · ${orgName}` : ""}
         </p>
         <button
           onClick={onLogout}
-          className="mono mt-3 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground transition-colors duration-300 hover:text-destructive"
+          className="mt-3 inline-flex items-center gap-2 text-[12px] text-muted-foreground transition-colors duration-300 hover:text-destructive"
         >
           <LogOut className="h-3 w-3" />
           Sign out

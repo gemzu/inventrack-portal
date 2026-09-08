@@ -184,7 +184,7 @@ export default function ChatPage() {
     <AdminGuard>
       <PageShell
         title="Messages"
-        eyebrow="Console"
+       
         subtitle="Whoever is asking, and what they asked."
       >
         <div className="grid h-[calc(100vh-22rem)] min-h-[26rem] gap-4 md:grid-cols-[17rem_1fr]">

@@ -123,7 +123,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </p>
           <button
             onClick={handleLogout}
-            className="mono mt-6 rounded-md border border-border px-4 py-2 text-[11px] uppercase tracking-[0.18em] transition-colors duration-300 hover:border-[var(--brand-2)]"
+            className="mt-6 rounded-md border border-border px-4 py-2 text-[12px] transition-colors duration-300 hover:border-[var(--brand-2)]"
           >
             Sign out
           </button>
@@ -178,7 +178,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <span className="font-display shrink-0 text-[13px] font-bold uppercase tracking-[0.06em]">
                     {here?.label || "Console"}
                   </span>
-                  <span className="mono hidden truncate text-[11px] uppercase tracking-[0.16em] text-muted-foreground sm:inline">
+                  <span className="hidden truncate text-[12px] text-muted-foreground sm:inline">
                     {here?.meta || "Signed in"}
                   </span>
                 </p>
@@ -245,10 +245,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               >
                 <span className="relative block h-4 w-14 overflow-hidden">
                   <span className="index-toggle__labels block" data-open={indexOpen}>
-                    <span className="mono block h-4 text-[13px] font-bold uppercase tracking-[0.18em]">
+                    <span className="block h-4 text-[13px] font-bold">
                       Index
                     </span>
-                    <span className="mono block h-4 text-[13px] font-bold uppercase tracking-[0.18em]">
+                    <span className="block h-4 text-[13px] font-bold">
                       Close
                     </span>
                   </span>

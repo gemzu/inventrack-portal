@@ -201,7 +201,7 @@ export default function ReportsPage() {
   }
   if (loading) {
     return (
-      <PageShell title="Reports" subtitle="Reading the floor." eyebrow="Console">
+      <PageShell title="Reports" subtitle="Reading the floor.">
         <div className="grid grid-cols-2 gap-px overflow-hidden rounded-md bg-border lg:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="bg-background p-5">
@@ -216,7 +216,7 @@ export default function ReportsPage() {
 
   if (!orgId) {
     return (
-      <PageShell title="Reports" eyebrow="Console">
+      <PageShell title="Reports">
         <EmptyState
           icon={FileBarChart}
           title="No organization"
@@ -237,7 +237,7 @@ export default function ReportsPage() {
   return (
     <PageShell
       title="Reports"
-      eyebrow="Console"
+     
       subtitle="Where the floor stands, and everything you can take away as a file."
     >
       <div className="space-y-12">
@@ -305,7 +305,7 @@ export default function ReportsPage() {
                 <button
                   onClick={() => generateReport("low_stock")}
                   disabled={generating === "low_stock"}
-                  className="mono inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground transition-colors duration-300 hover:text-[var(--brand-2)] disabled:opacity-40"
+                  className="inline-flex items-center gap-2 text-[12px] text-muted-foreground transition-colors duration-300 hover:text-[var(--brand-2)] disabled:opacity-40"
                 >
                   {generating === "low_stock" ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
@@ -322,18 +322,18 @@ export default function ReportsPage() {
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{item.modelId}</p>
                     {item.brand && (
-                      <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                      <p className="truncate text-[12px] text-muted-foreground">
                         {item.brand}
                       </p>
                     )}
                   </div>
-                  <span className="mono shrink-0 text-sm font-semibold tabular-nums text-warning">
+                  <span className="shrink-0 text-sm font-semibold tabular-nums text-warning">
                     {item.quantity}
                   </span>
                 </div>
               ))}
               {snapshot.lowStockItems.length > 8 && (
-                <p className="mono px-5 py-3 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                <p className="px-5 py-3 text-[12px] text-muted-foreground">
                   and {snapshot.lowStockItems.length - 8} more
                 </p>
               )}
@@ -356,7 +356,7 @@ export default function ReportsPage() {
                 <p className="mt-1.5 min-h-[2.5rem] text-sm leading-relaxed text-muted-foreground">
                   {r.desc}
                 </p>
-                <span className="mono mt-4 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground transition-colors duration-300 group-hover:text-[var(--brand-2)]">
+                <span className="mt-4 inline-flex items-center gap-2 text-[12px] text-muted-foreground transition-colors duration-300 group-hover:text-[var(--brand-2)]">
                   {generating === r.type ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
                   ) : (

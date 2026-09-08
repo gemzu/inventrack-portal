@@ -161,7 +161,7 @@ function ApprovalsContent() {
 
   if (loading) {
     return (
-      <PageShell title="Approvals" subtitle="Reading the queue." eyebrow="Console">
+      <PageShell title="Approvals" subtitle="Reading the queue.">
         <ListSkeleton rows={6} />
       </PageShell>
     );
@@ -174,7 +174,7 @@ function ApprovalsContent() {
   return (
     <PageShell
       title="Approvals"
-      eyebrow="Console"
+     
       subtitle="Submissions waiting on a decision before they become stock."
       actions={
         <Action onClick={runAutoApprove} disabled={autoRunning || approvals.length === 0}>
@@ -219,13 +219,13 @@ function ApprovalsContent() {
                     <p className="truncate text-sm font-medium">
                       {item.modelId || item.partNumber || "Unnamed item"}
                     </p>
-                    <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                    <p className="truncate text-[12px] text-muted-foreground">
                       {item.barcode || detail || "No detail given"}
                       {item.barcode && detail ? ` · ${detail}` : ""}
                     </p>
                   </div>
 
-                  <span className="mono hidden w-16 shrink-0 text-right text-sm font-semibold tabular-nums md:block">
+                  <span className="hidden w-16 shrink-0 text-right text-sm font-semibold tabular-nums md:block">
                     {item.quantity ?? "—"}
                   </span>
                   <span className="hidden w-40 shrink-0 truncate text-sm text-muted-foreground lg:block">
@@ -236,14 +236,14 @@ function ApprovalsContent() {
                     <button
                       onClick={() => handleApprove(item)}
                       disabled={busy}
-                      className="mono text-[11px] uppercase tracking-[0.16em] text-success transition-colors duration-300 hover:text-foreground disabled:opacity-40"
+                      className="text-[12px] text-success transition-colors duration-300 hover:text-foreground disabled:opacity-40"
                     >
                       Approve
                     </button>
                     <button
                       onClick={() => handleReject(item)}
                       disabled={busy}
-                      className="mono text-[11px] uppercase tracking-[0.16em] text-destructive transition-colors duration-300 hover:text-foreground disabled:opacity-40"
+                      className="text-[12px] text-destructive transition-colors duration-300 hover:text-foreground disabled:opacity-40"
                     >
                       Reject
                     </button>

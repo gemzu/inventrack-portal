@@ -114,7 +114,6 @@ export default function PurchaseOrdersPage() {
     <AdminGuard>
       <PageShell
         title="Purchase orders"
-        eyebrow="Console"
         subtitle="Everything coming in, and how far along it is."
         actions={
           <Action solid onClick={() => setShowCreate(true)}>
@@ -155,7 +154,7 @@ export default function PurchaseOrdersPage() {
                         <p className="truncate text-sm font-medium">
                           {po.supplier || "Unnamed supplier"}
                         </p>
-                        <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                        <p className="mono truncate text-[12px] text-muted-foreground">
                           {po.reference ? `${po.reference} · ` : ""}
                           {po.items.length} {po.items.length === 1 ? "line" : "lines"}
                         </p>
@@ -172,7 +171,7 @@ export default function PurchaseOrdersPage() {
                         {po.status === "draft" && (
                           <button
                             onClick={() => markOrdered(po)}
-                            className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground transition-colors duration-300 hover:text-foreground"
+                            className="text-[12px] text-muted-foreground transition-colors duration-300 hover:text-foreground"
                           >
                             Send
                           </button>
@@ -180,7 +179,7 @@ export default function PurchaseOrdersPage() {
                         {(po.status === "draft" || po.status === "ordered") && (
                           <button
                             onClick={() => setReceiving(po)}
-                            className="mono text-[11px] uppercase tracking-[0.16em] text-[var(--brand-2)] transition-colors duration-300 hover:text-foreground"
+                            className="text-[12px] text-[var(--brand-2)] transition-colors duration-300 hover:text-foreground"
                           >
                             Receive
                           </button>

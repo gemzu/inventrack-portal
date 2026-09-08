@@ -26,8 +26,10 @@ export default function PageShell({
   subtitle,
   actions,
   breadcrumb,
-  /** Small mono line above the title. Defaults to the product's own word. */
-  eyebrow = "Console",
+  /** A word above the title, only where it says something the title does not.
+      It defaulted to "Console" and so appeared, identically, on every page in
+      the console — a label that told you where you already knew you were. */
+  eyebrow,
   className,
   children,
 }: {
@@ -45,9 +47,11 @@ export default function PageShell({
         <header className="space-y-5">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div className="min-w-0">
-              <p className="mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                {eyebrow}
-              </p>
+              {eyebrow && (
+                <p className="mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+                  {eyebrow}
+                </p>
+              )}
 
               {/* A string gets the focus pull. A node is trusted as-is, since
                   splitting arbitrary children into per-character spans would
@@ -74,7 +78,7 @@ export default function PageShell({
               )}
 
               {breadcrumb && (
-                <div className="mono mt-3 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                <div className="mt-3 text-[12px] text-muted-foreground">
                   {breadcrumb}
                 </div>
               )}

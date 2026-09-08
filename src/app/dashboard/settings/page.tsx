@@ -188,7 +188,6 @@ export default function SettingsPage() {
     <AdminGuard>
       <PageShell
         title="Settings"
-        eyebrow="Console"
         subtitle="Everything here saves itself as you leave the field."
       >
         <div className="max-w-2xl space-y-12">

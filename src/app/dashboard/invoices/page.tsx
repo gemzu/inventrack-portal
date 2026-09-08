@@ -194,7 +194,6 @@ export default function InvoicesPage() {
     <AdminGuard>
       <PageShell
         title="Invoices"
-        eyebrow="Console"
         subtitle="What has been billed, and what is still owed."
         actions={
           <>
@@ -245,7 +244,7 @@ export default function InvoicesPage() {
                   <div key={inv.id} className="row-line flex items-center gap-4 px-5 py-3.5">
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{inv.buyer_name}</p>
-                      <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                      <p className="mono truncate text-[12px] text-muted-foreground">
                         {inv.invoice_number}
                       </p>
                     </div>
@@ -367,7 +366,7 @@ export default function InvoicesPage() {
                 onClick={() =>
                   setInvoiceItems((prev) => [...prev, { name: "", quantity: 1, price: 0 }])
                 }
-                className="mono mt-3 text-[11px] uppercase tracking-[0.18em] text-[var(--brand-2)] transition-colors duration-300 hover:text-foreground"
+                className="mt-3 text-[12px] text-[var(--brand-2)] transition-colors duration-300 hover:text-foreground"
               >
                 Add a line
               </button>

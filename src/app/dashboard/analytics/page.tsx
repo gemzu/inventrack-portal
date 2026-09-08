@@ -122,7 +122,7 @@ export default function PlatformAnalyticsPage() {
 
   if (userPermissions !== "superadmin" && !loading) {
     return (
-      <PageShell title="Platform" eyebrow="Console">
+      <PageShell title="Platform">
         <EmptyState
           icon={ShieldAlert}
           title="Not yours to see"
@@ -134,7 +134,7 @@ export default function PlatformAnalyticsPage() {
 
   if (loading) {
     return (
-      <PageShell title="Platform" subtitle="Reading every floor." eyebrow="Console">
+      <PageShell title="Platform" subtitle="Reading every floor.">
         <div className="space-y-8">
           <div className="grid grid-cols-2 gap-px overflow-hidden rounded-md bg-border lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -153,7 +153,7 @@ export default function PlatformAnalyticsPage() {
   return (
     <PageShell
       title="Platform"
-      eyebrow="Console"
+     
       subtitle="Across every organization on this deployment."
     >
       <div className="space-y-12">
@@ -234,14 +234,14 @@ export default function PlatformAnalyticsPage() {
             ) : (
               topOrgs.map((org, i) => (
                 <div key={org.id} className="row-line flex items-center gap-4 px-5 py-3">
-                  <span className="mono w-6 shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                  <span className="mono w-6 shrink-0 text-[12px] tabular-nums text-muted-foreground">
                     {i + 1}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">{org.name}</span>
                   <span className="mono shrink-0 text-sm font-semibold tabular-nums">
                     {org.itemCount}
                   </span>
-                  <span className="mono hidden w-28 shrink-0 text-right text-[11px] text-muted-foreground sm:block">
+                  <span className="mono hidden w-28 shrink-0 text-right text-[12px] text-muted-foreground sm:block">
                     {new Date(org.createdAt).toLocaleDateString()}
                   </span>
                 </div>
@@ -263,11 +263,11 @@ export default function PlatformAnalyticsPage() {
                   <span className="pulse-dot h-1.5 w-1.5 shrink-0 rounded-full bg-success" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{u.name}</p>
-                    <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                    <p className="mono truncate text-[12px] text-muted-foreground">
                       {u.email}
                     </p>
                   </div>
-                  <span className="mono shrink-0 text-[11px] text-muted-foreground">
+                  <span className="mono shrink-0 text-[12px] text-muted-foreground">
                     {new Date(u.lastScan).toLocaleDateString()}
                   </span>
                 </div>

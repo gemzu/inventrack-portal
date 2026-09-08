@@ -99,14 +99,14 @@ function Rail({
       <div className="shrink-0 space-y-3 border-t border-border px-5 py-4">
         <button
           onClick={toggleTheme}
-          className="mono flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground transition-colors duration-300 hover:text-foreground"
+          className="flex items-center gap-2 text-[12px] text-muted-foreground transition-colors duration-300 hover:text-foreground"
         >
           {theme === "dark" ? <Sun className="h-3 w-3" /> : <Moon className="h-3 w-3" />}
           {theme === "dark" ? "Light" : "Dark"}
         </button>
         <button
           onClick={onLogout}
-          className="mono flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground transition-colors duration-300 hover:text-destructive"
+          className="flex items-center gap-2 text-[12px] text-muted-foreground transition-colors duration-300 hover:text-destructive"
         >
           <LogOut className="h-3 w-3" />
           Sign out
@@ -154,7 +154,7 @@ function BottomBar({
                   </span>
                 )}
               </span>
-              <span className="mono text-[9px] uppercase tracking-[0.14em]">{l.label}</span>
+              <span className="mono text-[10px]">{l.label}</span>
             </Link>
           );
         })}
@@ -203,7 +203,7 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
           </p>
           <button
             onClick={handleLogout}
-            className="mono mt-6 rounded-md border border-border px-4 py-2 text-[11px] uppercase tracking-[0.18em] transition-colors duration-300 hover:border-[var(--brand-2)]"
+            className="mt-6 rounded-md border border-border px-4 py-2 text-[12px] transition-colors duration-300 hover:border-[var(--brand-2)]"
           >
             Sign out
           </button>
@@ -259,7 +259,7 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
             <span className="font-display text-[13px] font-bold uppercase tracking-[0.06em]">
               {here?.label || "Buying"}
             </span>
-            <span className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+            <span className="text-[12px] text-muted-foreground">
               {here?.meta || "Signed in"}
             </span>
           </p>

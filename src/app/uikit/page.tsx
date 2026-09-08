@@ -75,7 +75,7 @@ export default function ConsoleReference() {
         <div className="mx-auto flex h-full max-w-5xl items-center justify-between px-6">
           <p className="feed-line flex items-baseline gap-3">
             <span className="font-display text-[13px] font-bold uppercase tracking-[0.06em]">Inventory</span>
-            <span className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Every unit on the floor</span>
+            <span className="text-[12px] text-muted-foreground">Every unit on the floor</span>
           </p>
           <span className="mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
             Console reference
@@ -87,9 +87,8 @@ export default function ConsoleReference() {
         <PageShell
           title="Overview"
           subtitle="Everything on the floor, as it stands this minute."
-          eyebrow="Console"
           actions={
-            <span className="mono inline-flex items-center gap-2 rounded-md border border-border px-3.5 py-2 text-[11px] uppercase tracking-[0.18em] transition-[border-color,color] duration-300 hover:border-[var(--brand-2)] hover:text-[var(--brand-2)]">
+            <span className="inline-flex items-center gap-2 rounded-md border border-border px-3.5 py-2 text-[12px] transition-[border-color,color] duration-300 hover:border-[var(--brand-2)] hover:text-[var(--brand-2)]">
               Open inventory <ArrowUpRight className="h-3 w-3" />
             </span>
           }
@@ -152,7 +151,7 @@ export default function ConsoleReference() {
                     <div key={o.buyer} className="row-line flex items-center justify-between gap-4 px-5 py-3.5">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium">{o.buyer}</p>
-                        <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                        <p className="mono truncate text-[12px] text-muted-foreground">
                           {o.lines} lines · {o.at}
                         </p>
                       </div>
@@ -169,7 +168,7 @@ export default function ConsoleReference() {
                     <div key={l.code} className="row-line flex items-center justify-between gap-4 px-5 py-3.5">
                       <div className="min-w-0">
                         <p className="mono truncate text-sm">{l.code}</p>
-                        <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                        <p className="mono truncate text-[12px] text-muted-foreground">
                           {l.action} · {l.by}
                         </p>
                       </div>

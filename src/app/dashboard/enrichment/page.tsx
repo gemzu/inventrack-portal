@@ -160,7 +160,7 @@ export default function EnrichmentDashboardPage() {
 
   if (loading) {
     return (
-      <PageShell title="Enrichment" subtitle="Reading the queue." eyebrow="Console">
+      <PageShell title="Enrichment" subtitle="Reading the queue.">
         <ListSkeleton rows={6} />
       </PageShell>
     );
@@ -169,7 +169,6 @@ export default function EnrichmentDashboardPage() {
   return (
     <PageShell
       title="Enrichment"
-      eyebrow="Console"
       subtitle="Product detail filled in automatically, and the queue of guesses still waiting on a human."
       actions={
         <Action onClick={loadData}>
@@ -208,7 +207,7 @@ export default function EnrichmentDashboardPage() {
                 <button
                   onClick={processQueue}
                   disabled={processing}
-                  className="mono mt-3 text-[11px] uppercase tracking-[0.16em] text-[var(--brand-2)] transition-colors duration-300 hover:text-foreground disabled:opacity-40"
+                  className="mt-3 text-[12px] text-[var(--brand-2)] transition-colors duration-300 hover:text-foreground disabled:opacity-40"
                 >
                   {processing ? "Processing" : "Process now"}
                 </button>
@@ -222,7 +221,7 @@ export default function EnrichmentDashboardPage() {
           <section className="space-y-5 lg:col-span-1">
             <Rule label="Waiting" />
             {queue.length === 0 ? (
-              <p className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+              <p className="text-[12px] text-muted-foreground">
                 Queue is empty
               </p>
             ) : (
@@ -235,7 +234,7 @@ export default function EnrichmentDashboardPage() {
                         {item.priority}
                       </span>
                     </div>
-                    <p className="mono mt-1 truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                    <p className="mono mt-1 truncate text-[12px] text-muted-foreground">
                       {item.nameHint ? `${item.nameHint} · ` : ""}
                       {new Date(item.createdAt).toLocaleDateString()}
                     </p>
@@ -250,7 +249,7 @@ export default function EnrichmentDashboardPage() {
             <Rule
               label="Needs checking"
               action={
-                <span className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                <span className="text-[12px] text-muted-foreground">
                   {filteredProducts.length}
                 </span>
               }
@@ -278,7 +277,7 @@ export default function EnrichmentDashboardPage() {
             </div>
 
             {filteredProducts.length === 0 ? (
-              <p className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+              <p className="text-[12px] text-muted-foreground">
                 Nothing waiting on a person
               </p>
             ) : (
@@ -291,7 +290,7 @@ export default function EnrichmentDashboardPage() {
                   >
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{product.name}</p>
-                      <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                      <p className="mono truncate text-[12px] text-muted-foreground">
                         {product.modelId}
                         {product.brand ? ` · ${product.brand}` : ""}
                         {product.category ? ` · ${product.category}` : ""}
@@ -309,7 +308,7 @@ export default function EnrichmentDashboardPage() {
                     >
                       {Math.round(product.enrichmentConfidence * 100)}%
                     </span>
-                    <span className="mono shrink-0 text-[11px] uppercase tracking-[0.16em] text-muted-foreground transition-colors duration-300 group-hover:text-[var(--brand-2)]">
+                    <span className="shrink-0 text-[12px] text-muted-foreground transition-colors duration-300 group-hover:text-[var(--brand-2)]">
                       Check
                     </span>
                   </Link>

@@ -776,10 +776,17 @@ function randomCode(prefix: string) {
   return code;
 }
 
-export async function regenerateInviteCode(orgId: string, kind: "admin" | "worker" | "buyer") {
-  const column =
-    kind === "admin" ? "admin_invite_code" : kind === "worker" ? "worker_invite_code" : "invite_code";
-  const prefix = kind === "admin" ? "ADM" : kind === "worker" ? "WRK" : "ORG";
+/**
+ * Staff join codes only.
+ *
+ * "buyer" used to be accepted here and wrote organizations.invite_code, which
+ * nothing reads — join-org-secure resolves buyers against storefronts.invite_code
+ * instead. Narrowing the type means the dead branch cannot be called back into
+ * existence by accident.
+ */
+export async function regenerateInviteCode(orgId: string, kind: "admin" | "worker") {
+  const column = kind === "admin" ? "admin_invite_code" : "worker_invite_code";
+  const prefix = kind === "admin" ? "ADM" : "WRK";
   const code = randomCode(prefix);
   const { data, error } = await supabase
     .from("organizations")

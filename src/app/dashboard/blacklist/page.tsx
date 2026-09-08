@@ -70,7 +70,6 @@ export default function BlacklistPage() {
     <AdminGuard>
       <PageShell
         title="Blacklist"
-        eyebrow="Console"
         subtitle="Codes the floor should refuse."
       >
         <CodeList

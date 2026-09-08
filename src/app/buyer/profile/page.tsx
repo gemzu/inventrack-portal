@@ -116,7 +116,7 @@ export default function BuyerProfilePage() {
               </div>
               <div className="row-line flex items-center justify-between gap-6 py-3">
                 <ColHead>Role</ColHead>
-                <span className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                <span className="text-[12px] text-muted-foreground">
                   Buyer
                 </span>
               </div>
@@ -151,7 +151,7 @@ export default function BuyerProfilePage() {
                         {s.storefronts?.name || "Storefront"}
                       </p>
                       {s.storefronts?.code ? (
-                        <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                        <p className="mono truncate text-[12px] text-muted-foreground">
                           {s.storefronts.code}
                         </p>
                       ) : null}

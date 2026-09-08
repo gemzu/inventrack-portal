@@ -143,7 +143,7 @@ export default function OrdersPage() {
 
   if (loading) {
     return (
-      <PageShell title="Orders" subtitle="Reading the book." eyebrow="Console">
+      <PageShell title="Orders" subtitle="Reading the book.">
         <div className="space-y-3">
           {Array.from({ length: 7 }).map((_, i) => (
             <CrateSkeleton key={i} className="h-14 w-full" delay={i * 0.06} />
@@ -156,7 +156,6 @@ export default function OrdersPage() {
   return (
     <PageShell
       title="Orders"
-      eyebrow="Console"
       subtitle="Everything going out, and what it is waiting on."
     >
       <div className="space-y-8">
@@ -217,7 +216,7 @@ export default function OrdersPage() {
                     <p className="truncate text-sm font-medium">
                       {order.buyerName || "Unknown buyer"}
                     </p>
-                    <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                    <p className="mono truncate text-[12px] text-muted-foreground">
                       {order.buyerCompany || order.buyerEmail || "No contact"}
                     </p>
                   </button>
@@ -239,13 +238,13 @@ export default function OrdersPage() {
                       <>
                         <button
                           onClick={() => updateOrderStatus(order, ORDER_STATUS.CONFIRMED)}
-                          className="mono text-[11px] uppercase tracking-[0.16em] text-success transition-colors duration-300 hover:text-foreground"
+                          className="text-[12px] text-success transition-colors duration-300 hover:text-foreground"
                         >
                           Approve
                         </button>
                         <button
                           onClick={() => updateOrderStatus(order, ORDER_STATUS.CANCELLED)}
-                          className="mono text-[11px] uppercase tracking-[0.16em] text-destructive transition-colors duration-300 hover:text-foreground"
+                          className="text-[12px] text-destructive transition-colors duration-300 hover:text-foreground"
                         >
                           Reject
                         </button>
@@ -253,7 +252,7 @@ export default function OrdersPage() {
                     ) : (
                       <button
                         onClick={() => setSelectedOrder(order)}
-                        className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground transition-colors duration-300 hover:text-[var(--brand-2)]"
+                        className="text-[12px] text-muted-foreground transition-colors duration-300 hover:text-[var(--brand-2)]"
                       >
                         Open
                       </button>

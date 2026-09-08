@@ -150,7 +150,7 @@ export default function BuyerOrderDetailPage() {
                             }`}
                           />
                           <span
-                            className={`mono text-[10px] uppercase tracking-[0.14em] ${
+                            className={`text-[11px] ${
                               done ? "text-foreground" : "text-muted-foreground"
                             }`}
                           >
@@ -169,7 +169,7 @@ export default function BuyerOrderDetailPage() {
               <Rule
                 label="Lines"
                 action={
-                  <span className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                  <span className="text-[12px] text-muted-foreground">
                     {items.length} · {units} units
                   </span>
                 }
@@ -190,12 +190,12 @@ export default function BuyerOrderDetailPage() {
                             {id.title}
                           </p>
                           {id.subtitle && (
-                            <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                            <p className="truncate text-[12px] text-muted-foreground">
                               {id.subtitle}
                             </p>
                           )}
                         </div>
-                        <span className="mono shrink-0 text-sm font-semibold tabular-nums">
+                        <span className="shrink-0 text-sm font-semibold tabular-nums">
                           {item.quantity ?? 1}
                         </span>
                       </div>
@@ -219,7 +219,7 @@ export default function BuyerOrderDetailPage() {
                   {order.trackingNumber && (
                     <div className="row-line flex items-center justify-between gap-6 py-3">
                       <ColHead>Tracking</ColHead>
-                      <span className="mono truncate text-sm">{order.trackingNumber}</span>
+                      <span className="truncate text-sm">{order.trackingNumber}</span>
                     </div>
                   )}
                   {order.packingNotes && (
@@ -237,13 +237,13 @@ export default function BuyerOrderDetailPage() {
             <div className="flex flex-wrap gap-3 border-t border-border pt-6">
               <Link
                 href="/buyer/messages"
-                className="mono inline-flex items-center gap-2 rounded-md border border-border px-4 py-2.5 text-[11px] uppercase tracking-[0.18em] transition-[border-color,color,transform] duration-300 ease-[cubic-bezier(0.16,1,0.30,1)] hover:-translate-y-0.5 hover:border-[var(--brand-2)] hover:text-[var(--brand-2)]"
+                className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2.5 text-[12px] transition-[border-color,color,transform] duration-300 ease-[cubic-bezier(0.16,1,0.30,1)] hover:-translate-y-0.5 hover:border-[var(--brand-2)] hover:text-[var(--brand-2)]"
               >
                 Ask about this order
               </Link>
               <Link
                 href="/buyer/orders"
-                className="mono inline-flex items-center px-2 py-2.5 text-[11px] uppercase tracking-[0.18em] text-muted-foreground transition-colors duration-300 hover:text-foreground"
+                className="inline-flex items-center px-2 py-2.5 text-[12px] text-muted-foreground transition-colors duration-300 hover:text-foreground"
               >
                 All orders
               </Link>

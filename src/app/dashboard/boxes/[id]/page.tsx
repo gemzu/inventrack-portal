@@ -271,7 +271,7 @@ export default function BoxDetailPage() {
 
           {capacityPct != null && (
             <div className="reveal d1">
-              <div className="mono flex items-baseline justify-between text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+              <div className="flex items-baseline justify-between text-[12px] text-muted-foreground">
                 <span>Capacity</span>
                 <span className="tabular-nums">
                   {stats.total} of {box.capacity} · {capacityPct}%
@@ -290,7 +290,7 @@ export default function BoxDetailPage() {
           )}
 
           {(box.location || box.weightLimit != null || box.category) && (
-            <p className="mono reveal d2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+            <p className="reveal d2 text-[12px] text-muted-foreground">
               {[
                 box.category,
                 box.location,
@@ -304,25 +304,25 @@ export default function BoxDetailPage() {
           {/* Bulk bar */}
           {selected.size > 0 && (
             <div className="panel panel-live sticky top-16 z-20 flex flex-wrap items-center gap-3 bg-background/90 px-4 py-3 backdrop-blur-xl">
-              <span className="mono text-[11px] uppercase tracking-[0.18em] text-[var(--brand-2)]">
+              <span className="text-[12px] text-[var(--brand-2)]">
                 {selected.size} selected
               </span>
               <div className="ml-auto flex flex-wrap items-center gap-4">
                 <button
                   onClick={bulkRemove}
-                  className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground transition-colors duration-300 hover:text-foreground"
+                  className="text-[12px] text-muted-foreground transition-colors duration-300 hover:text-foreground"
                 >
                   Take out of box
                 </button>
                 <button
                   onClick={bulkDelete}
-                  className="mono text-[11px] uppercase tracking-[0.16em] text-destructive transition-colors duration-300 hover:text-foreground"
+                  className="text-[12px] text-destructive transition-colors duration-300 hover:text-foreground"
                 >
                   Delete
                 </button>
                 <button
                   onClick={() => setSelected(new Set())}
-                  className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground transition-colors duration-300 hover:text-foreground"
+                  className="text-[12px] text-muted-foreground transition-colors duration-300 hover:text-foreground"
                 >
                   Clear
                 </button>
@@ -378,7 +378,7 @@ export default function BoxDetailPage() {
                       <p className={`truncate text-sm font-medium ${id.unnamed ? "mono" : ""}`}>
                         {id.title}
                       </p>
-                      <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                      <p className="mono truncate text-[12px] text-muted-foreground">
                         {extra || "Unnamed"}
                       </p>
                     </div>
@@ -520,7 +520,7 @@ export default function BoxDetailPage() {
           subtitle={`Into ${box.code}`}
           footer={
             <>
-              <span className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+              <span className="text-[12px] text-muted-foreground">
                 {addSelected.size} picked
               </span>
               <Action
@@ -565,7 +565,7 @@ export default function BoxDetailPage() {
                         {id.title}
                       </p>
                       {id.subtitle && (
-                        <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                        <p className="mono truncate text-[12px] text-muted-foreground">
                           {id.subtitle}
                         </p>
                       )}

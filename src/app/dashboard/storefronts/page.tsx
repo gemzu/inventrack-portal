@@ -162,7 +162,6 @@ export default function StorefrontsPage() {
     <AdminGuard>
       <PageShell
         title="Storefronts"
-        eyebrow="Console"
         subtitle="A storefront is a filtered view of your stock with its own join code. Buyers only ever see what the filters let through."
         actions={
           <Action solid onClick={openCreate}>
@@ -231,7 +230,7 @@ export default function StorefrontsPage() {
                       </button>
                     </div>
 
-                    <p className="mono mt-3 truncate text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                    <p className="mt-3 truncate text-[12px] text-muted-foreground">
                       {sf.filterType === "all" ? "Everything" : "Filtered"}
                       {bans ? ` · ${bans} item ${bans === 1 ? "ban" : "bans"}` : ""}
                     </p>

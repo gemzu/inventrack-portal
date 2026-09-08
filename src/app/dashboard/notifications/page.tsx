@@ -78,7 +78,6 @@ export default function NotificationsPage() {
   return (
     <PageShell
       title="Notifications"
-      eyebrow="Console"
       subtitle="What the floor has told you since you were last here."
       actions={
         unreadCount > 0 ? <Action onClick={markAll}>Mark all read</Action> : undefined
@@ -128,7 +127,7 @@ export default function NotificationsPage() {
                       {n.body && (
                         <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">{n.body}</p>
                       )}
-                      <p className="mono mt-1.5 truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                      <p className="mono mt-1.5 truncate text-[12px] text-muted-foreground">
                         {n.type ? `${n.type} · ` : ""}
                         {n.createdAt ? formatDate(n.createdAt) : ""}
                       </p>

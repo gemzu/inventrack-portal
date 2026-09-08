@@ -116,7 +116,7 @@ export default function FacilitiesPage() {
   if (loading) {
     return (
       <AdminGuard>
-        <PageShell title="Sites" subtitle="Reading your locations." eyebrow="Console">
+        <PageShell title="Sites" subtitle="Reading your locations.">
           <ListSkeleton rows={4} />
         </PageShell>
       </AdminGuard>
@@ -127,7 +127,6 @@ export default function FacilitiesPage() {
     <AdminGuard>
       <PageShell
         title="Sites"
-        eyebrow="Console"
         subtitle="Warehouses and storage locations, and who is assigned to each."
         actions={
           <Action solid onClick={openNew}>
@@ -153,7 +152,7 @@ export default function FacilitiesPage() {
                 <p className="mt-4 truncate border-t border-border pt-3 text-sm font-medium">
                   {fac.name}
                 </p>
-                <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                <p className="mono truncate text-[12px] text-muted-foreground">
                   {fac.state || "No region"}
                   {fac.address ? ` · ${fac.address}` : ""}
                 </p>

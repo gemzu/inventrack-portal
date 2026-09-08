@@ -257,10 +257,10 @@ export default function ProductVerificationPage() {
             <p className="figure-label mt-2">Confidence</p>
           </div>
           <div className="min-w-0 text-right">
-            <p className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+            <p className="text-[12px] text-muted-foreground">
               {product.enrichmentSource || "unknown source"}
             </p>
-            <p className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+            <p className="text-[12px] text-muted-foreground">
               {product.enrichedAt
                 ? new Date(product.enrichedAt).toLocaleDateString()
                 : "date unknown"}
@@ -275,7 +275,7 @@ export default function ProductVerificationPage() {
               {(product.aiSuggestedFields as string[]).map((field) => (
                 <span
                   key={field}
-                  className="mono rounded-sm border border-border px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] text-muted-foreground"
+                  className="mono rounded-sm border border-border px-2.5 py-1 text-[11px] text-muted-foreground"
                 >
                   {field}
                 </span>
@@ -408,7 +408,7 @@ export default function ProductVerificationPage() {
 
         {product.enrichmentData != null && (
           <details className="reveal border-t border-border pt-6">
-            <summary className="mono cursor-pointer text-[11px] uppercase tracking-[0.18em] text-muted-foreground transition-colors duration-300 hover:text-foreground">
+            <summary className="cursor-pointer text-[12px] text-muted-foreground transition-colors duration-300 hover:text-foreground">
               What the model actually returned
             </summary>
             <pre className="mono panel mt-4 max-h-64 overflow-auto p-4 text-[11px] leading-relaxed">

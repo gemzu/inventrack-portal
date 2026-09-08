@@ -67,7 +67,6 @@ export default function WhitelistPage() {
     <AdminGuard>
       <PageShell
         title="Whitelist"
-        eyebrow="Console"
         subtitle="Codes the floor should always accept."
       >
         <CodeList

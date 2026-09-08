@@ -93,7 +93,7 @@ export default function BuyerCartPage() {
                           {id.title}
                         </p>
                         {id.subtitle && (
-                          <p className="mono truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                          <p className="truncate text-[12px] text-muted-foreground">
                             {id.subtitle}
                           </p>
                         )}
@@ -110,7 +110,7 @@ export default function BuyerCartPage() {
                         >
                           <Minus className="h-3 w-3" />
                         </button>
-                        <span className="mono w-10 text-center text-sm font-semibold tabular-nums">
+                        <span className="w-10 text-center text-sm font-semibold tabular-nums">
                           {item.quantity}
                         </span>
                         <button
@@ -136,7 +136,7 @@ export default function BuyerCartPage() {
 
               <div className="lg:col-span-1">
                 <div className="panel panel-live reveal d1 sticky top-20 p-6">
-                  <p className="mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                  <p className="text-[12px] tracking-[0.2em] text-muted-foreground">
                     Sending
                   </p>
                   <p className="figure-value mt-3">{totalQty}</p>
@@ -156,7 +156,7 @@ export default function BuyerCartPage() {
 
                   <Link
                     href="/buyer/catalog"
-                    className="mono mt-5 block text-center text-[11px] uppercase tracking-[0.16em] text-muted-foreground transition-colors duration-300 hover:text-foreground"
+                    className="mt-5 block text-center text-[12px] text-muted-foreground transition-colors duration-300 hover:text-foreground"
                   >
                     Keep shopping
                   </Link>

@@ -1,34 +1,45 @@
 "use client";
 
 /**
- * Invite codes.
+ * Invite codes — staff only.
  *
- * The code is the entire point of this screen, so it is set at display size —
- * the way a figure is set everywhere else in the console — instead of sitting
- * in a grey inset box beside an icon in a tinted tile.
+ * This screen used to offer three codes: admin, worker and buyer. The buyer one
+ * did nothing.
  *
- * Which code you are looking at is the segmented control, not three buttons
- * where one happens to be filled.
+ * `join-org-secure` is the only thing that turns a code into access, and it
+ * resolves exactly three cases: `organizations.admin_invite_code` → admin,
+ * `organizations.worker_invite_code` → worker, and `storefronts.invite_code` →
+ * buyer. It never reads `organizations.invite_code`, which is the column the
+ * old Buyer tab wrote to and displayed. Handing that code to a customer would
+ * have got them a "code not found", and regenerating it changed nothing.
+ *
+ * Buyers join a *storefront*, not the organization — that is the whole point of
+ * storefronts, since the code decides which slice of stock they can see. So
+ * this screen now covers staff, and points at Storefronts for customers.
+ *
+ * The dead column is left in the database rather than dropped here; removing it
+ * is a migration, and nothing reads it.
  */
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import AdminGuard from "@/components/AdminGuard";
 import PageShell from "@/components/page-shell";
 import { useAuth } from "@/context/AuthContext";
 import { getOrg, regenerateInviteCode } from "@/lib/dataService";
-import { Copy, RefreshCw, Share2 } from "lucide-react";
+import { ArrowRight, Copy, RefreshCw, Share2 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import { isSuperadmin } from "@/lib/roles";
-import { Panel, CrateSkeleton } from "@/components/console/surfaces";
+import { Panel, Rule, ColHead, CrateSkeleton } from "@/components/console/surfaces";
 import { Action, Segmented } from "@/components/console/controls";
 
-type Kind = "admin" | "worker" | "buyer";
+type Kind = "admin" | "worker";
 
 export default function InvitesPage() {
   const { orgId, userPermissions } = useAuth();
   const { toast } = useToast();
-  const [active, setActive] = useState<Kind>("admin");
-  const [codes, setCodes] = useState<{ admin?: string; worker?: string; buyer?: string }>({});
+  const [active, setActive] = useState<Kind>("worker");
+  const [codes, setCodes] = useState<{ admin?: string; worker?: string }>({});
   const [loading, setLoading] = useState(true);
   const [regenBusy, setRegenBusy] = useState(false);
 
@@ -37,13 +48,10 @@ export default function InvitesPage() {
     setLoading(true);
     try {
       const org = (await getOrg(orgId)) as {
-        adminInviteCode?: string; workerInviteCode?: string; inviteCode?: string;
+        adminInviteCode?: string;
+        workerInviteCode?: string;
       };
-      setCodes({
-        admin: org.adminInviteCode,
-        worker: org.workerInviteCode,
-        buyer: org.inviteCode,
-      });
+      setCodes({ admin: org.adminInviteCode, worker: org.workerInviteCode });
     } catch (e) {
       toast((e as Error).message || "Failed to load codes", "error");
     } finally {
@@ -83,7 +91,7 @@ export default function InvitesPage() {
 
   const handleRegenerate = async () => {
     if (!orgId) return;
-    if (active !== "buyer" && !isSuperadmin(userPermissions)) {
+    if (!isSuperadmin(userPermissions)) {
       toast("Only super admins can regenerate staff codes", "error");
       return;
     }
@@ -103,24 +111,20 @@ export default function InvitesPage() {
     <AdminGuard>
       <PageShell
         title="Invite codes"
-        eyebrow="Console"
-        subtitle="New members enter one of these when they sign up. Which code they used sets what they can do."
+        subtitle="For staff joining this organization. Which code they use decides what they can do, so send the right one."
       >
-        <div className="space-y-8">
+        <div className="space-y-12">
           <Segmented
             value={active}
             onChange={setActive}
             options={[
-              { value: "admin", label: "Admin" },
               { value: "worker", label: "Worker" },
-              { value: "buyer", label: "Buyer" },
+              { value: "admin", label: "Admin" },
             ]}
           />
 
           <Panel className="reveal p-8" live>
-            <p className="mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-              {labelFor(active)} code
-            </p>
+            <ColHead className="block">{labelFor(active)} code</ColHead>
 
             {loading ? (
               <CrateSkeleton className="mt-4 h-12 w-72 border-0" />
@@ -148,14 +152,32 @@ export default function InvitesPage() {
             </div>
           </Panel>
 
+          {/* ── Where buyers actually come from ────────────────── */}
+          <section className="space-y-5">
+            <Rule label="Customers" />
+            <Link
+              href="/dashboard/storefronts"
+              className="panel panel-hover reveal flex items-center justify-between gap-4 p-6"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-medium">Buyers join a storefront, not the organization</p>
+                <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-muted-foreground">
+                  A storefront carries its own code and its own filters, so the code you hand a
+                  customer also decides which stock they can see. Create one there and share that
+                  code instead.
+                </p>
+              </div>
+              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            </Link>
+          </section>
+
           <div className="reveal d1 space-y-3 border-t border-border pt-6 text-sm leading-relaxed text-muted-foreground">
             <p>
-              <span className="text-foreground">How it works.</span> New members enter their code
-              when signing up, in the app or on the portal. Their role is set from the code they
-              used, so send the right one.
+              <span className="text-foreground">How it works.</span> Staff enter their code when
+              signing up in the app. Their role comes from the code, not from anything they pick.
             </p>
             <p>
-              <span className="text-foreground">Regenerating.</span> The previous code stops working
+              <span className="text-foreground">Regenerating.</span> The old code stops working
               immediately. People who already joined are unaffected.
             </p>
           </div>
@@ -166,11 +188,12 @@ export default function InvitesPage() {
 }
 
 function labelFor(k: Kind) {
-  return k === "admin" ? "Admin" : k === "worker" ? "Worker" : "Buyer";
+  return k === "admin" ? "Admin" : "Worker";
 }
 
 function descFor(k: Kind) {
-  if (k === "admin") return "Full admin access to this organization. Share only with people you trust with everything.";
-  if (k === "worker") return "Floor staff: they can scan, submit, and fulfil, but not change how the organization is set up.";
-  return "Customers who order through your connected storefronts.";
+  if (k === "admin") {
+    return "Full control of this organization — stock, people, settings, and the codes on this page. Only send it to someone you would trust with all of it.";
+  }
+  return "Floor staff. They can scan, receive, count and fulfil, but cannot change how the organization is set up.";
 }
