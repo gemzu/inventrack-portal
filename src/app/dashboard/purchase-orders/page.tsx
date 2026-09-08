@@ -1,4 +1,5 @@
 "use client";
+import ReceivePo from "@/components/dashboard/ReceivePo";
 import { useEffect, useMemo, useState } from "react";
 import AdminGuard from "@/components/AdminGuard";
 import PageShell from "@/components/page-shell";
@@ -31,6 +32,7 @@ export default function PurchaseOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [receiving, setReceiving] = useState<PO | null>(null);
 
   const [supplier, setSupplier] = useState("");
   const [reference, setReference] = useState("");
@@ -79,37 +81,6 @@ export default function PurchaseOrdersPage() {
     load();
   };
 
-  const receivePo = async (po: PO) => {
-    if (!orgId) return;
-    setBusy(po.id);
-    try {
-      let restocked = 0, added = 0;
-      for (const l of po.items) {
-        const code = (l.barcode || l.modelId || "").trim();
-        const qty = Math.max(1, l.qty || 1);
-        if (!code) continue;
-        const { data: found } = await supabase.from("inventory").select("id,quantity").eq("org_id", orgId).eq("barcode", code).limit(1);
-        if (found && found.length > 0) {
-          const row = found[0] as { id: string; quantity: number };
-          await supabase.from("inventory").update({ quantity: (row.quantity || 0) + qty }).eq("id", row.id);
-          restocked++;
-        } else {
-          await supabase.from("inventory").insert({
-            org_id: orgId, barcode: code, model_id: l.modelId || code, display_name: l.name || null,
-            quantity: qty, cost_price: l.cost ?? null, status: "available", facility_id: po.facility_id ?? null,
-          });
-          added++;
-        }
-      }
-      await supabase.from("purchase_orders").update({ status: "received", received_at: new Date().toISOString() }).eq("id", po.id);
-      toast(`Received — ${restocked} restocked, ${added} new`, "success");
-      load();
-    } catch {
-      toast("Could not receive PO", "error");
-    } finally {
-      setBusy(null);
-    }
-  };
 
   return (
     <AdminGuard><PageShell
@@ -141,8 +112,8 @@ export default function PurchaseOrdersPage() {
                     <Button variant="outline" className="h-9 px-3" onClick={() => markOrdered(po)}><Send className="w-4 h-4" /> Ordered</Button>
                   )}
                   {(po.status === "draft" || po.status === "ordered") && (
-                    <Button variant="brand" className="h-9 px-3" disabled={busy === po.id} onClick={() => receivePo(po)}>
-                      <Download className="w-4 h-4" /> {busy === po.id ? "Receiving…" : "Receive"}
+                    <Button variant="brand" className="h-9 px-3" disabled={busy === po.id} onClick={() => setReceiving(po)}>
+                      <Download className="w-4 h-4" /> Receive
                     </Button>
                   )}
                   {po.status !== "received" && (
@@ -200,6 +171,14 @@ export default function PurchaseOrdersPage() {
             </div>
           </div>
         </div>
+      )}
+      {receiving && (
+        <ReceivePo
+          po={receiving}
+          orgId={orgId as string}
+          onClose={() => setReceiving(null)}
+          onDone={() => { setReceiving(null); load(); }}
+        />
       )}
     </PageShell></AdminGuard>
   );

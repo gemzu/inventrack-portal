@@ -50,6 +50,7 @@ const navGroups: NavGroup[] = [
       { href: "/dashboard/orders", label: "Orders", icon: ShoppingCart },
       { href: "/dashboard/purchase-orders", label: "Purchase Orders", icon: ClipboardList },
       { href: "/dashboard/approvals", label: "Approvals", icon: ClipboardCheck },
+      { href: "/dashboard/cycle-count", label: "Cycle Count", icon: ClipboardCheck },
     ],
   },
   {
