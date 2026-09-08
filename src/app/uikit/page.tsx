@@ -39,13 +39,13 @@ export default function UIKit() {
         ].map((k) => (
           <StaggerItem key={k.label}>
             <MotionCard className="p-5 group overflow-hidden" glow={k.accent}>
-              {k.accent && <div className="absolute -right-8 -top-8 w-28 h-28 rounded-full bg-brand-gradient opacity-[0.14] blur-2xl" />}
+              {k.accent && <div className="absolute -right-8 -top-8 w-28 h-28 rounded-full bg-primary opacity-[0.14] blur-2xl" />}
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{k.label}</p>
                   <p className="text-3xl font-display font-bold mt-2"><AnimatedNumber value={k.value} />{k.suffix}</p>
                 </div>
-                <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${k.accent ? "bg-brand-gradient text-white" : "bg-secondary"}`}>
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${k.accent ? "bg-primary text-primary-foreground" : "bg-secondary"}`}>
                   <k.icon className="w-5 h-5" />
                 </div>
               </div>
@@ -57,7 +57,7 @@ export default function UIKit() {
       <Stagger className="grid sm:grid-cols-2 gap-4">
         <StaggerItem>
           <MotionCard className="p-5 flex items-center gap-4 group">
-            <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center group-hover:bg-brand-gradient group-hover:text-white transition-[color,background-color,border-color,box-shadow,transform,opacity]">
+            <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-[color,background-color,border-color,box-shadow,transform,opacity]">
               <Upload className="w-5 h-5" />
             </div>
             <div className="flex-1">

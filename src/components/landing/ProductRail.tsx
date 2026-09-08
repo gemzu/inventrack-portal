@@ -177,7 +177,7 @@ export default function ProductRail() {
                   {BARS.map((h, i) => (
                     <span
                       key={i}
-                      className="bar-breathe flex-1 rounded-t-sm bg-brand-gradient"
+                      className="bar-breathe flex-1 rounded-t-sm bg-primary"
                       style={{ height: `${h}%`, "--delay": `${i * 0.19}s` } as React.CSSProperties}
                     />
                   ))}

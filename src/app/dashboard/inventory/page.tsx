@@ -515,7 +515,7 @@ export default function InventoryPage() {
             }`}
           >
             {view === v && (
-              <motion.span layoutId="inv-view" transition={spring} className="absolute inset-0 rounded-lg bg-brand-gradient shadow-[0_4px_12px_-4px_var(--brand-1)]" />
+              <motion.span layoutId="inv-view" transition={spring} className="absolute inset-0 rounded-lg bg-primary shadow-[0_4px_12px_-4px_var(--brand-1)]" />
             )}
             <span className="relative">{v}</span>
           </button>
@@ -654,7 +654,7 @@ export default function InventoryPage() {
                 </span>
               </div>
               {/* Edit affordance — always visible, pinned right */}
-              <div className="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center text-muted-foreground bg-secondary group-hover:bg-brand-gradient group-hover:text-white transition-colors">
+              <div className="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center text-muted-foreground bg-secondary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                 <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
               </div>
             </div>
@@ -995,7 +995,7 @@ export default function InventoryPage() {
                         key={s}
                         onClick={() => updateStatus(editItem, s)}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition capitalize ${
-                          editItem.status === s ? "bg-brand-gradient text-white border-transparent" : "hover:border-primary"
+                          editItem.status === s ? "bg-primary text-primary-foreground border-transparent" : "hover:border-primary"
                         }`}
                         style={editItem.status !== s ? { borderColor: "var(--border)" } : undefined}
                       >

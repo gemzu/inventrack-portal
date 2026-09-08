@@ -300,7 +300,7 @@ function ResetPageContent() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full rounded-lg bg-brand-gradient py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {submitting ? (
                     <span className="flex items-center justify-center gap-2">
@@ -366,7 +366,7 @@ function ResetPageContent() {
                   type="button"
                   onClick={handleResend}
                   disabled={resending}
-                  className="w-full rounded-lg bg-brand-gradient py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {resending ? (
                     <span className="flex items-center justify-center gap-2">
@@ -395,7 +395,7 @@ function ResetPageContent() {
               <button
                 type="button"
                 onClick={() => router.push("/login")}
-                className="w-full rounded-lg bg-brand-gradient py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                className="w-full rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
               >
                 Go to login
               </button>

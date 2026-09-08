@@ -100,7 +100,7 @@ export default function SignupPage() {
                     onClick={() => setRole(r.value)}
                     className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition-[background,color,border-color,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
                       role === r.value
-                        ? "bg-brand-gradient text-white shadow-[0_4px_12px_-4px_var(--brand-1)]"
+                        ? "bg-primary text-primary-foreground shadow-[0_4px_12px_-4px_var(--brand-1)]"
                         : "border border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
                     }`}
                   >
@@ -187,7 +187,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading || !agreedToTerms}
-              className="press mt-2 w-full rounded-lg bg-brand-gradient py-3 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--brand-1)] transition-[transform,filter,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+              className="press mt-2 w-full rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground shadow-[0_8px_24px_-8px_var(--brand-1)] transition-[transform,filter,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">

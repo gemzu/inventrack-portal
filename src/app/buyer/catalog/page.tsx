@@ -191,7 +191,7 @@ export default function BuyerCatalogPage() {
                   onClick={() => setCategoryFilter(null)}
                   className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,transform,opacity] ${
                     !categoryFilter 
-                      ? "bg-brand-gradient text-white shadow-[0_4px_12px_-4px_var(--brand-1)]"
+                      ? "bg-primary text-primary-foreground shadow-[0_4px_12px_-4px_var(--brand-1)]"
                       : "bg-muted text-muted-foreground hover:bg-muted/80"
                   }`}
                 >
@@ -203,7 +203,7 @@ export default function BuyerCatalogPage() {
                     onClick={() => setCategoryFilter(categoryFilter === cat ? null : cat)}
                     className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,transform,opacity] ${
                       categoryFilter === cat
-                        ? "bg-brand-gradient text-white"
+                        ? "bg-primary text-primary-foreground"
                         : "bg-muted text-muted-foreground hover:bg-muted/80"
                     }`}
                   >

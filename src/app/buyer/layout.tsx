@@ -37,7 +37,7 @@ function NavItem({
       }`}
     >
       {active && (
-        <motion.span layoutId={layoutId} transition={spring} className="absolute inset-0 rounded-xl bg-brand-gradient shadow-[0_8px_20px_-8px_var(--brand-1)]" />
+        <motion.span layoutId={layoutId} transition={spring} className="absolute inset-0 rounded-xl bg-primary shadow-[0_8px_20px_-8px_var(--brand-1)]" />
       )}
       {!active && <span className="absolute inset-0 rounded-xl group-hover:bg-secondary transition-colors" />}
       <span className="relative"><Icon className="w-[18px] h-[18px] transition-transform group-hover:scale-110" /></span>
@@ -53,7 +53,7 @@ function Sidebar({ pathname, onNavigate, unread, cartCount }: { pathname: string
     <div className="flex flex-col h-full bg-sidebar border-r border-sidebar-border">
       <div className="h-16 flex items-center px-5 shrink-0">
         <Link href="/buyer/catalog" className="flex items-center gap-3 group" onClick={onNavigate}>
-          <div className="w-9 h-9 rounded-xl bg-brand-gradient flex items-center justify-center shadow-[0_6px_16px_-6px_var(--brand-1)]">
+          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-[0_6px_16px_-6px_var(--brand-1)]">
             <Mark className="h-6 w-6 text-white" />
           </div>
           <span className="font-display font-bold text-lg tracking-tight">Invems</span>
@@ -164,7 +164,7 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
         {/* Mobile header */}
         <header className="md:hidden fixed top-0 left-0 right-0 h-14 glass border-b border-border z-30 flex items-center justify-between px-4">
           <Link href="/buyer/catalog" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-brand-gradient flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
               <Mark className="h-5 w-5 text-white" />
             </div>
             <span className="font-display font-bold text-sm">Invems</span>

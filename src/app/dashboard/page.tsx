@@ -38,7 +38,7 @@ function StatCard({ label, value, icon: Icon, suffix, accent, href }: StatCardPr
   const inner = (
     <MotionCard className="p-5 group overflow-hidden h-full" glow={accent}>
       {accent && (
-        <div className="absolute -right-8 -top-8 w-28 h-28 rounded-full bg-brand-gradient opacity-[0.14] blur-2xl pointer-events-none" />
+        <div className="absolute -right-8 -top-8 w-28 h-28 rounded-full bg-primary opacity-[0.14] blur-2xl pointer-events-none" />
       )}
       <div className="flex items-start justify-between">
         <div className="min-w-0">
@@ -49,7 +49,7 @@ function StatCard({ label, value, icon: Icon, suffix, accent, href }: StatCardPr
           </p>
         </div>
         <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3 ${
-          accent ? "bg-brand-gradient text-white shadow-[0_6px_16px_-6px_var(--brand-1)]" : "bg-secondary text-foreground"
+          accent ? "bg-primary text-primary-foreground shadow-[0_6px_16px_-6px_var(--brand-1)]" : "bg-secondary text-foreground"
         }`}>
           <Icon className="w-5 h-5" />
         </div>
@@ -64,7 +64,7 @@ function QuickAction({ icon: Icon, title, description, href }: { icon: React.Ele
     <StaggerItem>
       <Link href={href} className="block">
         <MotionCard className="p-5 flex items-center gap-4 group">
-          <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center shrink-0 transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-300 group-hover:bg-brand-gradient group-hover:text-white group-hover:scale-110">
+          <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center shrink-0 transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-300 group-hover:bg-primary group-hover:text-primary-foreground group-hover:scale-110">
             <Icon className="w-5 h-5" />
           </div>
           <div className="flex-1 min-w-0">
@@ -246,7 +246,7 @@ export default function DashboardPage() {
       <PageShell title="Dashboard">
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center max-w-md">
-            <div className="w-20 h-20 rounded-2xl bg-brand-gradient mx-auto mb-6 flex items-center justify-center text-white shadow-glow">
+            <div className="w-20 h-20 rounded-2xl bg-primary mx-auto mb-6 flex items-center justify-center text-primary-foreground shadow-glow">
               <Package className="w-8 h-8" />
             </div>
             <h2 className="text-xl font-bold">Welcome to Invems</h2>
@@ -255,7 +255,7 @@ export default function DashboardPage() {
             </p>
             {userRole === "admin" ? (
               <Link href="/setup/organization">
-                <button className="mt-6 px-6 py-3 rounded-xl bg-brand-gradient text-white font-semibold hover:brightness-110 transition shadow-[0_8px_24px_-8px_var(--brand-1)]">
+                <button className="mt-6 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:brightness-110 transition shadow-[0_8px_24px_-8px_var(--brand-1)]">
                   Create Organization
                 </button>
               </Link>

@@ -27,7 +27,7 @@ export default function EmptyState({ icon: Icon, title, description, actionLabel
         transition={{ ...spring, delay: 0.05 }}
         className="relative w-20 h-20 rounded-2xl bg-secondary flex items-center justify-center mb-6"
       >
-        <div className="absolute inset-0 rounded-2xl bg-brand-gradient opacity-10" />
+        <div className="absolute inset-0 rounded-2xl bg-primary opacity-10" />
         <Icon className="relative w-9 h-9 text-primary" />
       </motion.div>
       <h3 className="text-lg font-bold text-foreground mb-2">{title}</h3>

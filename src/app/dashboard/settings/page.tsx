@@ -1,4 +1,5 @@
 "use client";
+import MfaSetup from "@/components/dashboard/MfaSetup";
 import AdminGuard from "@/components/AdminGuard";
 
 import { useState, useEffect, useCallback, useTransition } from "react";
@@ -298,6 +299,13 @@ export default function SettingsPage() {
                 {accent === "pink" ? "✨ On" : "Off"}
               </button>
             </SettingRow>
+          </SettingsSection>
+
+          <SettingsSection
+            title="Two factor authentication"
+            description="Ask for a code from an authenticator app as well as your password."
+          >
+            <MfaSetup />
           </SettingsSection>
         </div>
       </PageShell>

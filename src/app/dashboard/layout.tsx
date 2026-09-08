@@ -111,7 +111,7 @@ function NavLink({
         <motion.span
           layoutId="nav-active"
           transition={spring}
-          className="absolute inset-0 rounded-xl bg-brand-gradient shadow-[0_8px_20px_-8px_var(--brand-1)]"
+          className="absolute inset-0 rounded-xl bg-primary shadow-[0_8px_20px_-8px_var(--brand-1)]"
         />
       )}
       {!active && (
@@ -141,7 +141,7 @@ function SidebarNav({
       {/* Logo area */}
       <div className="h-16 flex items-center px-5 shrink-0">
         <Link href="/" className="flex items-center gap-3 group" onClick={onNavigate}>
-          <div className="relative w-9 h-9 rounded-xl bg-brand-gradient flex items-center justify-center shadow-[0_6px_16px_-6px_var(--brand-1)] overflow-hidden">
+          <div className="relative w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-[0_6px_16px_-6px_var(--brand-1)] overflow-hidden">
             <Mark className="h-6 w-6 text-white" />
             <span className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors" />
           </div>
@@ -400,7 +400,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
             <Link
               href="/dashboard/settings"
-              className="w-9 h-9 rounded-full bg-brand-gradient flex items-center justify-center text-white text-xs font-bold ml-1 shadow-[0_4px_12px_-4px_var(--brand-1)] hover:scale-105 transition-transform"
+              className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold ml-1 shadow-[0_4px_12px_-4px_var(--brand-1)] hover:scale-105 transition-transform"
             >
               {userName?.charAt(0).toUpperCase() || "U"}
             </Link>

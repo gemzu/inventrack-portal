@@ -217,7 +217,7 @@ export default function UsersPage() {
               <div key={user.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3.5 border-b border-border/60 last:border-0 hover:bg-primary/[0.03] transition-colors">
                 {/* Identity */}
                 <div className="flex items-center gap-3 flex-1 min-w-[200px]">
-                  <div className="w-9 h-9 rounded-full bg-brand-gradient flex items-center justify-center text-white text-xs font-bold shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold shrink-0">
                     {user.name?.charAt(0).toUpperCase() || "?"}
                   </div>
                   <div className="min-w-0">

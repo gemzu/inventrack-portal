@@ -927,6 +927,28 @@ button:hover > svg {
   .boot-gate { display: none; }
 }
 
+/* Looping mark draw, used by the full-page loader. Same gesture as the boot
+   gate, but it clears and repeats because loading has no fixed length. */
+.mark-draw path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: mark-draw-loop 2.8s var(--ease-out-expo) infinite;
+}
+.mark-draw path:nth-child(1) { animation-delay: 0s; }
+.mark-draw path:nth-child(2) { animation-delay: .09s; }
+.mark-draw path:nth-child(3) { animation-delay: .18s; }
+.mark-draw path:nth-child(4) { animation-delay: .27s; }
+.mark-draw path:nth-child(5) { animation-delay: .36s; }
+.mark-draw path:nth-child(6) { animation-delay: .45s; }
+@keyframes mark-draw-loop {
+  0%        { stroke-dashoffset: 1; }
+  38%, 72%  { stroke-dashoffset: 0; }
+  100%      { stroke-dashoffset: -1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mark-draw path { animation: none; stroke-dashoffset: 0; }
+}
+
 /* ════════════════════════════════════════════════════════════
    THE MARK IS THE WAREHOUSE — hero crate lattice.
    The logo's cube tiled into a wall, with the real three-cube

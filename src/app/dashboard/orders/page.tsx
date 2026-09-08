@@ -145,7 +145,7 @@ export default function OrdersPage() {
             return (
               <div key={order.id} className="group flex items-center gap-4 px-4 py-3 border-b border-border/60 last:border-0 hover:bg-primary/[0.05] transition-colors">
                 <button onClick={() => setSelectedOrder(order)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
-                  <div className="w-9 h-9 rounded-full bg-brand-gradient flex items-center justify-center text-white text-xs font-bold shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold shrink-0">
                     {(order.buyerName || "?").charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0">
@@ -172,7 +172,7 @@ export default function OrdersPage() {
                       </button>
                     </>
                   )}
-                  <button onClick={() => setSelectedOrder(order)} title="View" className="w-9 h-9 rounded-lg flex items-center justify-center bg-secondary text-muted-foreground group-hover:bg-brand-gradient group-hover:text-white transition-colors">
+                  <button onClick={() => setSelectedOrder(order)} title="View" className="w-9 h-9 rounded-lg flex items-center justify-center bg-secondary text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                     <Eye className="w-4 h-4" />
                   </button>
                 </div>
