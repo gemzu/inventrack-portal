@@ -20,6 +20,7 @@ import Status from "@/components/Status";
 import { ArrowUpRight } from "lucide-react";
 import ConsoleRail from "@/components/console/ConsoleRail";
 import ConsoleIndex from "@/components/console/ConsoleIndex";
+import AppGate from "@/components/console/AppGate";
 import { visibleSections } from "@/components/console/nav";
 import { Action, Chip, Field, Input, SearchInput, Segmented, Select } from "@/components/console/controls";
 
@@ -56,7 +57,11 @@ export default function ConsoleReference() {
   const total = COMPOSITION.reduce((n, c) => n + c.value, 0);
 
   return (
-    <div className="console flex min-h-screen bg-background text-foreground">
+    <>
+      {/* What a phone or tablet gets instead of the console. */}
+      <AppGate />
+
+      <div className="console console-shell min-h-screen bg-background text-foreground">
 
       <aside className="sticky top-0 hidden h-screen w-[16.5rem] shrink-0 lg:block">
         <ConsoleRail
@@ -230,6 +235,7 @@ export default function ConsoleReference() {
           reference carries it too — a thing that only misbehaves while shut
           is exactly the thing a reference needs to render. */}
       <ConsoleIndex open={false} onClose={() => {}} role="admin" permissions="admin" orgId={null} />
-    </div>
+      </div>
+    </>
   );
 }

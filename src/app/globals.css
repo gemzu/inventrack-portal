@@ -1407,3 +1407,27 @@ a:hover > .panel::before,
 @media (prefers-reduced-motion: reduce) {
   .drawer-scrim, .drawer-panel, .modal-panel { animation: none; }
 }
+
+/* ════════════════════════════════════════════════════════════
+   THE CONSOLE IS A DESKTOP TOOL.
+
+   Below this, the app takes over. Two tests, because width alone
+   gets tablets wrong: anything narrow is out, and anything with a
+   coarse primary pointer is out up to laptop width — an iPad in
+   landscape passes a width check and is still an iPad.
+
+   Doing this in CSS rather than with matchMedia in JS means no
+   hydration mismatch and no flash of the wrong shell on load.
+   ════════════════════════════════════════════════════════════ */
+.console-shell { display: none; }
+.app-gate { display: flex; }
+
+@media (min-width: 1024px) {
+  .console-shell { display: flex; }
+  .app-gate { display: none; }
+}
+
+@media (min-width: 1024px) and (max-width: 1365px) and (pointer: coarse) {
+  .console-shell { display: none; }
+  .app-gate { display: flex; }
+}

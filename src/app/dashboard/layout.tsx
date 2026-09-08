@@ -18,15 +18,15 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import Mark from "@/components/Mark";
-import { Bell, Menu, Moon, Sun } from "lucide-react";
+import { Bell, Moon, Sun } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useToast } from "@/components/Toast";
 import PageLoader from "@/components/PageLoader";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { getNotifications, getUnreadNotificationCount } from "@/lib/dataService";
 import ConsoleRail from "@/components/console/ConsoleRail";
+import AppGate from "@/components/console/AppGate";
 import ConsoleIndex from "@/components/console/ConsoleIndex";
 import { activeHref, flatten, visibleSections } from "@/components/console/nav";
 
@@ -39,7 +39,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
 
-  const [sheetOpen, setSheetOpen] = useState(false);
   const [indexOpen, setIndexOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -135,9 +134,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const orgName = (orgData as { name?: string } | null)?.name ?? null;
 
   return (
-    <div className="console flex min-h-screen bg-background text-foreground">
+    <>
+      {/* Phones and tablets get the app instead. Both branches render and CSS
+          decides which one is on, so there is no hydration mismatch and no
+          flash of the wrong shell while JavaScript boots. */}
+      <AppGate />
 
-      <aside className="sticky top-0 hidden h-screen w-[16.5rem] shrink-0 lg:block">
+      <div className="console console-shell min-h-screen bg-background text-foreground">
+      <aside className="sticky top-0 h-screen w-[16.5rem] shrink-0">
         <ConsoleRail
           sections={sections}
           pathname={pathname}
@@ -153,24 +157,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <header className="sticky top-0 z-30 h-14 shrink-0 border-b border-border bg-background/80 backdrop-blur-xl">
           <div className="flex h-full items-center justify-between gap-6 px-5 lg:px-8">
             <div className="flex min-w-0 items-center gap-4">
-              <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-                <SheetTrigger className="rounded-md p-1.5 transition-colors duration-300 hover:text-[var(--brand-2)] lg:hidden">
-                  <Menu className="h-4 w-4" />
-                  <span className="sr-only">Open navigation</span>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-72 border-r border-border p-0">
-                  <ConsoleRail
-                    sections={sections}
-                    pathname={pathname}
-                    userName={userName}
-                    userRole={userRole}
-                    orgName={orgName}
-                    onNavigate={() => setSheetOpen(false)}
-                    onLogout={handleLogout}
-                  />
-                </SheetContent>
-              </Sheet>
-
               {/* Where you are, and what that place is for. The readout is
                   keyed on the route so it re-enters on every navigation. */}
               <div className="feed-window min-w-0">
@@ -279,6 +265,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         permissions={userPermissions}
         orgId={orgId}
       />
-    </div>
+      </div>
+    </>
   );
 }

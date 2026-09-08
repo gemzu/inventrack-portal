@@ -33,7 +33,15 @@ export default function Mark({
         strokeLinecap="round"
       >
         {CUBES.map((d, i) => (
-          <path key={i} d={d} />
+          /* pathLength normalises every path to 1 unit long, so a
+             stroke-dasharray of 1 covers whichever path it is applied to and
+             the draw-on animations work evenly across all six.
+
+             Without it, .mark-draw and .boot-draw set a 1-unit dash on a
+             512-unit viewBox — the animation ran, moved the dash by a
+             pixel-and-a-bit, and looked completely static. That is why the
+             full-page loader sat there not moving. */
+          <path key={i} d={d} pathLength={1} />
         ))}
       </g>
     </svg>
