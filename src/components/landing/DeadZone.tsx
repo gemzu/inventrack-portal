@@ -111,7 +111,7 @@ export default function DeadZone() {
                     {[0, 1, 2, 3].map((b) => (
                       <span
                         key={b}
-                        className="w-1.5 rounded-sm transition-all duration-500 ease-[cubic-bezier(0.16,1,0.30,1)]"
+                        className="w-1.5 rounded-sm transition-[background,height] duration-500 ease-[cubic-bezier(0.16,1,0.30,1)]"
                         style={{
                           height: `${6 + b * 4}px`,
                           background:
@@ -137,7 +137,7 @@ export default function DeadZone() {
                   return (
                     <li
                       key={q.sku}
-                      className="flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.30,1)]"
+                      className="flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-[opacity,transform,border-color,background] duration-500 ease-[cubic-bezier(0.16,1,0.30,1)]"
                       style={{
                         opacity: present ? 1 : 0,
                         transform: present ? "none" : "translateY(8px)",

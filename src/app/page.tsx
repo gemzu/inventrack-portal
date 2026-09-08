@@ -9,7 +9,6 @@ import ProductRail from "@/components/landing/ProductRail";
 import DeadZone from "@/components/landing/DeadZone";
 import SiteNav from "@/components/landing/SiteNav";
 import SiteFooter from "@/components/landing/SiteFooter";
-import ScrollReveals from "@/components/motion/ScrollReveals";
 import ScanText from "@/components/motion/ScanText";
 
 export default function LandingPage() {
@@ -18,7 +17,6 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <ScrollReveals />
       <SiteNav />
 
       {/* ── Hero: the mark tiled into a warehouse ─────────────── */}
@@ -46,7 +44,7 @@ export default function LandingPage() {
         <div className="fade-up fade-up-3 mt-9 flex flex-wrap items-center gap-4">
           <Link
             href={isLoggedIn ? "/dashboard" : "/signup"}
-            className="press inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--btn-shadow)] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:bg-primary-dark"
+            className="press inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--btn-shadow)] transition-[transform,background-color,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:bg-primary-dark"
           >
             {isLoggedIn ? "Open dashboard" : "Create account"}
             <ArrowRight className="h-4 w-4" />
@@ -88,7 +86,7 @@ export default function LandingPage() {
             />
             <Link
               href={isLoggedIn ? "/dashboard" : "/signup"}
-              className="press mt-8 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--btn-shadow)] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:bg-primary-dark"
+              className="press mt-8 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--btn-shadow)] transition-[transform,background-color,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:bg-primary-dark"
             >
               {isLoggedIn ? "Open dashboard" : "Create account"}
               <ArrowRight className="h-4 w-4" />

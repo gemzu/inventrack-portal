@@ -8,7 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 
 /* Shared field styling. Focus ring comes from globals (input:focus). */
 const FIELD =
-  "w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground";
+  "w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition-[border-color,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.30,1)] placeholder:text-muted-foreground";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -65,7 +65,7 @@ export default function LoginPage() {
 
       <div className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
-          <div className="mb-9 flex items-center gap-2.5">
+          <div className="reveal mb-9 flex items-center gap-2.5">
             <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-lg">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/logo.svg" alt="" className="h-full w-full object-contain" />
@@ -73,14 +73,14 @@ export default function LoginPage() {
             <span className="font-display text-sm font-bold tracking-tight">Invems</span>
           </div>
 
-          <h1 className="font-display text-3xl font-extrabold tracking-[-0.03em]">
+          <h1 className="reveal d1 font-display text-[1.6rem] font-bold tracking-[-0.015em] sm:text-[2rem]">
             Welcome back.
           </h1>
-          <p className="mb-8 mt-2 text-sm text-muted-foreground">
+          <p className="reveal d2 mb-8 mt-2 text-sm text-muted-foreground">
             Sign in and pick up where the floor left off.
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="reveal d3 space-y-4">
             {error && (
               <div
                 role="alert"
@@ -153,7 +153,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="press w-full rounded-lg bg-brand-gradient py-3 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--brand-1)] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+              className="press w-full rounded-lg bg-brand-gradient py-3 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--brand-1)] transition-[transform,filter,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">

@@ -887,6 +887,47 @@ button:hover > svg {
 }
 
 /* ════════════════════════════════════════════════════════════
+   BOOT GATE — first load opens with the index's own door.
+   ════════════════════════════════════════════════════════════ */
+.boot-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.boot-slat {
+  position: absolute;
+  inset: 0;
+  transform: translateY(0);
+  transition: transform 0.72s var(--ease-in-out-q);
+}
+.boot-slat:nth-child(1) { background: color-mix(in oklab, var(--brand-1) 22%, var(--background)); }
+.boot-slat:nth-child(2) { background: color-mix(in oklab, var(--brand-2) 12%, var(--background)); }
+.boot-slat:nth-child(3) { background: var(--background); }
+.boot-gate[data-open="true"] .boot-slat { transform: translateY(-101%); }
+
+.boot-mark {
+  position: relative;
+  filter: drop-shadow(0 0 22px color-mix(in oklab, var(--brand-2) 55%, transparent));
+  transition: opacity 0.34s var(--ease-out-expo), transform 0.5s var(--ease-out-expo);
+}
+.boot-gate[data-open="true"] .boot-mark { opacity: 0; transform: scale(1.06); }
+
+/* pathLength is normalised to 1, so one dash length reveals any path evenly. */
+.boot-draw path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: boot-draw 0.72s var(--ease-out-expo) both;
+}
+@keyframes boot-draw { to { stroke-dashoffset: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .boot-gate { display: none; }
+}
+
+/* ════════════════════════════════════════════════════════════
    THE MARK IS THE WAREHOUSE — hero crate lattice.
    The logo's cube tiled into a wall, with the real three-cube
    arrangement held lit inside it.

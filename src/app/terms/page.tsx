@@ -42,7 +42,7 @@ export default function TermsPage() {
         <div className="max-w-4xl mx-auto">
           <div className="grid gap-8">
             {/* Section 1 */}
-            <div className="group bg-card border border-border rounded-2xl p-8 hover:border-primary/30 transition-all duration-300">
+            <div className="reveal group bg-card border border-border rounded-2xl p-8 hover:border-primary/30 transition-[border-color,box-shadow,transform] duration-300 ease-[cubic-bezier(0.16,1,0.30,1)]">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                   <FileText className="w-6 h-6 text-primary" />
@@ -57,7 +57,7 @@ export default function TermsPage() {
             </div>
 
             {/* Section 2 */}
-            <div className="group bg-card border border-border rounded-2xl p-8 hover:border-primary/30 transition-all duration-300">
+            <div className="reveal group bg-card border border-border rounded-2xl p-8 hover:border-primary/30 transition-[border-color,box-shadow,transform] duration-300 ease-[cubic-bezier(0.16,1,0.30,1)]">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                   <ChevronRight className="w-6 h-6 text-primary" />
@@ -72,7 +72,7 @@ export default function TermsPage() {
             </div>
 
             {/* Section 3 */}
-            <div className="group bg-card border border-border rounded-2xl p-8 hover:border-primary/30 transition-all duration-300">
+            <div className="reveal group bg-card border border-border rounded-2xl p-8 hover:border-primary/30 transition-[border-color,box-shadow,transform] duration-300 ease-[cubic-bezier(0.16,1,0.30,1)]">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                   <AlertTriangle className="w-6 h-6 text-primary" />
@@ -87,7 +87,7 @@ export default function TermsPage() {
             </div>
 
             {/* Section 4 */}
-            <div className="group bg-card border border-border rounded-2xl p-8 hover:border-primary/30 transition-all duration-300">
+            <div className="reveal group bg-card border border-border rounded-2xl p-8 hover:border-primary/30 transition-[border-color,box-shadow,transform] duration-300 ease-[cubic-bezier(0.16,1,0.30,1)]">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                   <CreditCard className="w-6 h-6 text-primary" />
@@ -102,7 +102,7 @@ export default function TermsPage() {
             </div>
 
             {/* Section 5 */}
-            <div className="group bg-card border border-border rounded-2xl p-8 hover:border-primary/30 transition-all duration-300">
+            <div className="reveal group bg-card border border-border rounded-2xl p-8 hover:border-primary/30 transition-[border-color,box-shadow,transform] duration-300 ease-[cubic-bezier(0.16,1,0.30,1)]">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                   <Copyright className="w-6 h-6 text-primary" />
@@ -117,7 +117,7 @@ export default function TermsPage() {
             </div>
 
             {/* Section 6 */}
-            <div className="group bg-card border border-border rounded-2xl p-8 hover:border-primary/30 transition-all duration-300">
+            <div className="reveal group bg-card border border-border rounded-2xl p-8 hover:border-primary/30 transition-[border-color,box-shadow,transform] duration-300 ease-[cubic-bezier(0.16,1,0.30,1)]">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                   <AlertTriangle className="w-6 h-6 text-primary" />
@@ -132,7 +132,7 @@ export default function TermsPage() {
             </div>
 
             {/* Section 7 - Termination */}
-            <div className="group bg-card border border-border rounded-2xl p-8 hover:border-primary/30 transition-all duration-300">
+            <div className="reveal group bg-card border border-border rounded-2xl p-8 hover:border-primary/30 transition-[border-color,box-shadow,transform] duration-300 ease-[cubic-bezier(0.16,1,0.30,1)]">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                   <X className="w-6 h-6 text-primary" />

@@ -42,7 +42,7 @@ export default function AppLinks() {
           href={s.href}
           target="_blank"
           rel="noopener noreferrer"
-          className="bay-tag group relative overflow-hidden rounded-xl border border-border bg-card p-5 text-left transition-[transform,border-color,box-shadow] duration-300 ease-[cubic-bezier(0.16,1,0.30,1)] hover:-translate-y-1 hover:border-[var(--brand-1)]"
+          className="bay-tag group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card p-5 text-left transition-[transform,border-color,box-shadow] duration-300 ease-[cubic-bezier(0.16,1,0.30,1)] hover:-translate-y-1 hover:border-[var(--brand-1)]"
         >
           {/* The tag's barcode. Goes brand-coloured once scanned. */}
           <span

@@ -7,7 +7,7 @@ import { Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const FIELD =
-  "w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground";
+  "w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition-[border-color,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.30,1)] placeholder:text-muted-foreground";
 
 const ROLES = [
   { value: "admin", label: "Business owner" },
@@ -64,7 +64,7 @@ export default function SignupPage() {
 
       <div className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
-          <div className="mb-9 flex items-center gap-2.5">
+          <div className="reveal mb-9 flex items-center gap-2.5">
             <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-lg">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/logo.svg" alt="" className="h-full w-full object-contain" />
@@ -72,14 +72,14 @@ export default function SignupPage() {
             <span className="font-display text-sm font-bold tracking-tight">Invems</span>
           </div>
 
-          <h1 className="font-display text-3xl font-extrabold tracking-[-0.03em]">
+          <h1 className="reveal d1 font-display text-[1.6rem] font-bold tracking-[-0.015em] sm:text-[2rem]">
             Set up your warehouse.
           </h1>
-          <p className="mb-8 mt-2 text-sm text-muted-foreground">
+          <p className="reveal d2 mb-8 mt-2 text-sm text-muted-foreground">
             Takes about a minute. You can add your team afterwards.
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="reveal d3 space-y-4">
             {error && (
               <div
                 role="alert"
@@ -98,7 +98,7 @@ export default function SignupPage() {
                     type="button"
                     aria-pressed={role === r.value}
                     onClick={() => setRole(r.value)}
-                    className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                    className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition-[background,color,border-color,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
                       role === r.value
                         ? "bg-brand-gradient text-white shadow-[0_4px_12px_-4px_var(--brand-1)]"
                         : "border border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
@@ -187,7 +187,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading || !agreedToTerms}
-              className="press mt-2 w-full rounded-lg bg-brand-gradient py-3 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--brand-1)] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+              className="press mt-2 w-full rounded-lg bg-brand-gradient py-3 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--brand-1)] transition-[transform,filter,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
