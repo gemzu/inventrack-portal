@@ -190,7 +190,7 @@ export default function StorefrontsPage() {
                     <Button variant="ghost" size="icon-sm" onClick={() => navigator.clipboard.writeText(sf.inviteCode)} className="h-6 w-6"><Copy className="w-3 h-3" /></Button>
                   </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-wider">
+                <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
                   <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted text-foreground">
                     {sf.filterType === "all" ? <Globe className="w-3 h-3" /> : <MapPin className="w-3 h-3" />} {sf.filterType}
                   </div>
@@ -218,11 +218,11 @@ export default function StorefrontsPage() {
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Name</label>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Name</label>
                     <Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Premium Hub" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Description</label>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Description</label>
                     <Input value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} placeholder="Who is this for?" />
                   </div>
                 </div>
@@ -248,7 +248,7 @@ export default function StorefrontsPage() {
 function MultiPill({ title, icon, values, selected, onToggle }: { title: string; icon: React.ReactNode; values: Array<{ id: string; label: string }>; selected: string[]; onToggle: (id: string) => void }) {
   return (
     <div className="space-y-2">
-      <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">{title}</label>
+      <label className="block text-xs font-semibold text-muted-foreground">{title}</label>
       <div className="flex flex-wrap gap-2">
         {values.map((v) => (
           <Button key={v.id} size="sm" variant={selected.includes(v.id) ? "default" : "outline"} onClick={() => onToggle(v.id)}>
@@ -263,7 +263,7 @@ function MultiPill({ title, icon, values, selected, onToggle }: { title: string;
 function MultiList({ title, icon, items, selected, onToggle, tone }: { title: string; icon: React.ReactNode; items: Array<{ id: string; label: string }>; selected: string[]; onToggle: (id: string) => void; tone: "primary" | "danger" }) {
   return (
     <div className="space-y-2">
-      <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">{title}</label>
+      <label className="block text-xs font-semibold text-muted-foreground">{title}</label>
       <div className="max-h-44 overflow-auto rounded-lg border p-2 space-y-1">
         {items.map((it) => (
           <button key={it.id} type="button" onClick={() => onToggle(it.id)} className={`w-full text-left px-2 py-1.5 rounded text-xs ${selected.includes(it.id) ? (tone === "danger" ? "bg-destructive/15 text-destructive" : "bg-primary/15 text-primary") : "hover:bg-muted"}`}>

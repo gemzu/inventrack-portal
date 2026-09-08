@@ -155,7 +155,7 @@ export default function TeamPage() {
                 <div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center`}>
                   <stat.icon className={`w-5 h-5 ${stat.color}`} />
                 </div>
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <span className="text-xs font-semibold tracking-wide text-muted-foreground">
                   {stat.label}
                 </span>
               </div>

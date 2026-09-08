@@ -260,7 +260,7 @@ export default function EnrichmentDashboardPage() {
                   <div key={item.id} className="p-3 rounded-lg border bg-card">
                     <div className="flex items-center justify-between">
                       <span className="font-mono text-sm font-medium">{item.modelId}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-warning text-warning">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-warning/15 text-warning">
                         #{item.priority}
                       </span>
                     </div>

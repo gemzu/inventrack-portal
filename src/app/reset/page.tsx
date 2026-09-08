@@ -208,8 +208,8 @@ function ResetPageContent() {
       <div className="mx-auto flex min-h-[calc(100vh-56px)] max-w-5xl items-center justify-center px-6 py-12">
         <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 shadow-sm">
           <div className="mb-8 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-500/10">
-              <Boxes className="h-5 w-5 text-indigo-500" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10">
+              <Boxes className="h-5 w-5 text-primary" />
             </div>
             <div>
               <div className="text-2xl font-black tracking-tight">Invems</div>
@@ -219,8 +219,8 @@ function ResetPageContent() {
 
           {state === "checking" && (
             <div className="space-y-4 text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-indigo-500/10">
-                <Loader2 className="h-6 w-6 animate-spin text-indigo-500" />
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
               <h1 className="text-2xl font-bold">Checking your reset link</h1>
               <p className="text-sm text-muted-foreground">Please wait while we verify your password recovery request.</p>
@@ -230,8 +230,8 @@ function ResetPageContent() {
           {state === "ready" && (
             <>
               <div className="mb-6 text-center">
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-500/10">
-                  <KeyRound className="h-6 w-6 text-indigo-500" />
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                  <KeyRound className="h-6 w-6 text-primary" />
                 </div>
                 <h1 className="text-2xl font-bold">Set a new password</h1>
                 <p className="mt-2 text-sm text-muted-foreground">
@@ -241,12 +241,12 @@ function ResetPageContent() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 {error && (
-                  <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-600 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/15 px-3 py-2.5 text-sm text-destructive dark:border-destructive/30 dark:bg-destructive/40 dark:text-destructive">
                     {error}
                   </div>
                 )}
                 {message && (
-                  <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 text-sm text-green-700 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300">
+                  <div className="rounded-lg border border-success/30 bg-success/15 px-3 py-2.5 text-sm text-success dark:border-success/30 dark:bg-success/40 dark:text-success">
                     {message}
                   </div>
                 )}
@@ -320,8 +320,8 @@ function ResetPageContent() {
               <div className="text-center">
                 {state === "needlink" ? (
                   <>
-                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-500/10">
-                      <KeyRound className="h-6 w-6 text-indigo-500" />
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                      <KeyRound className="h-6 w-6 text-primary" />
                     </div>
                     <h1 className="text-2xl font-bold">Reset your password</h1>
                     <p className="mt-2 text-sm text-muted-foreground">
@@ -330,8 +330,8 @@ function ResetPageContent() {
                   </>
                 ) : (
                   <>
-                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10">
-                      <MailWarning className="h-6 w-6 text-amber-500" />
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-warning/10">
+                      <MailWarning className="h-6 w-6 text-warning" />
                     </div>
                     <h1 className="text-2xl font-bold">This reset link is no longer valid</h1>
                     <p className="mt-2 text-sm text-muted-foreground">
@@ -357,7 +357,7 @@ function ResetPageContent() {
                 </div>
 
                 {message && (
-                  <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 text-sm text-green-700 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300">
+                  <div className="rounded-lg border border-success/30 bg-success/15 px-3 py-2.5 text-sm text-success dark:border-success/30 dark:bg-success/40 dark:text-success">
                     {message}
                   </div>
                 )}
@@ -383,8 +383,8 @@ function ResetPageContent() {
 
           {state === "success" && (
             <div className="space-y-5 text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-500/10">
-                <CheckCircle2 className="h-6 w-6 text-green-500" />
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-success/10">
+                <CheckCircle2 className="h-6 w-6 text-success" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold">Password updated</h1>
@@ -414,8 +414,8 @@ export default function ResetPage() {
         <div className="min-h-screen bg-background text-foreground">
           <div className="mx-auto flex min-h-screen max-w-5xl items-center justify-center px-6 py-12">
             <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 text-center shadow-sm">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-500/10">
-                <Loader2 className="h-6 w-6 animate-spin text-indigo-500" />
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
               <h1 className="text-2xl font-bold">Loading password recovery</h1>
               <p className="mt-2 text-sm text-muted-foreground">

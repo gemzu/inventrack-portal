@@ -1,10 +1,11 @@
 "use client";
 
+import Status from "@/components/Status";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { ShoppingCart, ChevronDown, Search, Eye, Check, X } from "lucide-react";
-import { statusColor, formatDateTime } from "@/lib/utils";
+import { formatDateTime } from "@/lib/utils";
 import { normalizeOrderStatus, orderStatusLabel, ORDER_STATUS_FLOW, ORDER_STATUS } from "@/lib/orderStatus";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
@@ -155,9 +156,7 @@ export default function OrdersPage() {
                 </button>
                 <div className="w-16 shrink-0 text-sm text-muted-foreground hidden sm:block">{order.totalQty} item{order.totalQty !== 1 ? "s" : ""}</div>
                 <div className="shrink-0 hidden md:block">
-                  <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border ${statusColor(order.status)}`}>
-                    {orderStatusLabel(order.status)}
-                  </span>
+                  <Status status={order.status} label={orderStatusLabel(order.status)} emphasis />
                 </div>
                 <div className="w-32 shrink-0 text-xs text-muted-foreground hidden lg:block">{formatDateTime(order.createdAt as string)}</div>
                 {/* Actions — always visible, pinned right */}
@@ -193,9 +192,7 @@ export default function OrdersPage() {
               <div className="flex justify-between"><span className="text-muted-foreground">Company:</span> <span>{selectedOrder.buyerCompany || "-"}</span></div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Status:</span>
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusColor(selectedOrder.status)}`}>
-                  {orderStatusLabel(selectedOrder.status)}
-                </span>
+                <Status status={selectedOrder.status} label={orderStatusLabel(selectedOrder.status)} emphasis />
               </div>
               <div className="flex justify-between"><span className="text-muted-foreground">Total Qty:</span> <strong>{selectedOrder.totalQty}</strong></div>
 

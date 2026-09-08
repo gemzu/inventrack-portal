@@ -1,5 +1,6 @@
 "use client";
 
+import { itemIdentity } from "@/lib/itemIdentity";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -236,11 +237,11 @@ export default function BuyerOrderDetailPage() {
                         </div>
                         <div className="min-w-0">
                           <div className="font-medium truncate">
-                            {item.displayName || item.modelId || "Item"}
+                            {itemIdentity(item).title}
                           </div>
-                          {item.barcode ? (
+                          {itemIdentity(item).subtitle ? (
                             <div className="text-xs text-muted-foreground font-mono">
-                              {item.barcode}
+                              {itemIdentity(item).subtitle}
                             </div>
                           ) : null}
                         </div>

@@ -108,11 +108,11 @@ export default function SetupOrganizationPage() {
               <h3 className="font-semibold">What happens next</h3>
               <div className="space-y-3">
                 <div className="flex items-start gap-2.5 text-sm">
-                  <CheckCircle2 className="w-4 h-4 mt-0.5 text-emerald-500 shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 mt-0.5 text-success shrink-0" />
                   <span>Your organization profile is created in Supabase.</span>
                 </div>
                 <div className="flex items-start gap-2.5 text-sm">
-                  <ShieldCheck className="w-4 h-4 mt-0.5 text-blue-500 shrink-0" />
+                  <ShieldCheck className="w-4 h-4 mt-0.5 text-primary shrink-0" />
                   <span>Your account is assigned as <strong>Owner</strong> with full admin rights.</span>
                 </div>
                 <div className="flex items-start gap-2.5 text-sm">

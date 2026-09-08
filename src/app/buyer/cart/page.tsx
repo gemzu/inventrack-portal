@@ -1,5 +1,6 @@
 "use client";
 
+import { itemIdentity } from "@/lib/itemIdentity";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -95,8 +96,10 @@ export default function BuyerCartPage() {
                 >
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold truncate">{item.displayName || item.modelId || "Item"}</div>
-                      <div className="text-xs text-muted-foreground font-mono">{item.barcode || ""}</div>
+                      <div className="truncate font-medium">{itemIdentity(item).title}</div>
+                      {itemIdentity(item).subtitle && (
+                                              <div className="mono text-xs text-muted-foreground">{itemIdentity(item).subtitle}</div>
+                                            )}
                     </div>
                     
                     <div className="flex items-center gap-3">

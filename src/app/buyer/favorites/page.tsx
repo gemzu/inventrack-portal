@@ -1,5 +1,6 @@
 "use client";
 
+import { itemIdentity } from "@/lib/itemIdentity";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
@@ -113,16 +114,16 @@ export default function BuyerFavoritesPage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold truncate">
-                      {it.displayName || it.modelId || "Item"}
+                      {itemIdentity(it).title}
                     </div>
                     {it.brand ? (
                       <div className="text-xs text-muted-foreground truncate">
                         {it.brand}
                       </div>
                     ) : null}
-                    {it.barcode ? (
+                    {itemIdentity(it).subtitle ? (
                       <div className="text-xs text-muted-foreground font-mono truncate mt-0.5">
-                        {it.barcode}
+                        {itemIdentity(it).subtitle}
                       </div>
                     ) : null}
                   </div>

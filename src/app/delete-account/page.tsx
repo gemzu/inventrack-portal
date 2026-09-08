@@ -268,8 +268,8 @@ export default function DeleteAccountPage() {
           {/* Step: success */}
           {step === "success" && (
             <div className="bg-card border border-border rounded-2xl p-8 text-center space-y-6">
-              <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto">
-                <CheckCircle className="w-8 h-8 text-green-500" />
+              <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mx-auto">
+                <CheckCircle className="w-8 h-8 text-success" />
               </div>
               <div>
                 <h2 className="text-xl font-semibold mb-2">Account deleted</h2>

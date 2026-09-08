@@ -189,9 +189,9 @@ export default function ProductVerificationPage() {
   }
 
   function getConfidenceColor(confidence: number) {
-    if (confidence >= 0.8) return "bg-success text-success border-success";
-    if (confidence >= 0.5) return "bg-warning text-warning border-warning";
-    return "bg-destructive text-destructive border-destructive";
+    if (confidence >= 0.8) return "bg-success/15 text-success border-success/30";
+    if (confidence >= 0.5) return "bg-warning/15 text-warning border-warning/30";
+    return "bg-destructive/15 text-destructive border-destructive/30";
   }
 
   if (loading) {
