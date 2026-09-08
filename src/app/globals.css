@@ -805,13 +805,31 @@ button:hover > svg {
 .index-toggle__glyph > span:last-child { transform: rotate(90deg); }
 .index-toggle__glyph[data-open="true"] { transform: rotate(135deg); }
 
+/* Closed means gone, not merely see-through.
+
+   Every child in here was hidden individually — the slats translated off the
+   top, the destinations at opacity 0, the readout at opacity 0 — but the panel
+   itself still painted. The destination list is long enough to overflow its
+   own scroll container, so the browser drew a scrollbar for it: a thin vertical
+   bar, fixed, in exactly the same place on every route, belonging to no layout
+   on the page. That was the stray line.
+
+   Hiding the container kills the whole class of that bug rather than the one
+   symptom. The delay matches the slat transition so the door is still seen to
+   close before the panel disappears. */
 .site-index {
   position: fixed;
   inset: 0;
   z-index: 40;
   pointer-events: none;
+  visibility: hidden;
+  transition: visibility 0s linear 0.62s;
 }
-.site-index[data-open="true"] { pointer-events: auto; }
+.site-index[data-open="true"] {
+  pointer-events: auto;
+  visibility: visible;
+  transition: visibility 0s;
+}
 
 .site-index__backdrop {
   position: absolute;

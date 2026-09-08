@@ -19,6 +19,7 @@ import PageShell from "@/components/page-shell";
 import Status from "@/components/Status";
 import { ArrowUpRight } from "lucide-react";
 import ConsoleRail from "@/components/console/ConsoleRail";
+import ConsoleIndex from "@/components/console/ConsoleIndex";
 import { visibleSections } from "@/components/console/nav";
 import { Action, Chip, Field, Input, SearchInput, Segmented, Select } from "@/components/console/controls";
 
@@ -225,6 +226,11 @@ export default function ConsoleReference() {
         </PageShell>
       </div>
       </div>
+
+      {/* The index, closed. It is mounted on every console route, so the
+          reference carries it too — a thing that only misbehaves while shut
+          is exactly the thing a reference needs to render. */}
+      <ConsoleIndex open={false} onClose={() => {}} role="admin" permissions="admin" orgId={null} />
     </div>
   );
 }
