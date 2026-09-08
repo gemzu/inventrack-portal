@@ -1,5 +1,21 @@
 "use client";
 
+/**
+ * Theme state.
+ *
+ * This used to *decide* the theme, in an effect: read localStorage, work out
+ * the preference, then add the `dark` class. Effects run after hydration, and
+ * hydration runs after the first paint — so every load painted light and then
+ * flipped. On a dark theme that is a white screen for the length of hydration,
+ * which is the most visible flaw a site can have and was showing up as "the
+ * first third of a second looks wrong".
+ *
+ * The decision moved into BootScript, which runs during parse, before anything
+ * is painted. What is left here is state that follows the DOM rather than
+ * leading it: read what the class already says, and own the writes when
+ * somebody flips a switch.
+ */
+
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 
 type Theme = "light" | "dark";
@@ -14,42 +30,44 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType>({
   theme: "light",
-  accent: "pink",
+  accent: "neutral",
   toggleTheme: () => {},
   setAccent: () => {},
 });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
+  /* Starts light to match what the server rendered, then syncs to whatever the
+     pre-paint script already put on <html>. Nothing visual depends on this —
+     the class is the source of truth for the paint; this is only so the theme
+     toggle draws the right icon. */
   const [theme, setTheme] = useState<Theme>("light");
-  const [accent, setAccentState] = useState<Accent>("pink");
-  const [mounted, setMounted] = useState(false);
+  const [accent, setAccentState] = useState<Accent>("neutral");
 
   useEffect(() => {
-    setMounted(true);
-    const savedTheme = localStorage.getItem("inventrack-theme") as Theme | null;
-    const savedAccent = localStorage.getItem("inventrack-accent") as Accent | null;
-    const preferred = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    
-    const t = savedTheme || preferred;
-    const a = savedAccent || "neutral";
-    
-    setTheme(t);
-    setAccentState(a);
-    document.documentElement.classList.toggle("dark", t === "dark");
-    document.documentElement.classList.toggle("pink-accent", a === "pink");
+    const el = document.documentElement;
+    setTheme(el.classList.contains("dark") ? "dark" : "light");
+    setAccentState(el.classList.contains("pink-accent") ? "pink" : "neutral");
   }, []);
 
   const toggleTheme = () => {
-    const next = theme === "light" ? "dark" : "light";
+    const next: Theme = theme === "light" ? "dark" : "light";
     setTheme(next);
-    localStorage.setItem("inventrack-theme", next);
+    try {
+      localStorage.setItem("inventrack-theme", next);
+    } catch {
+      /* Private mode. The choice just will not survive the tab. */
+    }
     document.documentElement.classList.toggle("dark", next === "dark");
   };
 
-  const setAccent = (newAccent: Accent) => {
-    setAccentState(newAccent);
-    localStorage.setItem("inventrack-accent", newAccent);
-    document.documentElement.classList.toggle("pink-accent", newAccent === "pink");
+  const setAccent = (next: Accent) => {
+    setAccentState(next);
+    try {
+      localStorage.setItem("inventrack-accent", next);
+    } catch {
+      /* As above. */
+    }
+    document.documentElement.classList.toggle("pink-accent", next === "pink");
   };
 
   return (
