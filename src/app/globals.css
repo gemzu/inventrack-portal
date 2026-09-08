@@ -1141,3 +1141,229 @@ button:hover > svg {
   .word-rise { transform: none !important; animation: none !important; }
 }
 
+
+/* ════════════════════════════════════════════════════════════
+   THE CONSOLE — the dashboard, rebuilt on the public site's
+   language rather than on a card framework.
+
+   The old dashboard was glass: blurred panels, 16px radii, drop
+   shadows, coloured pills, an icon in a rounded square on every
+   tile. None of that exists on the public site, which is why the
+   two never looked like one product.
+
+   This is the site's vocabulary applied to working screens:
+   hairlines instead of shadows, one lit edge instead of a glow,
+   Unbounded set large for figures, Plex Mono for every number and
+   code, and the index's exact entrance — up from behind a clipped
+   edge, ease-out-expo, 55ms steps.
+   ════════════════════════════════════════════════════════════ */
+
+.console {
+  --console-radius: 6px;
+  --hair: color-mix(in oklab, var(--foreground) 12%, transparent);
+  --hair-soft: color-mix(in oklab, var(--foreground) 7%, transparent);
+}
+
+/* The floor under the console. A faint isometric ruling, the same
+   grid the crate lattice is built on, so the working screens sit on
+   the same ground as the hero instead of on a flat wash. */
+.console-ground {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image:
+    linear-gradient(to right, var(--hair-soft) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--hair-soft) 1px, transparent 1px);
+  background-size: 128px 111px;
+  mask-image: radial-gradient(120% 90% at 70% 0%, #000 10%, transparent 75%);
+}
+
+/* ── Panel: the only surface. ─────────────────────────────────
+   A hairline box with one edge that can light. No blur, no radius
+   worth noticing, no shadow — the border does the work, the way
+   the header and the index do it. */
+.panel {
+  position: relative;
+  border: 1px solid var(--hair);
+  border-radius: var(--console-radius);
+  background: color-mix(in oklab, var(--card) 82%, transparent);
+  transition: border-color 0.4s var(--ease-out-expo);
+}
+
+/* The lit edge. Draws in from the left on hover — the same gesture
+   as the boot beam crossing the fold, at panel scale. */
+.panel::before {
+  content: "";
+  position: absolute;
+  inset: -1px -1px auto -1px;
+  height: 1px;
+  background: linear-gradient(to right, var(--brand-1), var(--brand-3));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.55s var(--ease-out-expo);
+}
+.panel-live::before,
+a:hover > .panel::before,
+.panel-hover:hover::before { transform: scaleX(1); }
+.panel-hover:hover { border-color: color-mix(in oklab, var(--brand-2) 40%, var(--hair)); }
+
+/* Anything clickable rises the way an index link does. */
+.panel-hover {
+  transition: border-color 0.4s var(--ease-out-expo),
+              transform 0.4s var(--ease-out-expo);
+}
+.panel-hover:hover { transform: translateY(-2px); }
+
+/* ── Section rule: a numbered hairline, not a card header. ──── */
+.console-rule {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  border-top: 1px solid var(--hair);
+  padding-top: 0.75rem;
+}
+.console-rule__line {
+  flex: 1;
+  height: 1px;
+  background: var(--hair-soft);
+}
+
+/* ── Figures: the numbers are the design. ──────────────────── */
+.figure-value {
+  font-family: var(--font-display, inherit);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 0.92;
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(1.9rem, 1.2rem + 2.4vw, 3.1rem);
+}
+.figure-label {
+  font-family: var(--font-mono-face, ui-monospace, monospace);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+/* ── The rail. ────────────────────────────────────────────────
+   Nav entries are index entries: a mono ordinal, a display label,
+   and a hairline that grows from the left when the entry is live.
+   No pill, no fill, no icon chip. */
+.rail-link {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.4rem 0 0.4rem 0.875rem;
+  color: var(--muted-foreground);
+  transition: color 0.3s var(--ease-out-expo), padding-left 0.4s var(--ease-out-expo);
+}
+.rail-link::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55rem;
+  bottom: 0.55rem;
+  width: 2px;
+  border-radius: 2px;
+  background: linear-gradient(to bottom, var(--brand-1), var(--brand-3));
+  transform: scaleY(0);
+  transform-origin: center;
+  transition: transform 0.45s var(--ease-out-expo);
+}
+.rail-link:hover { color: var(--foreground); padding-left: 1.125rem; }
+.rail-link:hover::before { transform: scaleY(0.45); }
+.rail-link[data-active="true"] { color: var(--foreground); padding-left: 1.125rem; }
+.rail-link[data-active="true"]::before { transform: scaleY(1); }
+.rail-link__ord {
+  font-family: var(--font-mono-face, ui-monospace, monospace);
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  opacity: 0.45;
+}
+.rail-link[data-active="true"] .rail-link__ord { opacity: 0.9; color: var(--brand-2); }
+
+.rail-group__label {
+  font-family: var(--font-mono-face, ui-monospace, monospace);
+  font-size: 0.625rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--muted-foreground) 70%, transparent);
+}
+
+/* ── Route change: the bay door, at content scale. ───────────
+   template.tsx remounts on navigation, so this plays once per
+   route. Clipped rise, not a fade — the index's move. */
+.bay-in { animation: bay-in 0.62s var(--ease-out-expo) both; }
+@keyframes bay-in {
+  from { opacity: 0; transform: translate3d(0, 26px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* A single slat wipes down the content column as the route lands,
+   so navigation reads as a door opening rather than a crossfade. */
+.bay-wipe {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  transform-origin: top;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--brand-1) 26%, var(--background)),
+    color-mix(in oklab, var(--brand-2) 8%, var(--background))
+  );
+  animation: bay-wipe 0.72s var(--ease-in-out-q) both;
+}
+@keyframes bay-wipe {
+  0%   { transform: scaleY(1); }
+  100% { transform: scaleY(0); }
+}
+
+/* ── Data rows. A table is hairlines and monospace, nothing more. */
+.row-line {
+  border-bottom: 1px solid var(--hair-soft);
+  transition: background-color 0.3s var(--ease-out-expo);
+}
+.row-line:last-child { border-bottom: 0; }
+.row-line:hover { background: color-mix(in oklab, var(--brand-2) 5%, transparent); }
+
+.col-head {
+  font-family: var(--font-mono-face, ui-monospace, monospace);
+  font-size: 0.625rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+/* ── Skeletons draw as hairline crates, not grey blocks. ───── */
+.crate-skeleton {
+  border: 1px solid var(--hair);
+  border-radius: var(--console-radius);
+  position: relative;
+  overflow: hidden;
+}
+.crate-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--brand-2) 12%, transparent),
+    transparent
+  );
+  transform: translateX(-100%);
+  animation: crate-sweep 1.6s var(--ease-out-expo) var(--d, 0s) infinite;
+}
+@keyframes crate-sweep {
+  to { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bay-in, .bay-wipe, .crate-skeleton::after { animation: none; }
+  .bay-wipe { display: none; }
+  .panel::before, .rail-link, .rail-link::before, .panel-hover { transition: none; }
+}

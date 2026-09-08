@@ -1,207 +1,59 @@
 "use client";
 
-import Mark from "@/components/Mark";
-import { useEffect, useState } from "react";
+/**
+ * The console shell.
+ *
+ * Rebuilt on the public site's language rather than on the admin-template
+ * shape it had: a numbered rail instead of pill navigation, a header that
+ * carries a live readout and one INDEX toggle instead of a row of icon
+ * buttons, and the site's own bay door for finding anything.
+ *
+ * The header is deliberately the same object as the marketing header — same
+ * height, same hairline, same toggle with its two stacked labels and its plus
+ * rotating into a cross — because signing in should feel like walking further
+ * into the same building, not like arriving at a different one.
+ */
+
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import Mark from "@/components/Mark";
+import { Bell, Menu, Moon, Sun } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
-import {
-  LayoutDashboard, Package, BookOpen, ShoppingCart, Users, Building2,
-  Ban, Activity, Settings, LogOut, Menu,
-  Sun, Moon, Boxes, Bell, ClipboardCheck, ClipboardList,
-  TrendingUp, FileBarChart, MessageCircle, FileText,
-  Sparkles, ShoppingBag, ShieldCheck,
-} from "lucide-react";
-import Breadcrumb from "@/components/Breadcrumb";
+import { useToast } from "@/components/Toast";
 import PageLoader from "@/components/PageLoader";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { getNotifications, getUnreadNotificationCount } from "@/lib/dataService";
-import { useToast } from "@/components/Toast";
-import { spring } from "@/lib/motion";
-
-/* ── Nav structure with groups ───────────────────────── */
-interface NavItem {
-  href: string;
-  label: string;
-  icon: typeof LayoutDashboard;
-}
-
-interface NavGroup {
-  label: string;
-  items: NavItem[];
-}
-
-const navGroups: NavGroup[] = [
-  {
-    label: "OVERVIEW",
-    items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }],
-  },
-  {
-    label: "OPERATIONS",
-    items: [
-      { href: "/dashboard/inventory", label: "Inventory", icon: Package },
-      { href: "/dashboard/catalog", label: "Product Catalog", icon: BookOpen },
-      { href: "/dashboard/boxes", label: "Boxes", icon: Boxes },
-      { href: "/dashboard/orders", label: "Orders", icon: ShoppingCart },
-      { href: "/dashboard/purchase-orders", label: "Purchase Orders", icon: ClipboardList },
-      { href: "/dashboard/approvals", label: "Approvals", icon: ClipboardCheck },
-      { href: "/dashboard/cycle-count", label: "Cycle Count", icon: ClipboardCheck },
-    ],
-  },
-  {
-    label: "TEAM",
-    items: [
-      { href: "/dashboard/users", label: "Users", icon: Users },
-      { href: "/dashboard/invites", label: "Invites", icon: FileText },
-      { href: "/dashboard/chat", label: "Messages", icon: MessageCircle },
-    ],
-  },
-  {
-    label: "TOOLS",
-    items: [
-      { href: "/dashboard/facilities", label: "Facilities", icon: Building2 },
-      { href: "/dashboard/storefronts", label: "Storefronts", icon: ShoppingBag },
-      { href: "/dashboard/blacklist", label: "Blacklist", icon: Ban },
-      { href: "/dashboard/whitelist", label: "Whitelist", icon: ShieldCheck },
-      { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
-      { href: "/dashboard/support", label: "Support", icon: MessageCircle },
-      { href: "/dashboard/enrichment", label: "AI Enrichment", icon: Sparkles },
-      { href: "/dashboard/activity", label: "Activity", icon: Activity },
-      { href: "/dashboard/invoices", label: "Invoices", icon: FileText },
-    ],
-  },
-];
-
-// Admin-only pages filtering
-const adminOnlyPages = [
-  "/dashboard/users",
-  "/dashboard/facilities",
-  "/dashboard/blacklist",
-  "/dashboard/enrichment",
-  "/dashboard/activity",
-  "/dashboard/settings",
-  "/dashboard/approvals",
-  "/dashboard/storefronts",
-];
-
-function NavLink({
-  item,
-  active,
-  onNavigate,
-}: {
-  item: NavItem;
-  active: boolean;
-  onNavigate?: () => void;
-}) {
-  return (
-    <Link
-      href={item.href}
-      onClick={onNavigate}
-      className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
-        active
-          ? "text-white font-semibold"
-          : "text-muted-foreground hover:text-foreground"
-      }`}
-    >
-      {active && (
-        <motion.span
-          layoutId="nav-active"
-          transition={spring}
-          className="absolute inset-0 rounded-xl bg-primary shadow-[0_8px_20px_-8px_var(--brand-1)]"
-        />
-      )}
-      {!active && (
-        <span className="absolute inset-0 rounded-xl bg-transparent group-hover:bg-secondary transition-colors" />
-      )}
-      <item.icon className="relative w-[18px] h-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" />
-      <span className="relative">{item.label}</span>
-    </Link>
-  );
-}
-
-function SidebarNav({
-  visibleGroups,
-  showSettings,
-  pathname,
-  onNavigate,
-  onLogout,
-}: {
-  visibleGroups: NavGroup[];
-  showSettings: boolean;
-  pathname: string;
-  onNavigate?: () => void;
-  onLogout: () => void;
-}) {
-  return (
-    <div className="flex flex-col h-full bg-sidebar border-r border-sidebar-border">
-      {/* Logo area */}
-      <div className="h-16 flex items-center px-5 shrink-0">
-        <Link href="/" className="flex items-center gap-3 group" onClick={onNavigate}>
-          <div className="relative w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-[0_6px_16px_-6px_var(--brand-1)] overflow-hidden">
-            <Mark className="h-6 w-6 text-white" />
-            <span className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors" />
-          </div>
-          <span className="font-display font-bold text-lg tracking-tight">Invems</span>
-        </Link>
-      </div>
-
-      {/* Nav groups */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-5">
-        {visibleGroups.map((group) => (
-          <div key={group.label}>
-            <div className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-[0.14em] px-3 mb-2">
-              {group.label}
-            </div>
-            <div className="space-y-0.5">
-              {group.items.map((item) => (
-                <NavLink
-                  key={item.href}
-                  item={item}
-                  active={pathname === item.href}
-                  onNavigate={onNavigate}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
-      </nav>
-
-      {/* Settings + Sign out (bottom) */}
-      <div className="shrink-0 border-t border-sidebar-border p-3 space-y-0.5">
-        {showSettings && (
-          <NavLink
-            item={{ href: "/dashboard/settings", label: "Settings", icon: Settings }}
-            active={pathname === "/dashboard/settings"}
-            onNavigate={onNavigate}
-          />
-        )}
-        <button
-          onClick={onLogout}
-          className="group flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors w-full"
-        >
-          <LogOut className="w-[18px] h-[18px] transition-transform duration-200 group-hover:-translate-x-0.5" />
-          Sign Out
-        </button>
-      </div>
-    </div>
-  );
-}
+import ConsoleRail from "@/components/console/ConsoleRail";
+import ConsoleIndex from "@/components/console/ConsoleIndex";
+import { activeHref, flatten, visibleSections } from "@/components/console/nav";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, userName, userRole, userActive, userPermissions, orgId, loading, logout } = useAuth();
+  const {
+    user, userName, userRole, userActive, userPermissions, orgId, orgData, loading, logout,
+  } = useAuth();
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
+
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [indexOpen, setIndexOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifPreview, setNotifPreview] = useState<Array<Record<string, unknown>>>([]);
+
+  const sections = useMemo(
+    () => visibleSections(userRole, userPermissions),
+    [userRole, userPermissions]
+  );
+  const dests = useMemo(() => flatten(sections), [sections]);
+  const here = useMemo(() => {
+    const href = activeHref(pathname, dests);
+    return dests.find((d) => d.href === href) || null;
+  }, [pathname, dests]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -222,6 +74,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     getUnreadNotificationCount(user.id).then(setUnreadCount).catch(() => setUnreadCount(0));
   }, [user]);
 
+  /* The index answers the shortcut people already try for search. */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setIndexOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const closeIndex = useCallback(() => setIndexOpen(false), []);
+
   const openNotifications = async () => {
     if (!user) return;
     setNotifOpen((v) => !v);
@@ -234,197 +100,186 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   };
 
-  if (loading) {
-    return <PageLoader />;
-  }
-
-  if (!user) return null;
-
-  // Block inactive buyers
-  if (userRole === "buyer" && userActive === false) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
-        <Card className="max-w-md">
-          <CardContent className="p-10 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-warning/10 flex items-center justify-center mx-auto mb-5">
-              <Bell className="w-8 h-8 text-warning" />
-            </div>
-            <h2 className="text-xl font-bold mb-2">Account Pending</h2>
-            <p className="text-sm text-muted-foreground mb-6">
-              Your account is awaiting activation. Contact your admin to get access.
-            </p>
-            <Button
-              variant="outline"
-              onClick={async () => { await logout(); router.push("/login"); }}
-            >
-              Sign Out
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Build dynamic groups based on role/permissions (no mutation!)
-  const visibleGroups = (() => {
-    const isAdmin = userRole === "admin";
-
-    const groups: NavGroup[] = navGroups.map((group) => ({
-      label: group.label,
-      items: isAdmin
-        ? [...group.items]
-        : group.items.filter((item) => !adminOnlyPages.includes(item.href)),
-    })).filter((group) => group.items.length > 0);
-
-    if (isAdmin) {
-      const toolsIdx = groups.findIndex((g) => g.label === "TOOLS");
-      if (toolsIdx !== -1) {
-        groups[toolsIdx] = {
-          ...groups[toolsIdx],
-          items: [...groups[toolsIdx].items, { href: "/dashboard/reports", label: "Reports", icon: FileBarChart }],
-        };
-      }
-    }
-
-    if (userPermissions === "superadmin") {
-      groups.push({
-        label: "ADMIN",
-        items: [{ href: "/dashboard/analytics", label: "Platform Analytics", icon: TrendingUp }],
-      });
-    }
-
-    return groups;
-  })();
-
-  const showSettings = userRole === "admin";
-
   const handleLogout = async () => {
     await logout();
     router.push("/login");
   };
 
+  if (loading) return <PageLoader />;
+  if (!user) return null;
+
+  /* A buyer whose account has not been switched on yet. Kept as a plain
+     hairline panel rather than a card with an icon in a coloured square. */
+  if (userRole === "buyer" && userActive === false) {
+    return (
+      <div className="console flex min-h-screen items-center justify-center px-6">
+        <div className="panel panel-live max-w-md p-8 text-center">
+          <Mark className="mx-auto h-9 w-9 text-[var(--brand-2)]" />
+          <h2 className="font-display mt-5 text-lg font-bold uppercase tracking-[-0.01em]">
+            Account pending
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Your account is waiting on activation. Your admin can switch it on.
+          </p>
+          <button
+            onClick={handleLogout}
+            className="mono mt-6 rounded-md border border-border px-4 py-2 text-[11px] uppercase tracking-[0.18em] transition-colors duration-300 hover:border-[var(--brand-2)]"
+          >
+            Sign out
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const orgName = (orgData as { name?: string } | null)?.name ?? null;
+
   return (
-    <div className="min-h-screen flex bg-background text-foreground">
-      {/* ── Desktop Sidebar ──────────────── */}
-      <aside className="hidden lg:block sticky top-0 h-screen w-64 shrink-0">
-        <SidebarNav
-          visibleGroups={visibleGroups}
-          showSettings={showSettings}
+    <div className="console flex min-h-screen bg-background text-foreground">
+      <div className="console-ground" aria-hidden />
+
+      <aside className="sticky top-0 hidden h-screen w-[16.5rem] shrink-0 lg:block">
+        <ConsoleRail
+          sections={sections}
           pathname={pathname}
+          userName={userName}
+          userRole={userRole}
+          orgName={orgName}
           onLogout={handleLogout}
         />
       </aside>
 
-      {/* ── Main content ────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Topbar */}
-        <header className="glass border-b border-border/60 h-16 flex items-center justify-between px-4 lg:px-6 shrink-0 sticky top-0 z-30">
-          <div className="flex items-center gap-3">
-            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-              <SheetTrigger className="lg:hidden p-2 rounded-lg hover:bg-secondary transition-colors">
-                <Menu className="w-5 h-5" />
-              </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-72 bg-sidebar border-r border-sidebar-border">
-                <SidebarNav
-                  visibleGroups={visibleGroups}
-                  showSettings={showSettings}
-                  pathname={pathname}
-                  onNavigate={() => setSheetOpen(false)}
-                  onLogout={handleLogout}
-                />
-              </SheetContent>
-            </Sheet>
-            <Breadcrumb />
-          </div>
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* ── Header. The site's header, with a live readout in it. ── */}
+        <header className="sticky top-0 z-30 h-14 shrink-0 border-b border-border bg-background/80 backdrop-blur-xl">
+          <div className="flex h-full items-center justify-between gap-6 px-5 lg:px-8">
+            <div className="flex min-w-0 items-center gap-4">
+              <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+                <SheetTrigger className="rounded-md p-1.5 transition-colors duration-300 hover:text-[var(--brand-2)] lg:hidden">
+                  <Menu className="h-4 w-4" />
+                  <span className="sr-only">Open navigation</span>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-72 border-r border-border p-0">
+                  <ConsoleRail
+                    sections={sections}
+                    pathname={pathname}
+                    userName={userName}
+                    userRole={userRole}
+                    orgName={orgName}
+                    onNavigate={() => setSheetOpen(false)}
+                    onLogout={handleLogout}
+                  />
+                </SheetContent>
+              </Sheet>
 
-          <div className="flex items-center gap-1">
-            <button
-              onClick={toggleTheme}
-              className="p-2.5 rounded-xl hover:bg-secondary transition-colors"
-              aria-label="Toggle theme"
-            >
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.span
-                  key={theme}
-                  initial={{ rotate: -90, opacity: 0, scale: 0.6 }}
-                  animate={{ rotate: 0, opacity: 1, scale: 1 }}
-                  exit={{ rotate: 90, opacity: 0, scale: 0.6 }}
-                  transition={{ duration: 0.2 }}
-                  className="block"
-                >
-                  {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                </motion.span>
-              </AnimatePresence>
-            </button>
-            <div className="relative">
+              {/* Where you are, and what that place is for. The readout is
+                  keyed on the route so it re-enters on every navigation. */}
+              <div className="feed-window min-w-0">
+                <p key={pathname} className="feed-line flex min-w-0 items-baseline gap-3">
+                  <span className="font-display shrink-0 text-[13px] font-bold uppercase tracking-[0.06em]">
+                    {here?.label || "Console"}
+                  </span>
+                  <span className="mono hidden truncate text-[11px] uppercase tracking-[0.16em] text-muted-foreground sm:inline">
+                    {here?.meta || "Signed in"}
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-2">
               <button
-                onClick={openNotifications}
-                className="p-2.5 rounded-xl hover:bg-secondary transition-colors relative"
-                aria-label="Notifications"
+                onClick={toggleTheme}
+                aria-label="Toggle theme"
+                className="rounded-md p-2 text-muted-foreground transition-colors duration-300 hover:text-foreground"
               >
-                <Bell className="w-4 h-4" />
-                {unreadCount > 0 ? (
-                  <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-destructive ring-2 ring-background pulse-dot" />
-                ) : null}
+                {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
               </button>
-              <AnimatePresence>
+
+              <div className="relative">
+                <button
+                  onClick={openNotifications}
+                  aria-label="Notifications"
+                  className="relative rounded-md p-2 text-muted-foreground transition-colors duration-300 hover:text-foreground"
+                >
+                  <Bell className="h-3.5 w-3.5" />
+                  {unreadCount > 0 ? (
+                    <span className="pulse-dot absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[var(--brand-3)]" />
+                  ) : null}
+                </button>
                 {notifOpen ? (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8, scale: 0.97 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -8, scale: 0.97 }}
-                    transition={{ duration: 0.16 }}
-                    className="absolute right-0 mt-2 w-80 rounded-2xl border border-border bg-popover backdrop-blur-xl shadow-glow z-40 overflow-hidden"
-                  >
-                    <div className="p-4 border-b border-border">
-                      <span className="text-sm font-semibold">Notifications</span>
-                    </div>
+                  <div className="panel panel-live absolute right-0 z-40 mt-2 w-80 bg-popover backdrop-blur-xl">
+                    <p className="mono border-b border-border px-4 py-3 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                      Notifications
+                    </p>
                     <div className="max-h-80 overflow-y-auto">
                       {notifPreview.length === 0 ? (
-                        <div className="p-4 text-sm text-muted-foreground">No recent notifications.</div>
+                        <p className="px-4 py-4 text-sm text-muted-foreground">Nothing recent.</p>
                       ) : (
                         notifPreview.map((n, i) => (
                           <Link
                             key={`${n.id || i}`}
                             href="/dashboard/notifications"
-                            className="block p-4 border-b border-border/50 last:border-0 hover:bg-secondary/50 transition-colors"
+                            onClick={() => setNotifOpen(false)}
+                            className="row-line block px-4 py-3"
                           >
-                            <div className="text-sm font-medium truncate">{String(n.title || n.type || "Notification")}</div>
-                            <div className="text-xs text-muted-foreground truncate">{String(n.body || n.message || "")}</div>
+                            <p className="truncate text-sm font-medium">
+                              {String(n.title || n.type || "Notification")}
+                            </p>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {String(n.body || n.message || "")}
+                            </p>
                           </Link>
                         ))
                       )}
                     </div>
-                  </motion.div>
+                  </div>
                 ) : null}
-              </AnimatePresence>
+              </div>
+
+              {/* The site's own toggle, unchanged in gesture. */}
+              <button
+                type="button"
+                onClick={() => setIndexOpen((v) => !v)}
+                aria-expanded={indexOpen}
+                aria-controls="console-index"
+                className="index-toggle group ml-1 flex items-center gap-3"
+              >
+                <span className="relative block h-4 w-14 overflow-hidden">
+                  <span className="index-toggle__labels block" data-open={indexOpen}>
+                    <span className="mono block h-4 text-[13px] font-bold uppercase tracking-[0.18em]">
+                      Index
+                    </span>
+                    <span className="mono block h-4 text-[13px] font-bold uppercase tracking-[0.18em]">
+                      Close
+                    </span>
+                  </span>
+                </span>
+                <span
+                  className="index-toggle__glyph flex h-8 w-8 items-center justify-center rounded-md border border-border"
+                  data-open={indexOpen}
+                >
+                  <span className="block h-px w-3.5 bg-foreground" />
+                  <span className="absolute block h-px w-3.5 bg-foreground" />
+                </span>
+              </button>
             </div>
-            <Link
-              href="/dashboard/settings"
-              className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold ml-1 shadow-[0_4px_12px_-4px_var(--brand-1)] hover:scale-105 transition-transform"
-            >
-              {userName?.charAt(0).toUpperCase() || "U"}
-            </Link>
           </div>
         </header>
 
-        {/* Page content — fade only (NO transform: a transform here would
-            make position:fixed drawers/modals anchor to this box instead of
-            the viewport, pinning them to the top of the page). */}
-        <main className="flex-1 overflow-auto">
-          <motion.div
-            key={pathname}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-            className="max-w-6xl mx-auto p-6 lg:p-8"
-          >
-            <ErrorBoundary>
-              {children}
-            </ErrorBoundary>
-          </motion.div>
+        <main className="relative flex-1 overflow-auto">
+          <div className="mx-auto max-w-6xl px-5 py-8 lg:px-8 lg:py-10">
+            <ErrorBoundary>{children}</ErrorBoundary>
+          </div>
         </main>
       </div>
+
+      <ConsoleIndex
+        open={indexOpen}
+        onClose={closeIndex}
+        role={userRole}
+        permissions={userPermissions}
+        orgId={orgId}
+      />
     </div>
   );
 }

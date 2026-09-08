@@ -2,6 +2,19 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * Card, rebuilt as the console's panel.
+ *
+ * Thirty screens import this, so the fastest honest way to change what the
+ * dashboard looks like was to change what a card *is* rather than to edit
+ * thirty files into a different shape. The API is untouched; the surface is
+ * the site's: a hairline box with one edge that can light, no blur, no drop
+ * shadow, and a radius small enough to read as machined rather than soft.
+ *
+ * Footers no longer get a filled grey bar. On the site, a section ends with a
+ * rule, so that is what a footer is here.
+ */
+
 function Card({
   className,
   size = "default",
@@ -12,7 +25,9 @@ function Card({
       data-slot="card"
       data-size={size}
       className={cn(
-        "group/card flex flex-col gap-4 overflow-hidden rounded-xl bg-card py-4 text-sm text-card-foreground ring-1 ring-foreground/10 transition-[box-shadow,border-color] duration-300 ease-out hover:ring-foreground/15 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
+        "panel group/card flex flex-col gap-4 py-5 text-sm text-card-foreground",
+        "data-[size=sm]:gap-3 data-[size=sm]:py-4",
+        "has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0",
         className
       )}
       {...props}
@@ -25,7 +40,9 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-header"
       className={cn(
-        "group/card-header @container/card-header grid auto-rows-min items-start gap-1 rounded-t-xl px-4 group-data-[size=sm]/card:px-3 has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-4 group-data-[size=sm]/card:[.border-b]:pb-3",
+        "group/card-header @container/card-header grid auto-rows-min items-start gap-1.5 px-5 group-data-[size=sm]/card:px-4",
+        "has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto]",
+        "[.border-b]:pb-4 group-data-[size=sm]/card:[.border-b]:pb-3",
         className
       )}
       {...props}
@@ -38,7 +55,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-title"
       className={cn(
-        "font-heading text-base leading-snug font-medium group-data-[size=sm]/card:text-sm",
+        "font-display text-[15px] font-bold leading-snug tracking-[-0.015em] group-data-[size=sm]/card:text-sm",
         className
       )}
       {...props}
@@ -46,11 +63,13 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/* Descriptions are the one place a card should be quiet, so they take the mono
+   caption treatment the rest of the console uses for secondary lines. */
 function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-description"
-      className={cn("text-sm text-muted-foreground", className)}
+      className={cn("text-sm leading-relaxed text-muted-foreground", className)}
       {...props}
     />
   )
@@ -73,7 +92,7 @@ function CardContent({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-content"
-      className={cn("px-4 group-data-[size=sm]/card:px-3", className)}
+      className={cn("px-5 group-data-[size=sm]/card:px-4", className)}
       {...props}
     />
   )
@@ -84,7 +103,7 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-footer"
       className={cn(
-        "flex items-center rounded-b-xl border-t bg-muted/50 p-4 group-data-[size=sm]/card:p-3",
+        "mt-1 flex items-center border-t border-border px-5 py-4 group-data-[size=sm]/card:px-4 group-data-[size=sm]/card:py-3",
         className
       )}
       {...props}

@@ -1,27 +1,29 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { ReactNode } from "react";
-
 /**
- * Owns the page-to-page transition for the whole dashboard. `template.tsx`
- * remounts on every navigation, so this single Framer Motion entrance gives a
- * consistent transition across all pages.
+ * The page-to-page transition, for the whole console.
  *
- * IMPORTANT: fade ONLY — no transform/filter/scale. Framer leaves those styles
- * inline even at rest (translateY(0) / blur(0px)), and any non-`none` transform
- * or filter on this wrapper makes every `position: fixed` drawer/modal inside
- * the dashboard anchor to THIS box instead of the viewport — pinning them to the
- * top of the page. Keep this purely opacity.
+ * `template.tsx` remounts on every navigation, so a plain CSS animation here
+ * plays exactly once per route. Two things happen together: a slat wipes up
+ * off the content column, and the content rises in behind it — the bay door
+ * from the site's index, at page scale.
+ *
+ * The old version was a Framer opacity crossfade, chosen because a transform
+ * on this wrapper would become the containing block for every `position:
+ * fixed` drawer inside the dashboard and pin them to the top of the page.
+ * That constraint still holds, and this respects it: the animation's final
+ * keyframe is `transform: none`, so once it has played there is no transform
+ * left on the element at all. Framer's inline `translateY(0)` was the actual
+ * hazard, and it is gone.
  */
+
+import type { ReactNode } from "react";
+
 export default function DashboardTemplate({ children }: { children: ReactNode }) {
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-    >
-      {children}
-    </motion.div>
+    <div className="relative">
+      <span className="bay-wipe" aria-hidden />
+      <div className="bay-in">{children}</div>
+    </div>
   );
 }
