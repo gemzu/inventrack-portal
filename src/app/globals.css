@@ -918,7 +918,21 @@ button:hover > svg {
 /* ════════════════════════════════════════════════════════════
    BOOT GATE — first load opens with the index's own door.
    ════════════════════════════════════════════════════════════ */
-.boot-gate {
+/* The gate ships in the first HTML the browser parses, and an inline script at
+   the top of <body> decides — before a single pixel is painted — whether it
+   should show. That ordering is the entire point.
+
+   It used to mount from an effect, which meant the server sent the page with no
+   gate at all: the browser painted the hero, hydration ran, and only then did
+   the door drop over the top. You saw the headline flash past before the logo
+   reveal, which is the one thing a boot gate exists to prevent.
+
+   Timing lives here rather than in JS timeouts for the same reason — a
+   setTimeout cannot fire before hydration, and by then it is already too late. */
+.boot-gate { display: none; }
+
+html[data-boot="on"] { overflow: hidden; }
+html[data-boot="on"] .boot-gate {
   position: fixed;
   inset: 0;
   z-index: 100;
@@ -926,23 +940,32 @@ button:hover > svg {
   place-items: center;
   pointer-events: none;
 }
-.boot-slat {
-  position: absolute;
-  inset: 0;
-  transform: translateY(0);
-  transition: transform 0.72s var(--ease-in-out-q);
-}
+
+.boot-slat { position: absolute; inset: 0; }
 .boot-slat:nth-child(1) { background: color-mix(in oklab, var(--brand-1) 22%, var(--background)); }
 .boot-slat:nth-child(2) { background: color-mix(in oklab, var(--brand-2) 12%, var(--background)); }
 .boot-slat:nth-child(3) { background: var(--background); }
-.boot-gate[data-open="true"] .boot-slat { transform: translateY(-101%); }
+
+/* The door lifts once the mark has drawn and held. Same slat stagger as the
+   index, so the first thing anyone sees is already the site's own gesture. */
+html[data-boot="on"] .boot-slat { animation: boot-lift 0.72s var(--ease-in-out-q) both; }
+html[data-boot="on"] .boot-slat:nth-child(1) { animation-delay: 1.41s; }
+html[data-boot="on"] .boot-slat:nth-child(2) { animation-delay: 1.33s; }
+html[data-boot="on"] .boot-slat:nth-child(3) { animation-delay: 1.25s; }
+@keyframes boot-lift {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-101%); }
+}
 
 .boot-mark {
   position: relative;
   filter: drop-shadow(0 0 22px color-mix(in oklab, var(--brand-2) 55%, transparent));
-  transition: opacity 0.34s var(--ease-out-expo), transform 0.5s var(--ease-out-expo);
 }
-.boot-gate[data-open="true"] .boot-mark { opacity: 0; transform: scale(1.06); }
+html[data-boot="on"] .boot-mark { animation: boot-mark-out 0.5s var(--ease-out-expo) 1.25s both; }
+@keyframes boot-mark-out {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: scale(1.06); }
+}
 
 /* pathLength is normalised to 1, so one dash length reveals any path evenly. */
 .boot-draw path {
@@ -952,8 +975,11 @@ button:hover > svg {
 }
 @keyframes boot-draw { to { stroke-dashoffset: 0; } }
 
+/* Reduced motion never gets the attribute set in the first place, so this is
+   only a belt-and-braces guard. */
 @media (prefers-reduced-motion: reduce) {
-  .boot-gate { display: none; }
+  html[data-boot="on"] .boot-gate { display: none; }
+  html[data-boot="on"] { overflow: auto; }
 }
 
 /* Looping mark draw, used by the full-page loader. Same gesture as the boot

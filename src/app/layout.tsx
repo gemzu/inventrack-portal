@@ -4,6 +4,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { ToastProvider } from "@/components/Toast";
+import BootScript from "@/components/motion/BootScript";
 import BootGate from "@/components/motion/BootGate";
 import ScrollReveals from "@/components/motion/ScrollReveals";
 import "./globals.css";
@@ -47,6 +48,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${body.variable} ${mono.variable} ${display.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col">
+        {/* First thing in the document: it decides whether the gate shows,
+            synchronously, before anything below has been parsed. */}
+        <BootScript />
         <BootGate />
         <ScrollReveals />
         <ThemeProvider>

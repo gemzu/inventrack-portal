@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * BOOT GATE — the page arrives the way the index does.
  *
@@ -11,11 +9,20 @@
  * pathLength normalised to 1 so the stroke reveals evenly whatever its true
  * length. Then the door lifts.
  *
- * Shown once per session: a gate on every navigation stops being an entrance
- * and becomes an obstacle.
+ * There is no React state here, and deliberately no "use client".
+ *
+ * It used to be a client component that started as null and mounted the gate
+ * from an effect. That meant the server sent the page with no gate on it at
+ * all: the browser painted the hero, hydration ran, and only then did the door
+ * drop over the top — so you saw the headline flash past before the logo
+ * reveal, which is the one thing a boot gate exists to prevent. No effect can
+ * beat first paint, so the decision cannot live in one.
+ *
+ * Instead the markup is always in the HTML and starts hidden, BootScript (the
+ * first thing in <body>) sets data-boot on <html> synchronously before any of
+ * this is parsed, and the CSS does the rest. Shown once per session: a gate on
+ * every navigation stops being an entrance and becomes an obstacle.
  */
-
-import { useEffect, useState } from "react";
 
 /* Straight from public/logo.svg. Order is draw order: top crate, then the
    two it rests on. */
@@ -34,60 +41,13 @@ const CUBES = [
   ],
 ];
 
-const SESSION_KEY = "invems-booted";
-const DRAW_MS = 1250;
-const OPEN_MS = 900;
-
 export default function BootGate() {
-  const [state, setState] = useState<"idle" | "drawing" | "opening" | "gone">("idle");
-
-  useEffect(() => {
-    let seen = false;
-    try {
-      seen = sessionStorage.getItem(SESSION_KEY) === "1";
-    } catch {
-      /* Private mode can throw on access; treat it as unseen. */
-    }
-
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (seen || reduced) {
-      setState("gone");
-      return;
-    }
-
-    try {
-      sessionStorage.setItem(SESSION_KEY, "1");
-    } catch {
-      /* Not worth failing the boot over. */
-    }
-
-    setState("drawing");
-    document.body.style.overflow = "hidden";
-
-    const toOpen = window.setTimeout(() => setState("opening"), DRAW_MS);
-    const toGone = window.setTimeout(() => setState("gone"), DRAW_MS + OPEN_MS);
-
-    return () => {
-      window.clearTimeout(toOpen);
-      window.clearTimeout(toGone);
-      document.body.style.overflow = "";
-    };
-  }, []);
-
-  useEffect(() => {
-    if (state === "gone") document.body.style.overflow = "";
-  }, [state]);
-
-  if (state === "gone" || state === "idle") return null;
-
-  const open = state === "opening";
-
   return (
-    <div className="boot-gate" data-open={open} aria-hidden>
+    <div className="boot-gate" aria-hidden>
       {/* Same three slats as the index door. */}
-      <span className="boot-slat" style={{ transitionDelay: open ? "160ms" : "0ms" }} />
-      <span className="boot-slat" style={{ transitionDelay: open ? "80ms" : "0ms" }} />
-      <span className="boot-slat" style={{ transitionDelay: open ? "0ms" : "0ms" }} />
+      <span className="boot-slat" />
+      <span className="boot-slat" />
+      <span className="boot-slat" />
 
       <div className="boot-mark">
         <svg viewBox="0 0 512 512" fill="none" className="h-28 w-28 sm:h-32 sm:w-32">
