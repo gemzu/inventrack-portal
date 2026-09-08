@@ -13,13 +13,14 @@
  * copy of them, or it stops being a reference and becomes a second design.
  */
 
-import Link from "next/link";
 import { AnimatedNumber } from "@/components/motion/primitives";
 import { Panel, Rule, Figure, ColHead, CrateSkeleton } from "@/components/console/surfaces";
 import PageShell from "@/components/page-shell";
 import Status from "@/components/Status";
-import Mark from "@/components/Mark";
 import { ArrowUpRight } from "lucide-react";
+import ConsoleRail from "@/components/console/ConsoleRail";
+import { visibleSections } from "@/components/console/nav";
+import { Action, Chip, Field, Input, SearchInput, Segmented, Select } from "@/components/console/controls";
 
 const COUNT = [
   { label: "Units on hand", value: 1284, note: "across 3 sites" },
@@ -54,17 +55,28 @@ export default function ConsoleReference() {
   const total = COMPOSITION.reduce((n, c) => n + c.value, 0);
 
   return (
-    <div className="console min-h-screen bg-background text-foreground">
+    <div className="console flex min-h-screen bg-background text-foreground">
       <div className="console-ground" aria-hidden />
+
+      <aside className="sticky top-0 hidden h-screen w-[16.5rem] shrink-0 lg:block">
+        <ConsoleRail
+          sections={visibleSections("admin", "admin")}
+          pathname="/dashboard/inventory"
+          userName="Reference"
+          userRole="admin"
+          orgName="Invems"
+          onLogout={() => {}}
+        />
+      </aside>
+
+      <div className="min-w-0 flex-1">
 
       <header className="sticky top-0 z-30 h-14 border-b border-border bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex h-full max-w-5xl items-center justify-between px-6">
-          <Link href="/" className="flex items-center gap-2.5">
-            <Mark className="h-6 w-6" />
-            <span className="font-display text-[15px] font-extrabold uppercase tracking-[0.02em]">
-              Invems
-            </span>
-          </Link>
+          <p className="feed-line flex items-baseline gap-3">
+            <span className="font-display text-[13px] font-bold uppercase tracking-[0.06em]">Inventory</span>
+            <span className="mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Every unit on the floor</span>
+          </p>
           <span className="mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
             Console reference
           </span>
@@ -177,7 +189,42 @@ export default function ConsoleReference() {
               </div>
             </section>
           </div>
+            <section className="space-y-5">
+              <Rule index={6} label="Controls" />
+              <div className="reveal panel space-y-6 p-6">
+                <Segmented
+                  value="items"
+                  onChange={() => {}}
+                  options={[
+                    { value: "items", label: "Items" },
+                    { value: "boxes", label: "Boxes" },
+                  ]}
+                />
+                <SearchInput value="" onChange={() => {}} placeholder="Barcode, item, or buyer" />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Name">
+                    <Input placeholder="Product name" />
+                  </Field>
+                  <Field label="Site">
+                    <Select defaultValue="a">
+                      <option value="a">Harbour warehouse</option>
+                      <option value="b">Northline depot</option>
+                    </Select>
+                  </Field>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Chip on>Available</Chip>
+                  <Chip>Reserved</Chip>
+                  <Chip>Sold</Chip>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <Action solid>Import CSV</Action>
+                  <Action>Export</Action>
+                </div>
+              </div>
+            </section>
         </PageShell>
+      </div>
       </div>
     </div>
   );
