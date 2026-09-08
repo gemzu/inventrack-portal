@@ -136,7 +136,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="console flex min-h-screen bg-background text-foreground">
-      <div className="console-ground" aria-hidden />
 
       <aside className="sticky top-0 hidden h-screen w-[16.5rem] shrink-0 lg:block">
         <ConsoleRail

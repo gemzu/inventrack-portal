@@ -1175,21 +1175,11 @@ button:hover > svg {
   --hair-soft: color-mix(in oklab, var(--foreground) 7%, transparent);
 }
 
-/* The floor under the console. A faint isometric ruling, the same
-   grid the crate lattice is built on, so the working screens sit on
-   the same ground as the hero instead of on a flat wash. */
-.console-ground {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  opacity: 0.5;
-  background-image:
-    linear-gradient(to right, var(--hair-soft) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--hair-soft) 1px, transparent 1px);
-  background-size: 128px 111px;
-  mask-image: radial-gradient(120% 90% at 70% 0%, #000 10%, transparent 75%);
-}
+/* There was a fixed grid of hairlines here, meant to echo the crate lattice.
+   Its radial mask left exactly one or two verticals visible, and because it
+   was fixed they sat in the same place on every route — so it read as a stray
+   line down the page rather than as ground. A background you have to explain
+   is not doing its job. The panels and rules carry the structure instead. */
 
 /* ── Panel: the only surface. ─────────────────────────────────
    A hairline box with one edge that can light. No blur, no radius
@@ -1265,7 +1255,7 @@ a:hover > .panel::before,
 .rail-link {
   position: relative;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.75rem;
   padding: 0.4rem 0 0.4rem 0.875rem;
   color: var(--muted-foreground);
@@ -1288,13 +1278,6 @@ a:hover > .panel::before,
 .rail-link:hover::before { transform: scaleY(0.45); }
 .rail-link[data-active="true"] { color: var(--foreground); padding-left: 1.125rem; }
 .rail-link[data-active="true"]::before { transform: scaleY(1); }
-.rail-link__ord {
-  font-family: var(--font-mono-face, ui-monospace, monospace);
-  font-size: 0.625rem;
-  letter-spacing: 0.1em;
-  opacity: 0.45;
-}
-.rail-link[data-active="true"] .rail-link__ord { opacity: 0.9; color: var(--brand-2); }
 
 .rail-group__label {
   font-family: var(--font-mono-face, ui-monospace, monospace);

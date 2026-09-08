@@ -57,25 +57,24 @@ export function Panel({
 }
 
 /* ── Rule ──────────────────────────────────────────────────────
-   Sections are announced by a hairline with an ordinal and a name,
-   the way the index numbers its destinations. No card header, no
-   icon in a rounded square. */
+   Sections are announced by a name and a hairline running out to the
+   edge. No card header, no icon in a rounded square.
+
+   These were numbered for a while, the way the site numbers the
+   destinations in its index. On a screen with six sections the digits
+   were counting something nobody needed counted, and they turned every
+   heading into a line item. The rule does the separating on its own. */
 export function Rule({
-  index,
   label,
   action,
   className,
 }: {
-  index: number;
   label: string;
   action?: ReactNode;
   className?: string;
 }) {
   return (
     <div className={cn("console-rule", className)}>
-      <span className="mono text-[11px] tracking-[0.18em] text-[var(--brand-2)]">
-        {String(index).padStart(2, "0")}
-      </span>
       <span className="font-display text-[13px] font-bold uppercase tracking-[0.08em]">
         {label}
       </span>

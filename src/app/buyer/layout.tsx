@@ -8,7 +8,7 @@
  * the marketing site first and this second, so the two should be the same
  * building.
  *
- * The rail is the numbered index. Counts that matter — unread messages, what
+ * The rail is the site's index, minus the ordinals. Counts that matter — unread messages, what
  * is in the cart — are printed as figures beside the destination rather than
  * as red discs, because a number you can read is more use than a dot you have
  * to open something to understand.
@@ -66,7 +66,7 @@ function Rail({
       <nav className="flex-1 overflow-y-auto px-5 py-6">
         <p className="rail-group__label mb-2.5">Buying</p>
         <ul>
-          {LINKS.map((l, i) => {
+          {LINKS.map((l) => {
             const active = pathname === l.href;
             const count = countFor(l.href, unread, cartCount);
             return (
@@ -79,7 +79,6 @@ function Rail({
                     aria-current={active ? "page" : undefined}
                     className="rail-link"
                   >
-                    <span className="rail-link__ord">{String(i + 1).padStart(2, "0")}</span>
                     <span className="flex min-w-0 flex-1 items-center gap-2.5">
                       <l.icon className="h-3.5 w-3.5 shrink-0 opacity-60" />
                       <span className="truncate text-[13.5px] font-medium">{l.label}</span>
@@ -217,7 +216,6 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="console flex min-h-screen bg-background text-foreground">
-      <div className="console-ground" aria-hidden />
 
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[16.5rem] md:block">
         <Rail

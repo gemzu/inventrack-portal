@@ -761,7 +761,7 @@ export default function InventoryPage() {
               live list so a search result can never be mistaken for stock. */}
           {histResults.length > 0 && (
             <section className="space-y-4">
-              <Rule index={9} label="Seen before, not in stock" />
+              <Rule label="Seen before, not in stock" />
               <div className="grid gap-px overflow-hidden rounded-md bg-border sm:grid-cols-2">
                 {histResults.map((h) => (
                   <div key={String(h.id)} className="bg-background p-4">

@@ -10,10 +10,10 @@
  *
  * This is written the way the site talks. The numbers are set in the display
  * face at headline size, because on a stock screen the numbers *are* the
- * content and everything else is a caption. Sections are announced by a
- * numbered hairline, the way the index numbers its destinations. Composition
- * is a rack of bars rather than a donut — the same object as the hero, and a
- * shape you can actually read a shortfall off.
+ * content and everything else is a caption. Sections are announced by a name
+ * and a hairline, nothing more. Composition is a rack of bars rather than a
+ * donut — the same object as the hero, and a shape you can actually read a
+ * shortfall off.
  *
  * The data it loads is unchanged. What it says about that data is not.
  */
@@ -243,7 +243,7 @@ export default function DashboardPage() {
             a rule. Anything needing attention is the only thing that
             takes colour. */}
         <section className="space-y-5">
-          <Rule index={1} label="The count" />
+          <Rule label="The count" />
           <div className="reveal grid grid-cols-2 gap-px overflow-hidden rounded-md bg-border lg:grid-cols-3">
             {[
               { label: "Units on hand", value: stats.items, href: "/dashboard/inventory" },
@@ -280,7 +280,7 @@ export default function DashboardPage() {
             actually want to see at a glance. */}
         {total > 0 && (
           <section className="space-y-5">
-            <Rule index={2} label="Composition" />
+            <Rule label="Composition" />
             <div className="reveal panel p-6">
               <div className="flex items-end gap-6" style={{ height: "9rem" }}>
                 {composition.map((c, i) => {
@@ -317,7 +317,7 @@ export default function DashboardPage() {
         {/* ── 03 Sites ────────────────────────────────────────── */}
         {facilities?.length ? (
           <section className="space-y-5">
-            <Rule index={3} label="Sites" />
+            <Rule label="Sites" />
             <div className="grid gap-px overflow-hidden rounded-md bg-border sm:grid-cols-2 lg:grid-cols-3">
               {facilities.map((f) => (
                 <div key={f.id} className="reveal bg-background p-5">
@@ -340,9 +340,7 @@ export default function DashboardPage() {
         {/* ── 04 Moving / 05 Scanned ───────────────────────────── */}
         <div className="grid gap-12 lg:grid-cols-2">
           <section className="space-y-5">
-            <Rule
-              index={facilities?.length ? 4 : 3}
-              label="Moving"
+            <Rule label="Moving"
               action={
                 <Link
                   href="/dashboard/orders"
@@ -376,9 +374,7 @@ export default function DashboardPage() {
           </section>
 
           <section className="space-y-5">
-            <Rule
-              index={facilities?.length ? 5 : 4}
-              label="Scanned"
+            <Rule label="Scanned"
               action={
                 <Link
                   href="/dashboard/activity"
@@ -414,9 +410,7 @@ export default function DashboardPage() {
 
         {/* ── Team, as one line rather than a card ─────────────── */}
         <section className="space-y-5">
-          <Rule
-            index={facilities?.length ? 6 : 5}
-            label="Team"
+          <Rule label="Team"
             action={
               <Link
                 href="/dashboard/users"

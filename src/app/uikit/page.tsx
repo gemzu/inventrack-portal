@@ -56,7 +56,6 @@ export default function ConsoleReference() {
 
   return (
     <div className="console flex min-h-screen bg-background text-foreground">
-      <div className="console-ground" aria-hidden />
 
       <aside className="sticky top-0 hidden h-screen w-[16.5rem] shrink-0 lg:block">
         <ConsoleRail
@@ -96,7 +95,7 @@ export default function ConsoleReference() {
         >
           <div className="space-y-12">
             <section className="space-y-5">
-              <Rule index={1} label="The count" />
+              <Rule label="The count" />
               <div className="reveal grid grid-cols-2 gap-px overflow-hidden rounded-md bg-border lg:grid-cols-3">
                 {COUNT.map((f) => (
                   <div key={f.label} className="bg-background p-5">
@@ -113,7 +112,7 @@ export default function ConsoleReference() {
             </section>
 
             <section className="space-y-5">
-              <Rule index={2} label="Composition" />
+              <Rule label="Composition" />
               <div className="reveal panel p-6">
                 <div className="flex items-end gap-6" style={{ height: "9rem" }}>
                   {COMPOSITION.map((c, i) => {
@@ -146,7 +145,7 @@ export default function ConsoleReference() {
 
             <div className="grid gap-12 lg:grid-cols-2">
               <section className="space-y-5">
-                <Rule index={3} label="Moving" />
+                <Rule label="Moving" />
                 <Panel className="reveal">
                   {MOVING.map((o) => (
                     <div key={o.buyer} className="row-line flex items-center justify-between gap-4 px-5 py-3.5">
@@ -163,7 +162,7 @@ export default function ConsoleReference() {
               </section>
 
               <section className="space-y-5">
-                <Rule index={4} label="Scanned" />
+                <Rule label="Scanned" />
                 <Panel className="reveal d1">
                   {SCANS.map((l) => (
                     <div key={l.code} className="row-line flex items-center justify-between gap-4 px-5 py-3.5">
@@ -181,7 +180,7 @@ export default function ConsoleReference() {
             </div>
 
             <section className="space-y-5">
-              <Rule index={5} label="Waiting" />
+              <Rule label="Waiting" />
               <div className="grid gap-4 sm:grid-cols-3">
                 {[0, 1, 2].map((i) => (
                   <CrateSkeleton key={i} className="h-24 w-full" delay={i * 0.12} />
@@ -190,7 +189,7 @@ export default function ConsoleReference() {
             </section>
           </div>
             <section className="space-y-5">
-              <Rule index={6} label="Controls" />
+              <Rule label="Controls" />
               <div className="reveal panel space-y-6 p-6">
                 <Segmented
                   value="items"

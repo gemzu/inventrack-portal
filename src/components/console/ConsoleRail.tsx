@@ -3,18 +3,21 @@
 /**
  * The rail.
  *
- * Navigation is a numbered index, the same object the site opens behind its
- * INDEX toggle: a mono ordinal, the destination set in the display face, and a
- * hairline that grows down the left edge when the entry is live.
+ * A destination is its name and a hairline that grows down the left edge when
+ * it is live. Nothing else.
  *
- * What it deliberately is not: a column of pill-shaped buttons with an icon in
- * a rounded square and a filled violet background on the active one. That is
- * the shape every admin template ships with, and it was the single loudest
- * reason the dashboard read as a different product from the site.
+ * It briefly carried a mono ordinal on every entry, borrowed from the site's
+ * full-screen index. That works there — five destinations, set huge, where the
+ * numbers read as a contents page. Down a sidebar of twenty-two it was just a
+ * column of digits nobody would ever count, competing with the labels for
+ * attention and making the whole thing look like a spec sheet. Removed.
  *
- * Icons still exist, but at the size of a glyph beside the ordinal, because on
- * a list of twenty destinations they help you find your place — they just
- * should not be the loudest thing in the column.
+ * Icons stay, at glyph size: on a list this long they help you find your place
+ * without becoming the loudest thing in the column.
+ *
+ * What it deliberately is not: pill-shaped buttons with an icon in a rounded
+ * square and a filled violet background on the active one. That is the shape
+ * every admin template ships with.
  */
 
 import Link from "next/link";
@@ -40,7 +43,6 @@ export default function ConsoleRail({
   onLogout: () => void;
 }) {
   const active = activeHref(pathname, flatten(sections));
-  let ordinal = 0;
 
   return (
     <div className="flex h-full flex-col border-r border-border bg-background">
@@ -60,7 +62,6 @@ export default function ConsoleRail({
             <p className="rail-group__label mb-2.5">{section.label}</p>
             <ul>
               {section.items.map((item) => {
-                ordinal += 1;
                 const isActive = active === item.href;
                 return (
                   <li key={item.href} className="reveal-line">
@@ -72,13 +73,8 @@ export default function ConsoleRail({
                         aria-current={isActive ? "page" : undefined}
                         className="rail-link"
                       >
-                        <span className="rail-link__ord">
-                          {String(ordinal).padStart(2, "0")}
-                        </span>
-                        <span className="flex min-w-0 items-center gap-2.5">
-                          <item.icon className="h-3.5 w-3.5 shrink-0 opacity-60" />
-                          <span className="truncate text-[13.5px] font-medium">{item.label}</span>
-                        </span>
+                        <item.icon className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                        <span className="truncate text-[13.5px] font-medium">{item.label}</span>
                       </Link>
                     </span>
                   </li>
