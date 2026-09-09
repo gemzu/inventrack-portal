@@ -36,12 +36,6 @@ const display = Unbounded({
 export const metadata: Metadata = {
   title: "Invems - Warehouse Management Made Simple",
   description: "Modern warehouse & inventory management. Scan, track, order, and manage your entire operation from one platform.",
-  icons: {
-    icon: [
-      { url: "/logo.svg", type: "image/svg+xml" },
-    ],
-    apple: "/logo.svg",
-  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
