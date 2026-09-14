@@ -65,7 +65,20 @@ export default function FacilitiesPage() {
   useEffect(() => { loadFacilities(); }, [loadFacilities]);
 
   const handleSave = async () => {
-    if (!orgId || !form.name) return;
+    /* This was `if (!orgId || !form.name) return;` — a silent return.
+       Name is the only required field of three that look identical, nothing
+       marked it, the button was never disabled, and pressing Add with it empty
+       did nothing at all: no error, no success, no movement. Which is exactly
+       what "I created the facility" plus an empty table looks like from the
+       outside. Both branches say something now. */
+    if (!form.name.trim()) {
+      toast("Give the site a name — that is the only part it cannot guess.", "error");
+      return;
+    }
+    if (!orgId) {
+      toast("Your organization has not loaded yet. Reload the page and try again.", "error");
+      return;
+    }
     try {
       if (editing) {
         const { error } = await supabase.from("facilities").update({
@@ -192,11 +205,12 @@ export default function FacilitiesPage() {
           subtitle={editing ? editing.name : "Somewhere stock physically lives"}
         >
           <div className="space-y-5">
-            <Field label="Name">
+            <Field label="Name (required)">
               <Input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="Warehouse A"
+                autoFocus
               />
             </Field>
             <Field label="Region">
@@ -213,7 +227,9 @@ export default function FacilitiesPage() {
                 placeholder="123 Main St"
               />
             </Field>
-            <Action solid onClick={handleSave} className="w-full">
+            {/* Off until it can work, so the reason is visible before the
+                press rather than after it. */}
+            <Action solid onClick={handleSave} disabled={!form.name.trim()} className="w-full">
               {editing ? "Save changes" : "Add site"}
             </Action>
           </div>
