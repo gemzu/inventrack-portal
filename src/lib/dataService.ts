@@ -598,19 +598,43 @@ export async function getApprovals(orgId: string) {
   return mapAll(data);
 }
 
+/* `approvals` has no resolved_at and no reason column. Both of these wrote to
+   them anyway, so both would have failed outright the first time anything
+   called them — and nothing does yet, which is the only reason it has not
+   been noticed. Left as they were, the next person to wire up a reject button
+   would have inherited the same silent rejection that made approving from
+   this dashboard impossible since the day it was written.
+
+   updated_at exists and carries the timestamp. The reason goes into note,
+   which is the only free-text column on the table, appended rather than
+   assigned so the submitter's own note is not overwritten by the answer to
+   it. */
 export async function approveApproval(id: string) {
   const { error } = await supabase
     .from("approvals")
-    .update({ status: "approved", resolved_at: new Date().toISOString() })
+    .update({ status: "approved", updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) throw error;
 }
 
 export async function rejectApproval(id: string, reason?: string) {
-  const { error } = await supabase
-    .from("approvals")
-    .update({ status: "rejected", resolved_at: new Date().toISOString(), reason: reason ?? null })
-    .eq("id", id);
+  const patch: Record<string, unknown> = {
+    status: "rejected",
+    updated_at: new Date().toISOString(),
+  };
+
+  const why = reason?.trim();
+  if (why) {
+    const { data: existing } = await supabase
+      .from("approvals")
+      .select("note")
+      .eq("id", id)
+      .maybeSingle();
+    const prior = (existing?.note ?? "").trim();
+    patch.note = prior ? `${prior}\n\nRejected: ${why}` : `Rejected: ${why}`;
+  }
+
+  const { error } = await supabase.from("approvals").update(patch).eq("id", id);
   if (error) throw error;
 }
 

@@ -139,8 +139,25 @@ export default function EnrichmentDashboardPage() {
 
       toast(`Processed ${data?.processed || 0} items from queue`, "success");
       loadData();
-    } catch {
-      toast("Failed to process queue", "error");
+    } catch (err) {
+      /* This button has never done anything. process_enrichment_queue does not
+         exist in the database, and there is no edge function by that name
+         either — the queue table and this dashboard were built, and the thing
+         that drains the queue never was.
+
+         The error was being swallowed by a bare catch and reported as "Failed
+         to process queue", which reads like a transient problem worth retrying.
+         It is not transient. Saying so is the difference between someone
+         retrying it for a year and someone finishing the feature. */
+      console.error("Enrichment queue error:", err);
+      const why = err instanceof Error ? err.message : String(err);
+      const missing = /process_enrichment_queue|does not exist|not find the function|PGRST202/i.test(why);
+      toast(
+        missing
+          ? "The enrichment processor is not deployed yet — nothing drains this queue. Items stay queued until it is built."
+          : `Could not process queue: ${why}`,
+        "error"
+      );
     } finally {
       setProcessing(false);
     }
