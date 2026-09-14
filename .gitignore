@@ -5,3 +5,6 @@ out
 
 .vercel
 .env*.local
+
+# TypeScript incremental build cache — regenerated on every typecheck.
+tsconfig.tsbuildinfo
