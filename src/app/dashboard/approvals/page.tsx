@@ -98,27 +98,51 @@ function ApprovalsContent() {
   const handleApprove = async (item: ApprovalDoc) => {
     setActionId(item.id);
     try {
-      // Insert into inventory
+      /* An approval and an inventory row are not the same shape, and this was
+         copying one into the other field for field.
+
+         `approvals` carries type and note. `inventory` has neither — it has
+         category and description. PostgREST rejects an insert naming a column
+         that does not exist, so every approval from this page failed on
+         `type`, every time, and said only "Failed to approve item". It has
+         never worked.
+
+         `approvals` also has no brand or part_number at all, so those two read
+         undefined off the record and were never sending anything.
+
+         Same mapping the mobile app uses, so the two agree about what an
+         approved item becomes. */
+      const qty = Number(item.quantity);
+
       const { error: insertErr } = await supabase.from("inventory").insert({
-        model_id: item.modelId,
-        part_number: item.partNumber,
-        brand: item.brand,
-        quantity: item.quantity,
-        type: item.type,
-        barcode: item.barcode,
-        status: "available",
         org_id: orgId,
+        barcode: item.barcode || null,
+        /* Falls back to the barcode so an approval submitted without a model
+           id does not land in inventory as "Unnamed item". */
+        model_id: item.modelId || item.barcode || null,
+        quantity: Number.isFinite(qty) ? qty : 0,
+        category: item.type || null,
+        description: item.note ? String(item.note).trim() : null,
+        status: "available",
       });
       if (insertErr) throw insertErr;
 
-      // Delete from approvals
       const { error: delErr } = await supabase.from("approvals").delete().eq("id", item.id);
       if (delErr) throw delErr;
+
+      /* Take it out of the list. The row was being deleted from the database
+         and left on screen, so the queue still showed work that no longer
+         existed until the page was reloaded. */
+      setApprovals((prev) => prev.filter((a) => a.id !== item.id));
 
       toast("Item approved and added to inventory", "success");
     } catch (err) {
       console.error("Approve error:", err);
-      toast("Failed to approve item", "error");
+      /* Say what went wrong. A generic failure message is why this sat broken:
+         the database was naming the column it rejected and nobody could see
+         it without opening the browser console. */
+      const why = err instanceof Error ? err.message : String(err);
+      toast(`Could not approve: ${why}`, "error");
     } finally {
       setActionId(null);
     }
