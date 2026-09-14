@@ -30,6 +30,31 @@ function scrubRecoveryUrl() {
   window.history.replaceState(window.history.state, "", cleanUrl);
 }
 
+/**
+ * Does this account still owe us a second factor?
+ *
+ * A recovery link signs you in at AAL1 — one factor, the link itself. Supabase
+ * refuses to change a password from an AAL1 session whenever the account has a
+ * verified factor enrolled, which is what "AAL2 session is required to update
+ * email or password when MFA is enabled" means. Anyone who turned on 2FA in
+ * the app could therefore never complete a reset: the link worked, the session
+ * was real, and the final step always failed.
+ *
+ * So the code has to be collected here too, between arriving and setting the
+ * password. Returns the factor to challenge, or null when the account has no
+ * MFA and can go straight through.
+ */
+async function pendingSecondFactor(): Promise<{ id: string; friendlyName?: string } | null> {
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (!aal || aal.nextLevel !== "aal2" || aal.currentLevel === "aal2") return null;
+
+  const { data: factors } = await supabase.auth.mfa.listFactors();
+  const verified = (factors?.totp ?? []).find((f) => f.status === "verified");
+  if (!verified) return null;
+
+  return { id: verified.id, friendlyName: verified.friendly_name ?? undefined };
+}
+
 function ResetPageContent() {
   const router = useRouter();
   const query = useSearchParams();
@@ -46,6 +71,13 @@ function ResetPageContent() {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
+  /* The second factor, when the account has one. Detected as the link is
+     verified rather than after the password is typed, so the code field is on
+     screen from the start instead of appearing as a surprise the moment you
+     press the button. */
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
 
   const inputClass = useMemo(
     () =>
@@ -64,6 +96,23 @@ function ResetPageContent() {
       setState("checking");
       setError("");
       setMessage("");
+
+      /* Every route into this page ends here, so the MFA check lives here too
+         rather than in each of the three branches below. A failure to read the
+         factor is not fatal: the form still submits, and handleSubmit catches
+         the AAL2 refusal and asks for the code then. Better a late prompt than
+         a page that refuses to load because a secondary lookup failed. */
+      const markReady = async () => {
+        let factor = null;
+        try {
+          factor = await pendingSecondFactor();
+        } catch {
+          /* fall through — handleSubmit is the backstop */
+        }
+        if (cancelled) return;
+        if (factor) setMfaFactorId(factor.id);
+        setState("ready");
+      };
 
       const hash = typeof window !== "undefined" ? window.location.hash.replace(/^#/, "") : "";
       const hashParams = new URLSearchParams(hash);
@@ -89,7 +138,7 @@ function ResetPageContent() {
           });
           if (error) throw error;
           scrubRecoveryUrl();
-          if (!cancelled) setState("ready");
+          await markReady();
           return;
         }
 
@@ -97,9 +146,7 @@ function ResetPageContent() {
           const { error } = await supabase.auth.exchangeCodeForSession(params.code);
           if (error) throw error;
           scrubRecoveryUrl();
-          if (!cancelled) {
-            setState("ready");
-          }
+          await markReady();
           return;
         }
 
@@ -110,11 +157,11 @@ function ResetPageContent() {
           });
           if (error) throw error;
           scrubRecoveryUrl();
-          if (!cancelled) {
-            setState(params.type === "recovery" ? "ready" : "invalid");
-            if (params.type !== "recovery") {
-              setError("This link is not a password recovery link.");
-            }
+          if (params.type === "recovery") {
+            await markReady();
+          } else if (!cancelled) {
+            setState("invalid");
+            setError("This link is not a password recovery link.");
           }
           return;
         }
@@ -158,8 +205,58 @@ function ResetPageContent() {
 
     setSubmitting(true);
     try {
+      /* Second factor first, password second.
+         The recovery link only proves the mailbox. On an account with 2FA,
+         Supabase will not accept a password change until the session has been
+         raised to AAL2, so the code is verified here and the update below
+         inherits the stronger session. */
+      if (mfaFactorId) {
+        const code = mfaCode.replace(/\D/g, "");
+        if (code.length !== 6) {
+          setError("Enter the 6-digit code from your authenticator app.");
+          setSubmitting(false);
+          return;
+        }
+
+        const { data: challenge, error: challengeError } =
+          await supabase.auth.mfa.challenge({ factorId: mfaFactorId });
+        if (challengeError) throw challengeError;
+
+        const { error: verifyError } = await supabase.auth.mfa.verify({
+          factorId: mfaFactorId,
+          challengeId: challenge.id,
+          code,
+        });
+        if (verifyError) {
+          /* Wrong or expired code is the ordinary case here, and the raw
+             message is not worth showing. The password they typed stays in
+             the form; only the code is cleared. */
+          setMfaCode("");
+          setError("That code was not accepted. Codes expire every 30 seconds — try the current one.");
+          setSubmitting(false);
+          return;
+        }
+      }
+
       const { error } = await supabase.auth.updateUser({ password: next });
-      if (error) throw error;
+
+      /* Backstop. If the factor lookup on load failed, or a factor was added
+         between the link being sent and being opened, this is where we find
+         out — so ask for the code rather than dead-ending on a message about
+         assurance levels that means nothing to the person reading it. */
+      if (error) {
+        if (/aal2|assurance/i.test(error.message)) {
+          const factor = await pendingSecondFactor().catch(() => null);
+          if (factor) {
+            setMfaFactorId(factor.id);
+            setError("This account has two-factor authentication on. Enter the 6-digit code to finish.");
+            setSubmitting(false);
+            return;
+          }
+        }
+        throw error;
+      }
+
       await supabase.auth.signOut();
       setState("success");
       setMessage("Your password has been updated. You can sign in now.");
@@ -296,6 +393,32 @@ function ResetPageContent() {
                     </button>
                   </div>
                 </div>
+
+                {mfaFactorId && (
+                  <div>
+                    <label className="mb-2 block text-xs font-medium text-muted-foreground">
+                      Authentication code
+                    </label>
+                    <input
+                      value={mfaCode}
+                      onChange={(e) => {
+                        setMfaCode(e.target.value.replace(/\D/g, "").slice(0, 6));
+                        setError("");
+                      }}
+                      /* numeric keyboard on a phone, and one-tap fill from the
+                         SMS/authenticator suggestion strip */
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      placeholder="000000"
+                      className={`${inputClass} text-center text-lg tracking-[0.5em] font-semibold`}
+                    />
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      This account has two-factor authentication. Enter the current code from your
+                      authenticator app to confirm the change.
+                    </p>
+                  </div>
+                )}
 
                 <button
                   type="submit"
