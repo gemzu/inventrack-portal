@@ -22,6 +22,7 @@ import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
 import { Figure, ListSkeleton } from "@/components/console/surfaces";
 import { Action, Field, Input, Modal } from "@/components/console/controls";
+import { reasonFor } from "@/lib/utils";
 
 interface Facility {
   id: string;
@@ -83,8 +84,13 @@ export default function FacilitiesPage() {
       setEditing(null);
       setForm({ name: "", state: "", address: "" });
       await loadFacilities();
-    } catch {
-      toast("Failed to save facility", "error");
+    } catch (err) {
+      /* The database says exactly what went wrong; this used to drop it and
+         print "Failed to save facility". An admin who lacked permission, or
+         whose account sat in a different organisation, got the same six words
+         as someone with a genuine bug — and no way to tell which. */
+      console.error("Facility save error:", err);
+      toast(reasonFor(err, "Could not save that facility."), "error");
     }
   };
 
@@ -96,8 +102,9 @@ export default function FacilitiesPage() {
       if (error) throw error;
       await loadFacilities();
       toast("Facility deleted", "success");
-    } catch {
-      toast("Failed to delete facility", "error");
+    } catch (err) {
+      console.error("Facility delete error:", err);
+      toast(reasonFor(err, "Could not delete that facility."), "error");
     }
   };
 
