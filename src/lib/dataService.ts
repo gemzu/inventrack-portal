@@ -372,10 +372,13 @@ export async function getStorefronts(orgId: string) {
 }
 
 export async function createStorefront(orgId: string, input: AnyRow) {
+  /* Eight characters from 32, from crypto.getRandomValues: about a trillion
+     codes. It was four from Math.random - about a million, few enough for a
+     script to try them all. 256 is a multiple of 32, so no bias. */
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const randomCode = () => {
     let code = "STORE-";
-    for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    for (const b of crypto.getRandomValues(new Uint8Array(8))) code += chars[b % chars.length];
     return code;
   };
 
@@ -793,71 +796,40 @@ export async function getOrg(orgId: string) {
   return toCamel(data);
 }
 
-function randomCode(prefix: string) {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let code = prefix + "-";
-  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  return code;
-}
-
 /**
  * Staff join codes only.
  *
- * "buyer" used to be accepted here and wrote organizations.invite_code, which
- * nothing reads — join-org-secure resolves buyers against storefronts.invite_code
- * instead. Narrowing the type means the dead branch cannot be called back into
- * existence by accident.
+ * Through rotate_org_invite_code: the database makes the new code (8
+ * characters, secure random), checks who is asking (any admin for the worker
+ * code, the owner or a super admin for the admin one) and returns it. This
+ * used to make a 4-character code here and write it with a direct update -
+ * short enough to guess - and read the row back with select(), which the
+ * hidden code columns made fail.
  */
 export async function regenerateInviteCode(orgId: string, kind: "admin" | "worker") {
-  const column = kind === "admin" ? "admin_invite_code" : "worker_invite_code";
-  const prefix = kind === "admin" ? "ADM" : "WRK";
-  const code = randomCode(prefix);
-  const { data, error } = await supabase
-    .from("organizations")
-    .update({ [column]: code })
-    .eq("id", orgId)
-    .select()
-    .single();
+  const { data, error } = await supabase.rpc("rotate_org_invite_code", { p_org_id: orgId, p_kind: kind });
   if (error) throw error;
-  return { code, org: toCamel(data) };
+  return { code: data as string };
 }
 
-export async function createOrganization(input: { name: string; ownerId: string }) {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const randomCode = (prefix: string) => {
-    let code = `${prefix}-`;
-    for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
-    return code;
-  };
-
-  const { data, error } = await supabase
-    .from("organizations")
-    .insert({
-      name: input.name.trim(),
-      owner_id: input.ownerId,
-      admin_invite_code: randomCode("ADM"),
-      worker_invite_code: randomCode("WRK"),
-      invite_code: randomCode("ORG"),
-    })
-    .select()
-    .single();
+/**
+ * Create an organisation, with the signed-in user as its owner.
+ *
+ * Through the create-org-secure Edge Function, the same as the app: it makes
+ * the organisation with long invite codes, applies the owner's country
+ * restriction, and sets up their profile and membership in one go. This used
+ * to insert the organisation from the browser with 4-character codes and then
+ * write the owner's role onto their own profile - which the database refuses
+ * (role changes on your own row need a matching membership), and the insert's
+ * select() read columns that are hidden. The organisation's id comes back.
+ */
+export async function createOrganization(input: { name: string }) {
+  const { data, error } = await supabase.functions.invoke("create-org-secure", {
+    body: { name: input.name.trim() },
+  });
   if (error) throw error;
-  return toCamel(data);
-}
-
-export async function assignOwnerToOrganization(userId: string, orgId: string) {
-  // User row can lag briefly after signup trigger. Retry a few times.
-  let lastErr: unknown = null;
-  for (let i = 0; i < 5; i++) {
-    const { error } = await supabase
-      .from("users")
-      .update({ org_id: orgId, role: "admin", permissions: "owner", active: true })
-      .eq("id", userId);
-    if (!error) return;
-    lastErr = error;
-    await new Promise((r) => setTimeout(r, 500));
-  }
-  throw (lastErr as Error) || new Error("Failed to assign owner to organization");
+  if (data?.error) throw new Error(data.error);
+  return { id: data?.orgId as string };
 }
 
 /* ─── Edge function wrappers (destructive user actions) ── */
@@ -877,7 +849,7 @@ export async function adminCreateUser(input: {
 
 export async function adminResetPassword(userId: string, newPassword: string) {
   const { data, error } = await supabase.functions.invoke("admin-reset-password", {
-    body: { userId, newPassword },
+    body: { targetUserId: userId, newPassword },
   });
   if (error) throw error;
   return data;
@@ -885,8 +857,24 @@ export async function adminResetPassword(userId: string, newPassword: string) {
 
 export async function adminDeleteUser(userId: string) {
   const { data, error } = await supabase.functions.invoke("admin-delete-user", {
-    body: { userId },
+    body: { targetUserId: userId },
   });
   if (error) throw error;
+  return data;
+}
+
+/**
+ * Change a member's role, through admin-update-user-role: it ranks both
+ * people by the organisation's own records (the owner cannot be changed, only
+ * owners and super admins change roles) and updates the membership the app
+ * reads as well as the profile. A direct update of users.role did neither -
+ * the app read the old role back from the membership on its next launch.
+ */
+export async function adminUpdateUserRole(userId: string, newRole: "admin" | "worker" | "buyer") {
+  const { data, error } = await supabase.functions.invoke("admin-update-user-role", {
+    body: { targetUserId: userId, newRole },
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
   return data;
 }

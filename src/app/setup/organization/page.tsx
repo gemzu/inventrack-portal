@@ -16,7 +16,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { createOrganization, assignOwnerToOrganization } from "@/lib/dataService";
+import { createOrganization } from "@/lib/dataService";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import PageShell from "@/components/page-shell";
@@ -49,10 +49,7 @@ export default function SetupOrganizationPage() {
     if (!user || !name.trim()) return;
     setSaving(true);
     try {
-      const org = (await createOrganization({ name: name.trim(), ownerId: user.id })) as {
-        id: string;
-      };
-      await assignOwnerToOrganization(user.id, org.id);
+      await createOrganization({ name: name.trim() });
       await refreshProfile();
       toast("Organization created", "success");
       router.replace("/dashboard");

@@ -15,7 +15,7 @@ import Status from "@/components/Status";
 import { Panel, ListSkeleton } from "@/components/console/surfaces";
 import { Modal } from "@/components/console/controls";
 import { canManage, isOwner, roleBadgeLabel } from "@/lib/roles";
-import { adminCreateUser } from "@/lib/dataService";
+import { adminCreateUser, adminUpdateUserRole } from "@/lib/dataService";
 
 interface UserDoc {
   id: string;
@@ -140,8 +140,7 @@ export default function UsersPage() {
       return;
     }
     try {
-      const { error } = await supabase.from("users").update({ role: newRole }).eq("id", user.id);
-      if (error) throw error;
+      await adminUpdateUserRole(user.id, newRole as "admin" | "worker" | "buyer");
       setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, role: newRole } : u)));
       toast(`Role updated to ${newRole}`, "success");
     } catch {
