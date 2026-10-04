@@ -813,6 +813,32 @@ export async function regenerateInviteCode(orgId: string, kind: "admin" | "worke
 }
 
 /**
+ * Call an Edge Function and hand back its answer, or throw its own reason.
+ *
+ * supabase-js reports any non-2xx answer as "Edge Function returned a non-2xx
+ * status code"; what the function said ("Owners cannot be edited.", "That
+ * email already has an account...") is in the response body. The portal used
+ * to show the generic line, so an admin never learned why something was
+ * refused.
+ */
+async function invokeFunction(name: string, body: unknown) {
+  const { data, error } = await supabase.functions.invoke(name, { body: body as Record<string, unknown> });
+  if (error) {
+    let message = error.message;
+    try {
+      const response = (error as { context?: Response }).context;
+      const parsed = response && typeof response.json === "function" ? await response.json() : null;
+      if (parsed?.error) message = parsed.error;
+    } catch {
+      /* not JSON - keep the generic message */
+    }
+    throw new Error(message);
+  }
+  if (data?.error) throw new Error(data.error);
+  return data;
+}
+
+/**
  * Create an organisation, with the signed-in user as its owner.
  *
  * Through the create-org-secure Edge Function, the same as the app: it makes
@@ -824,11 +850,7 @@ export async function regenerateInviteCode(orgId: string, kind: "admin" | "worke
  * select() read columns that are hidden. The organisation's id comes back.
  */
 export async function createOrganization(input: { name: string }) {
-  const { data, error } = await supabase.functions.invoke("create-org-secure", {
-    body: { name: input.name.trim() },
-  });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
+  const data = await invokeFunction("create-org-secure", { name: input.name.trim() });
   return { id: data?.orgId as string };
 }
 
@@ -842,25 +864,15 @@ export async function adminCreateUser(input: {
   permissions?: "admin" | "superadmin";
   facilityId?: string | null;
 }) {
-  const { data, error } = await supabase.functions.invoke("create-user", { body: input });
-  if (error) throw error;
-  return data;
+  return invokeFunction("create-user", input);
 }
 
 export async function adminResetPassword(userId: string, newPassword: string) {
-  const { data, error } = await supabase.functions.invoke("admin-reset-password", {
-    body: { targetUserId: userId, newPassword },
-  });
-  if (error) throw error;
-  return data;
+  return invokeFunction("admin-reset-password", { targetUserId: userId, newPassword });
 }
 
 export async function adminDeleteUser(userId: string) {
-  const { data, error } = await supabase.functions.invoke("admin-delete-user", {
-    body: { targetUserId: userId },
-  });
-  if (error) throw error;
-  return data;
+  return invokeFunction("admin-delete-user", { targetUserId: userId });
 }
 
 /**
@@ -871,10 +883,5 @@ export async function adminDeleteUser(userId: string) {
  * the app read the old role back from the membership on its next launch.
  */
 export async function adminUpdateUserRole(userId: string, newRole: "admin" | "worker" | "buyer") {
-  const { data, error } = await supabase.functions.invoke("admin-update-user-role", {
-    body: { targetUserId: userId, newRole },
-  });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
-  return data;
+  return invokeFunction("admin-update-user-role", { targetUserId: userId, newRole });
 }

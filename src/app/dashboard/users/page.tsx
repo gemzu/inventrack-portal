@@ -324,18 +324,18 @@ export default function UsersPage() {
                   }
                   try {
                     setCreating(true);
-                    const res = await adminCreateUser({
+                    await adminCreateUser({
                       name: newUser.name,
                       email: newUser.email,
                       password: newUser.password,
                       role: newUser.role as "admin" | "worker" | "buyer",
                       permissions: newUser.role === "admin" ? (newUser.permissions as "admin" | "superadmin") : undefined,
                       facilityId: newUser.role === "worker" && newUser.facilityId !== "none" ? newUser.facilityId : null,
-                    }) as { invited?: boolean; message?: string } | undefined;
+                    });
                     const { data } = await supabase.from("users").select("*").eq("org_id", orgId);
                     const mapped = (data || []).map(mapUser);
                     setUsers(mapped);
-                    toast(res?.invited ? (res.message || "Invitation sent to existing user") : "User created", "success");
+                    toast("User created", "success");
                     setShowAdd(false);
                     setNewUser({ name: "", email: "", password: "", role: "worker", permissions: "admin", facilityId: "none" });
                   } catch (e) {
