@@ -27,6 +27,23 @@ interface UserDoc {
   permissions?: string;
   facilityId?: string;
   createdAt: unknown;
+  /** In this organization, but has another of theirs open right now. */
+  elsewhere?: boolean;
+}
+
+/* Who has this organization open, then members who have another of theirs
+   open right now (org_members_elsewhere). Listing by org_id alone dropped
+   someone in two organizations from one list while they worked in the other,
+   so its admins could not see them, change their role or remove them. */
+async function fetchMembers(orgId: string): Promise<UserDoc[]> {
+  const { data } = await supabase.from("users").select("*").eq("org_id", orgId);
+  const here = (data || []).map(mapUser);
+  const { data: away } = await supabase.rpc("org_members_elsewhere", { p_org_id: orgId });
+  const ids = new Set(here.map((u) => u.id));
+  const elsewhere = ((away || []) as Record<string, unknown>[])
+    .map((row) => ({ ...mapUser(row), elsewhere: true }))
+    .filter((u) => !ids.has(u.id));
+  return [...here, ...elsewhere];
 }
 
 function mapUser(row: Record<string, unknown>): UserDoc {
@@ -70,16 +87,14 @@ export default function UsersPage() {
   useEffect(() => {
     if (!orgId) { setLoading(false); return; }
     const load = async () => {
-      const { data } = await supabase.from("users").select("*").eq("org_id", orgId);
-      const mapped = (data || []).map(mapUser);
+      const mapped = await fetchMembers(orgId);
       setUsers(mapped);
       setFiltered(mapped);
       setLoading(false);
       if (canEditDeleteAccess) {
-        const { data: mem } = await supabase
-          .from("organization_memberships")
-          .select("user_id, can_delete")
-          .eq("org_id", orgId);
+        /* Through org_delete_access: a plain select returned only the
+           owner's own membership, so every other switch read as off. */
+        const { data: mem } = await supabase.rpc("org_delete_access", { p_org_id: orgId });
         const map: Record<string, boolean> = {};
         (mem || []).forEach((r: Record<string, unknown>) => { map[r.user_id as string] = r.can_delete === true; });
         setDeleteAccessMap(map);
@@ -119,10 +134,17 @@ export default function UsersPage() {
       toast("You don't have permission to change this user", "error");
       return;
     }
+    if (user.elsewhere) {
+      toast("Switching off covers their whole account, so it works while they have this organization open.", "error");
+      return;
+    }
     try {
       const newActive = !user.active;
-      const { error } = await supabase.from("users").update({ active: newActive }).eq("id", user.id);
+      /* An update the rules filter out is no error and no rows - it said
+         "activated" while nothing had changed. */
+      const { data, error } = await supabase.from("users").update({ active: newActive }).eq("id", user.id).select("id");
       if (error) throw error;
+      if (!data?.length) throw new Error("not updated");
       setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, active: newActive } : u)));
       toast(`User ${newActive ? "activated" : "deactivated"}`, "success");
     } catch {
@@ -143,8 +165,8 @@ export default function UsersPage() {
       await adminUpdateUserRole(user.id, newRole as "admin" | "worker" | "buyer");
       setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, role: newRole } : u)));
       toast(`Role updated to ${newRole}`, "success");
-    } catch {
-      toast("Failed to change role", "error");
+    } catch (e) {
+      toast((e as Error).message || "Failed to change role", "error");
     }
   };
 
@@ -153,10 +175,15 @@ export default function UsersPage() {
       toast("You don't have permission to assign facility", "error");
       return;
     }
+    if (user.elsewhere) {
+      toast("Their facility can be changed while they have this organization open.", "error");
+      return;
+    }
     try {
       const val = facilityId === "" ? null : facilityId;
-      const { error } = await supabase.from("users").update({ facility_id: val }).eq("id", user.id);
+      const { data, error } = await supabase.from("users").update({ facility_id: val }).eq("id", user.id).select("id");
       if (error) throw error;
+      if (!data?.length) throw new Error("not updated");
       setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, facilityId: val || undefined } : u)));
       toast("Facility assignment updated", "success");
     } catch {
@@ -219,6 +246,9 @@ export default function UsersPage() {
                   <p className="mono truncate text-[12px] text-muted-foreground">
                     {roleBadgeLabel(user.role, user.permissions)} · {user.email}
                   </p>
+                  {user.elsewhere && (
+                    <p className="truncate text-[12px] text-muted-foreground">Working in another organization right now</p>
+                  )}
                 </div>
 
                 {/* Inline controls — wrap onto next line instead of scrolling off */}
@@ -238,7 +268,7 @@ export default function UsersPage() {
                   <Select
                     value={user.facilityId || "none"}
                     onValueChange={(val) => assignFacility(user, (val || "none") === "none" ? "" : (val || ""))}
-                    disabled={!manageable}
+                    disabled={!manageable || user.elsewhere}
                   >
                     <SelectTrigger className="h-9 w-[140px] text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -266,7 +296,7 @@ export default function UsersPage() {
                   <Button
                     variant="ghost" size="icon-sm"
                     onClick={() => toggleActive(user)}
-                    disabled={!manageable}
+                    disabled={!manageable || user.elsewhere}
                     className={`h-9 w-9 ${user.active ? "hover:bg-destructive/10 text-destructive" : "hover:bg-success/10 text-success"}`}
                     title={user.active ? "Deactivate" : "Activate"}
                   >
@@ -332,8 +362,7 @@ export default function UsersPage() {
                       permissions: newUser.role === "admin" ? (newUser.permissions as "admin" | "superadmin") : undefined,
                       facilityId: newUser.role === "worker" && newUser.facilityId !== "none" ? newUser.facilityId : null,
                     });
-                    const { data } = await supabase.from("users").select("*").eq("org_id", orgId);
-                    const mapped = (data || []).map(mapUser);
+                    const mapped = orgId ? await fetchMembers(orgId) : [];
                     setUsers(mapped);
                     toast("User created", "success");
                     setShowAdd(false);
