@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { getOrders } from "@/lib/dataService";
+import { getMyOrder } from "@/lib/dataService";
 import { useToast } from "@/components/Toast";
 import PageShell from "@/components/page-shell";
 import EmptyState from "@/components/EmptyState";
@@ -54,22 +54,21 @@ function statusIndex(status?: string) {
 
 export default function BuyerOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { user, orgId } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
 
+  /* By its id: the database only answers with the buyer's own orders. This
+     used to wait for an organization of the buyer's own, which most buyers do
+     not have, so the page never loaded for them. */
   useEffect(() => {
-    if (!orgId || !user) return;
-    setLoading(true);
-    getOrders(orgId, { buyerId: user.id })
-      .then((rows) => {
-        const found = (rows as unknown as Order[]).find((r) => String(r.id) === id) || null;
-        setOrder(found);
-      })
+    if (!user || !id) return;
+    getMyOrder(String(id))
+      .then((row) => setOrder((row as unknown as Order) || null))
       .catch((e) => toast((e as Error).message || "Failed to load order", "error"))
       .finally(() => setLoading(false));
-  }, [orgId, user, id, toast]);
+  }, [user, id, toast]);
 
   const activeStep = statusIndex(order?.status);
   const cancelled = order?.status === "cancelled";

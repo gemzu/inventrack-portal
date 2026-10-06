@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
+  getBuyerContacts,
   getConversations,
   getMessages,
-  getOrgUsers,
+  getPeople,
   markConversationRead,
   sendMessage,
 } from "@/lib/dataService";
@@ -21,6 +22,8 @@ interface OrgUser {
   name?: string;
   email?: string;
   role?: string;
+  /** The supplier organization a conversation with this person belongs to. */
+  orgId?: string;
 }
 
 interface Message {
@@ -39,6 +42,7 @@ interface Conversation {
     createdAt?: string;
     senderId?: string;
     read?: boolean;
+    orgId?: string;
   };
 }
 
@@ -56,7 +60,8 @@ function formatTime(d?: string) {
 }
 
 export default function BuyerMessagesPage() {
-  const { user, orgId } = useAuth();
+  const { user } = useAuth();
+  const [contacts, setContacts] = useState<OrgUser[]>([]);
   const { toast } = useToast();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [users, setUsers] = useState<Record<string, OrgUser>>({});
@@ -67,17 +72,43 @@ export default function BuyerMessagesPage() {
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Load org users (for peer name resolution)
+  /* The admins of every supplier this buyer is connected to - who they can
+     write to, and under which supplier each conversation is filed. A buyer
+     has no organization of their own, and this page used to need one: for
+     most buyers it could neither name anyone nor send anything. */
   useEffect(() => {
-    if (!orgId) return;
-    getOrgUsers(orgId)
+    if (!user) return;
+    getBuyerContacts(user.id)
       .then((rows) => {
-        const map: Record<string, OrgUser> = {};
-        for (const u of rows as unknown as OrgUser[]) map[u.id] = u;
-        setUsers(map);
+        setContacts(rows);
+        setUsers((prev) => {
+          const map = { ...prev };
+          for (const u of rows) map[u.id] = { ...map[u.id], ...u };
+          return map;
+        });
       })
       .catch(() => undefined);
-  }, [orgId]);
+  }, [user]);
+
+  /* Names for anyone in a conversation who is not a current contact - each
+     asked for once, so a name that cannot be read is not asked for forever. */
+  const askedNames = useRef(new Set<string>());
+  useEffect(() => {
+    const missing = conversations
+      .map((c) => c.peerId)
+      .filter((id) => !users[id] && !askedNames.current.has(id));
+    if (missing.length === 0) return;
+    missing.forEach((id) => askedNames.current.add(id));
+    getPeople(missing)
+      .then((rows) =>
+        setUsers((prev) => {
+          const map = { ...prev };
+          for (const u of rows as unknown as OrgUser[]) map[u.id] = { ...u, ...map[u.id] };
+          return map;
+        })
+      )
+      .catch(() => undefined);
+  }, [conversations, users]);
 
   // Load conversations
   const refreshConvos = useMemo(
@@ -106,9 +137,9 @@ export default function BuyerMessagesPage() {
     markConversationRead(user.id, peerId).catch(() => undefined);
   }, [user, peerId, toast]);
 
-  // Realtime: subscribe to new messages in this org where I'm sender or receiver
+  // Realtime: new messages addressed to me
   useEffect(() => {
-    if (!user || !orgId) return;
+    if (!user) return;
     const channel = supabase
       .channel(`buyer-messages-${user.id}`)
       .on(
@@ -117,7 +148,7 @@ export default function BuyerMessagesPage() {
           event: "INSERT",
           schema: "public",
           table: "messages",
-          filter: `org_id=eq.${orgId}`,
+          filter: `receiver_id=eq.${user.id}`,
         },
         (payload) => {
           const row = payload.new as Record<string, unknown>;
@@ -149,7 +180,7 @@ export default function BuyerMessagesPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, orgId, peerId, refreshConvos]);
+  }, [user, peerId, refreshConvos]);
 
   // Autoscroll on new message
   useEffect(() => {
@@ -163,12 +194,20 @@ export default function BuyerMessagesPage() {
     return u.name || u.email || id.slice(0, 8);
   };
 
+  /* A conversation stays with the supplier it started under; a new one goes
+     under the contact's supplier. */
+  const threadOrg = (id: string) =>
+    conversations.find((c) => c.peerId === id)?.last?.orgId || users[id]?.orgId || "";
+
+  const newContacts = contacts.filter((c) => !conversations.some((v) => v.peerId === c.id));
+
   const onSend = async () => {
-    if (!user || !orgId || !peerId || !text.trim()) return;
+    const org = threadOrg(peerId);
+    if (!user || !org || !peerId || !text.trim()) return;
     const body = text.trim();
     setSending(true);
     try {
-      await sendMessage(orgId, user.id, peerId, body);
+      await sendMessage(org, user.id, peerId, body);
       setText("");
       // Realtime will append; but we also optimistic-refresh as a fallback
       const rows = await getMessages(user.id, peerId);
@@ -211,10 +250,12 @@ export default function BuyerMessagesPage() {
                   <CrateSkeleton key={i} className="h-12 w-full border-0" delay={i * 0.08} />
                 ))}
               </div>
-            ) : conversations.length === 0 ? (
-              <p className="p-4 text-sm text-muted-foreground">Nothing yet.</p>
+            ) : conversations.length === 0 && newContacts.length === 0 ? (
+              <p className="p-4 text-sm text-muted-foreground">
+                Nothing yet. Connect to a supplier and their team appears here.
+              </p>
             ) : (
-              conversations.map((c) => {
+              [...conversations, ...newContacts.map((u) => ({ peerId: u.id, last: { text: `Write to ${u.role || "this supplier"}`, read: true } }) as Conversation)].map((c) => {
                 const active = peerId === c.peerId;
                 const unread = c.last && !c.last.read && c.last.senderId !== user?.id;
                 return (

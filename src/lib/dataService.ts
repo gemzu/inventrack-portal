@@ -546,6 +546,58 @@ export async function getMessages(userId: string, peerId: string) {
   return mapAll(data);
 }
 
+/**
+ * Who a buyer can message: the admins of every supplier they are connected
+ * to, each with that supplier's organization - a buyer's messages are filed
+ * under the supplier's organization, as in the app. `role` carries the
+ * supplier's store name for the thread header.
+ */
+export async function getBuyerContacts(buyerId: string) {
+  const { data: links, error: linkErr } = await supabase
+    .from("storefront_buyers")
+    .select("storefronts(org_id, name)")
+    .eq("buyer_id", buyerId)
+    .eq("status", "active");
+  if (linkErr) throw linkErr;
+  const supplier = new Map<string, string>();
+  for (const row of (links || []) as AnyRow[]) {
+    const sf = row.storefronts as AnyRow | null;
+    if (sf?.org_id) supplier.set(String(sf.org_id), String(sf.name || "Supplier"));
+  }
+  if (supplier.size === 0) return [];
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, name, email, org_id")
+    .in("org_id", [...supplier.keys()])
+    .in("role", ["admin", "owner", "superadmin"])
+    .eq("active", true);
+  if (error) throw error;
+  return ((data || []) as AnyRow[])
+    .filter((u) => u.id !== buyerId)
+    .map((u) => ({
+      id: String(u.id),
+      name: (u.name as string) || undefined,
+      email: (u.email as string) || undefined,
+      role: supplier.get(String(u.org_id)) || "Supplier",
+      orgId: String(u.org_id),
+    }));
+}
+
+/** Names for people this account has exchanged messages with. */
+export async function getPeople(ids: string[]) {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase.from("users").select("id, name, email").in("id", ids);
+  if (error) throw error;
+  return mapAll(data as AnyRow[]);
+}
+
+/** One of the signed-in buyer's own orders. */
+export async function getMyOrder(orderId: string) {
+  const { data, error } = await supabase.from("orders").select("*").eq("id", orderId).maybeSingle();
+  if (error) throw error;
+  return data ? toCamel(data as AnyRow) : null;
+}
+
 export async function sendMessage(orgId: string, senderId: string, receiverId: string, text: string) {
   const { data, error } = await supabase
     .from("messages")
