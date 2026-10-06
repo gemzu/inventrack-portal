@@ -24,7 +24,7 @@ import { Rule } from "@/components/console/surfaces";
 import { Action, Field, Input } from "@/components/console/controls";
 
 export default function SetupOrganizationPage() {
-  const { user, userRole, orgId, loading, refreshProfile } = useAuth();
+  const { user, userRole, orgId, loading, refreshProfile, mfaPending } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   const [name, setName] = useState("");
@@ -32,7 +32,7 @@ export default function SetupOrganizationPage() {
 
   useEffect(() => {
     if (loading) return;
-    if (!user) {
+    if (!user || mfaPending) {
       router.replace("/login");
       return;
     }
@@ -43,7 +43,7 @@ export default function SetupOrganizationPage() {
     if (userRole && userRole !== "admin") {
       router.replace("/dashboard");
     }
-  }, [user, userRole, orgId, loading, router]);
+  }, [user, userRole, orgId, loading, router, mfaPending]);
 
   const create = async () => {
     if (!user || !name.trim()) return;

@@ -32,7 +32,7 @@ import { activeHref, flatten, visibleSections } from "@/components/console/nav";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const {
-    user, userName, userRole, userActive, userPermissions, orgId, orgData, loading, logout,
+    user, userName, userRole, userActive, userPermissions, orgId, orgData, loading, logout, mfaPending,
   } = useAuth();
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
@@ -55,7 +55,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [pathname, dests]);
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && (!user || mfaPending)) {
       router.push("/login");
       return;
     }
@@ -66,7 +66,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!loading && user && userRole === "admin" && !orgId) {
       router.push("/setup/organization");
     }
-  }, [user, loading, userRole, orgId, router]);
+  }, [user, loading, userRole, orgId, router, mfaPending]);
 
   useEffect(() => {
     if (!user) return;
@@ -105,7 +105,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   if (loading) return <PageLoader />;
-  if (!user) return null;
+  if (!user || mfaPending) return null;
 
   /* A buyer whose account has not been switched on yet. Kept as a plain
      hairline panel rather than a card with an icon in a coloured square. */

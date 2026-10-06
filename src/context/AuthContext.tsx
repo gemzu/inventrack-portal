@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
+import { codeOwed, verifyAuthenticatorCode } from "@/lib/mfa";
 import type { User } from "@supabase/supabase-js";
 
 interface Facility {
@@ -39,6 +40,9 @@ interface AuthContextType {
   facilities: Facility[];
   userFacilityId: string | null;
   loading: boolean;
+  /** Signed in with the password, but the authenticator code is still owed. */
+  mfaPending: boolean;
+  verifyMfa: (code: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string, company?: string, role?: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -60,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [userFacilityId, setUserFacilityId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mfaPending, setMfaPending] = useState(false);
 
   const fetchUserProfile = async (supabaseUser: User) => {
     try {
@@ -130,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       const currentUser = session?.user ?? null;
+      setMfaPending(codeOwed(session));
       setUser(currentUser);
       if (currentUser) {
         fetchUserProfile(currentUser);
@@ -140,6 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       const currentUser = session?.user ?? null;
+      setMfaPending(codeOwed(session));
       setUser(currentUser);
       if (currentUser) {
         fetchUserProfile(currentUser);
@@ -181,6 +188,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // A database trigger auto-creates the users table row
   };
 
+  const verifyMfa = async (code: string) => {
+    await verifyAuthenticatorCode(code);
+    const { data } = await supabase.auth.getSession();
+    setMfaPending(codeOwed(data.session));
+  };
+
   const logout = async () => {
     await supabase.auth.signOut();
   };
@@ -201,7 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user, userRole, userName, userCompany, userActive, userPermissions,
-        orgId, orgData, facilities, userFacilityId, loading,
+        orgId, orgData, facilities, userFacilityId, loading, mfaPending, verifyMfa,
         login, signup, logout, resetPassword, refreshProfile,
       }}
     >

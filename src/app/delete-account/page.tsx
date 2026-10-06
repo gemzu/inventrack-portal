@@ -8,8 +8,9 @@ import {
 import { useState } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { supabase } from "@/lib/supabase";
+import { codeOwedNow, verifyAuthenticatorCode } from "@/lib/mfa";
 
-type Step = "form" | "confirm" | "success" | "error";
+type Step = "form" | "code" | "confirm" | "success" | "error";
 
 export default function DeleteAccountPage() {
   const [mobileMenu, setMobileMenu] = useState(false);
@@ -20,6 +21,7 @@ export default function DeleteAccountPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [reason, setReason] = useState("");
+  const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -31,9 +33,24 @@ export default function DeleteAccountPage() {
       // Verify credentials — this proves the requester owns the account
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw new Error("Incorrect email or password. Please try again.");
-      setStep("confirm");
+      setStep((await codeOwedNow()) ? "code" : "confirm");
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : "Verification failed.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleCode(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg("");
+    try {
+      await verifyAuthenticatorCode(code);
+      setStep("confirm");
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "That code did not go through.");
+      setCode("");
     } finally {
       setLoading(false);
     }
@@ -228,6 +245,51 @@ export default function DeleteAccountPage() {
                   className="w-full py-3 rounded-xl bg-destructive text-destructive-foreground font-semibold hover:bg-destructive/90 transition disabled:opacity-60"
                 >
                   {loading ? "Verifying..." : "Verify & Continue"}
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* Step: authenticator code */}
+          {step === "code" && (
+            <div className="bg-card border border-border rounded-2xl p-8">
+              <h2 className="text-xl font-semibold mb-2">Enter your authenticator code</h2>
+              <p className="text-sm text-muted-foreground mb-6">
+                This account signs in with an authenticator app as well as a password. Type the 6-digit code it shows for Invems.
+              </p>
+
+              {errorMsg && (
+                <div role="alert" className="mb-5 px-4 py-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
+                  {errorMsg}
+                </div>
+              )}
+
+              <form onSubmit={handleCode} className="space-y-5">
+                <div>
+                  <label htmlFor="mfa-code" className="block text-sm font-medium mb-2">
+                    Code <span className="text-destructive">*</span>
+                  </label>
+                  <input
+                    id="mfa-code"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={7}
+                    autoFocus
+                    required
+                    value={code}
+                    onChange={(e) => { setCode(e.target.value.replace(/[^0-9 ]/g, "")); setErrorMsg(""); }}
+                    placeholder="123 456"
+                    className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-destructive/50 focus:border-destructive transition text-sm font-mono tracking-[0.3em]"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || code.replace(/\s+/g, "").length !== 6}
+                  className="w-full py-3 rounded-xl bg-destructive text-destructive-foreground font-semibold hover:bg-destructive/90 transition disabled:opacity-60"
+                >
+                  {loading ? "Checking..." : "Verify & Continue"}
                 </button>
               </form>
             </div>

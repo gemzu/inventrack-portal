@@ -118,7 +118,7 @@ function Rail({
 }
 
 export default function BuyerLayout({ children }: { children: React.ReactNode }) {
-  const { user, userRole, userActive, loading, logout } = useAuth();
+  const { user, userRole, userActive, loading, logout, mfaPending } = useAuth();
   const { items: cartItems } = useCart();
   const pathname = usePathname();
   const router = useRouter();
@@ -126,9 +126,12 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
   const cartCount = cartItems?.length || 0;
 
   useEffect(() => {
-    if (!loading && !user) router.push("/login");
+    if (!loading && (!user || mfaPending)) {
+      router.push("/login");
+      return;
+    }
     if (!loading && user && userRole !== "buyer") router.push("/dashboard");
-  }, [loading, user, userRole, router]);
+  }, [loading, user, userRole, router, mfaPending]);
 
   useEffect(() => {
     if (!user) return;
@@ -141,7 +144,7 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
   };
 
   if (loading) return <PageLoader />;
-  if (!user || userRole !== "buyer") return null;
+  if (!user || mfaPending || userRole !== "buyer") return null;
 
   if (userActive === false) {
     return (
