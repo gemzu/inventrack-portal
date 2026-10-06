@@ -34,7 +34,7 @@ export default function PlatformAnalyticsPage() {
     try {
       // Platform-wide counts (no org_id filter)
       const [orgRes, userRes, itemRes, orderRes] = await Promise.all([
-        supabase.from("organizations").select("*", { count: "exact", head: true }),
+        supabase.from("organizations").select("id", { count: "exact", head: true }),
         supabase.from("users").select("*", { count: "exact", head: true }),
         supabase.from("inventory").select("*", { count: "exact", head: true }),
         supabase.from("orders").select("*", { count: "exact", head: true }),

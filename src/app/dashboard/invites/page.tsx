@@ -26,7 +26,7 @@ import Link from "next/link";
 import AdminGuard from "@/components/AdminGuard";
 import PageShell from "@/components/page-shell";
 import { useAuth } from "@/context/AuthContext";
-import { getOrg, regenerateInviteCode } from "@/lib/dataService";
+import { getInviteCodes, regenerateInviteCode } from "@/lib/dataService";
 import { ArrowRight, Copy, RefreshCw, Share2 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import { isSuperadmin } from "@/lib/roles";
@@ -47,11 +47,7 @@ export default function InvitesPage() {
     if (!orgId) return;
     setLoading(true);
     try {
-      const org = (await getOrg(orgId)) as {
-        adminInviteCode?: string;
-        workerInviteCode?: string;
-      };
-      setCodes({ admin: org.adminInviteCode, worker: org.workerInviteCode });
+      setCodes(await getInviteCodes(orgId));
     } catch (e) {
       toast((e as Error).message || "Failed to load codes", "error");
     } finally {

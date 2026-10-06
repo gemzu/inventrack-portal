@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import { codeOwed, verifyAuthenticatorCode } from "@/lib/mfa";
+import { ORG_COLUMNS } from "@/lib/orgColumns";
 import type { User } from "@supabase/supabase-js";
 
 interface Facility {
@@ -94,17 +95,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           const { data: orgDoc } = await supabase
             .from("organizations")
-            .select("*")
+            .select(ORG_COLUMNS)
             .eq("id", data.org_id)
-            .single();
+            .single<Record<string, unknown>>();
 
           if (orgDoc) {
             setOrgData({
-              name: orgDoc.name,
-              ownerId: orgDoc.owner_id,
-              sheetId: orgDoc.sheet_id,
-              lowStockThreshold: orgDoc.low_stock_threshold,
-              subscribed: orgDoc.subscribed,
+              name: orgDoc.name as string,
+              ownerId: orgDoc.owner_id as string,
+              sheetId: (orgDoc.sheet_id as string) ?? undefined,
+              lowStockThreshold: (orgDoc.low_stock_threshold as number) ?? undefined,
+              subscribed: (orgDoc.subscribed as boolean) ?? undefined,
+              address: (orgDoc.address as string) ?? undefined,
+              phone: (orgDoc.phone as string) ?? undefined,
+              timezone: (orgDoc.timezone as string) ?? undefined,
+              reservationHours: (orgDoc.reservation_hours as number) ?? undefined,
+              orderApprovalRequired: (orgDoc.order_approval_required as boolean) ?? undefined,
+              notifyLowStock: (orgDoc.notify_low_stock as boolean) ?? undefined,
+              notifyNewOrders: (orgDoc.notify_new_orders as boolean) ?? undefined,
+              notifySubmissions: (orgDoc.notify_submissions as boolean) ?? undefined,
             });
           }
 

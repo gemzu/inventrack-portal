@@ -21,6 +21,7 @@ import MfaSetup from "@/components/dashboard/MfaSetup";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useToast } from "@/components/Toast";
 import { Check, Loader2 } from "lucide-react";
 import { Rule } from "@/components/console/surfaces";
 import { Field, Input, Select } from "@/components/console/controls";
@@ -137,6 +138,7 @@ function AutoSaveInput({
 export default function SettingsPage() {
   const { orgId, orgData } = useAuth();
   const { theme, toggleTheme, accent, setAccent } = useTheme();
+  const { toast } = useToast();
   const [, startTransition] = useTransition();
 
   const [name, setName] = useState("");
@@ -166,9 +168,10 @@ export default function SettingsPage() {
   const saveSettings = useCallback(
     async (updates: Record<string, unknown>) => {
       if (!orgId) return;
-      await supabase.from("organizations").update(updates).eq("id", orgId);
+      const { data, error } = await supabase.from("organizations").update(updates).eq("id", orgId).select("id");
+      if (error || !data?.length) toast("That setting did not save. Try again.", "error");
     },
-    [orgId]
+    [orgId, toast]
   );
 
   const debouncedSave = useCallback(

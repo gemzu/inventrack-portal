@@ -7,6 +7,7 @@
  * Errors are thrown, not swallowed.
  */
 import { supabase } from "@/lib/supabase";
+import { ORG_COLUMNS } from "@/lib/orgColumns";
 
 /* ─── Helpers ──────────────────────────────────────────── */
 
@@ -791,9 +792,19 @@ export async function toggleFavorite(itemId: string, buyerId: string) {
 /* ─── Org / invite codes ───────────────────────────────── */
 
 export async function getOrg(orgId: string) {
-  const { data, error } = await supabase.from("organizations").select("*").eq("id", orgId).single();
+  const { data, error } = await supabase.from("organizations").select(ORG_COLUMNS).eq("id", orgId).single<AnyRow>();
   if (error) throw error;
   return toCamel(data);
+}
+
+/** The staff join codes, through the server: an admin of the organization only. */
+export async function getInviteCodes(orgId: string): Promise<{ admin?: string; worker?: string }> {
+  const { data, error } = await supabase.rpc("ensure_org_invite_codes", { p_org_id: orgId });
+  if (error) throw error;
+  const row = (Array.isArray(data) ? data[0] : data) as
+    | { admin_invite_code?: string | null; worker_invite_code?: string | null }
+    | null;
+  return { admin: row?.admin_invite_code ?? undefined, worker: row?.worker_invite_code ?? undefined };
 }
 
 /**
