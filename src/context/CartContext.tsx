@@ -9,6 +9,8 @@ export interface CartItem {
   displayName?: string;
   quantity: number;
   storefrontId?: string | null;
+  /** The supplier's organization: an order is filed under it. */
+  orgId?: string | null;
 }
 
 interface CartContextType {

@@ -408,6 +408,37 @@ export async function deleteStorefront(id: string) {
 }
 
 /**
+ * What a connected store offers this buyer, through buyer_storefront_items.
+ * Buyers cannot read a vendor's inventory directly - the database applies the
+ * store's filters and its "show prices" switch, and never returns cost.
+ */
+export async function getStorefrontItems(storefrontId: string) {
+  const { data, error } = await supabase.rpc("buyer_storefront_items", { p_storefront_id: storefrontId });
+  if (error) throw error;
+  return mapAll(data as AnyRow[]);
+}
+
+/**
+ * Holds units of an item for this buyer (reserve_inventory_units) and returns
+ * the held row - what an order points at, as in the app.
+ */
+export async function holdUnits(itemId: string, take: number, storefrontId: string) {
+  const { data, error } = await supabase.rpc("reserve_inventory_units", {
+    p_item_id: itemId,
+    p_take: take,
+    p_storefront_id: storefrontId,
+  });
+  if (error) throw error;
+  return toCamel(data as AnyRow);
+}
+
+/** Gives held units back to the store (buyer_release_item). */
+export async function releaseHold(heldItemId: string) {
+  const { error } = await supabase.rpc("buyer_release_item", { p_item_id: heldItemId });
+  if (error) throw error;
+}
+
+/**
  * A store by its join code, through lookup_storefront_by_code. A buyer cannot
  * read a store they are not connected to, so reading storefronts directly
  * found nothing; the lookup also counts wrong guesses, and is what lets

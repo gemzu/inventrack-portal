@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
-import { createOrder } from "@/lib/dataService";
+import { createOrder, holdUnits, releaseHold } from "@/lib/dataService";
+import type { CartItem } from "@/context/CartContext";
 import { ShoppingCart, Trash2, Plus, Minus, ArrowRight } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import PageShell from "@/components/page-shell";
@@ -15,7 +16,7 @@ import { Panel, Figure, ColHead } from "@/components/console/surfaces";
 import { Action } from "@/components/console/controls";
 
 export default function BuyerCartPage() {
-  const { user, orgId, userName } = useAuth();
+  const { user, userName } = useAuth();
   const { items, updateQuantity, removeFromCart, clearCart, count } = useCart();
   const { toast } = useToast();
   const router = useRouter();
@@ -23,32 +24,65 @@ export default function BuyerCartPage() {
 
   const totalQty = useMemo(() => items.reduce((acc, i) => acc + i.quantity, 0), [items]);
 
+  /* One order per supplier, placed the way the app places it: each item's
+     units are held first, and the order points at the held units - which is
+     what lets the supplier approve it, and stops the same units being sold
+     twice. This used to send nothing for most buyers (it needed an
+     organization of the buyer's own) and, for the rest, an order with no
+     store and no units behind it, which the database refuses. */
   const handleSubmit = async () => {
-    if (!orgId || !user) return;
+    if (!user) return;
+    const groups = new Map<string, CartItem[]>();
+    for (const it of items) {
+      if (!it.storefrontId || !it.orgId) continue;
+      groups.set(it.storefrontId, [...(groups.get(it.storefrontId) || []), it]);
+    }
+    if (groups.size === 0) {
+      toast("Add these items again from the catalog - they are missing their supplier.", "error");
+      return;
+    }
+    setSubmitting(true);
+    let held: string[] = [];
+    let sent = 0;
     try {
-      setSubmitting(true);
-      // All cart items are expected to come from the same storefront for now.
-      // Pick the first non-null storefrontId as the order's storefront.
-      const storefrontId = items.find((i) => i.storefrontId)?.storefrontId ?? null;
-      await createOrder(orgId, {
-        buyerId: user.id,
-        buyerName: userName || user.email || "Buyer",
-        buyerEmail: user.email || "",
-        storefrontId,
-        items: items.map((i) => ({
-          modelId: i.modelId,
-          barcode: i.barcode,
-          displayName: i.displayName,
-          quantity: i.quantity,
-        })),
-        totalQty,
-        status: "pending_approval",
-      });
-      clearCart();
-      toast("Order submitted", "success");
+      for (const [storefrontId, group] of groups) {
+        const lines = [];
+        for (const it of group) {
+          const row = (await holdUnits(it.id, it.quantity, storefrontId)) as Record<string, unknown>;
+          held.push(String(row.id));
+          lines.push({
+            inventoryId: row.id,
+            displayName: (row.displayName as string) ?? it.displayName ?? null,
+            modelId: (row.modelId as string) ?? it.modelId ?? null,
+            brand: (row.brand as string) ?? null,
+            barcode: (row.barcode as string) ?? it.barcode ?? null,
+            partNumber: (row.partNumber as string) ?? null,
+            category: (row.category as string) ?? null,
+            quantity: it.quantity,
+          });
+        }
+        const name = userName || user.email || "Buyer";
+        await createOrder(String(group[0].orgId), {
+          buyerId: user.id,
+          buyerName: name,
+          buyerEmail: user.email || "",
+          orderName: `Order from ${name}`,
+          storefrontId,
+          items: lines,
+          totalQty: group.reduce((acc, i) => acc + i.quantity, 0),
+          status: "pending_approval",
+        });
+        /* Those units now belong to a placed order. */
+        held = [];
+        sent += 1;
+        group.forEach((it) => removeFromCart(it.id));
+      }
+      toast(sent > 1 ? `${sent} orders sent` : "Order sent", "success");
       router.push("/buyer/orders");
     } catch (e) {
-      toast((e as Error).message || "Failed to submit order", "error");
+      /* Give back whatever was held for the order that did not go out. */
+      await Promise.all(held.map((id) => releaseHold(id).catch(() => {})));
+      toast((e as Error).message || "That order did not go through.", "error");
     } finally {
       setSubmitting(false);
     }

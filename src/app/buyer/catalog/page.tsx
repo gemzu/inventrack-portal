@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
-import { getInventoryPaginated, getMyStorefronts } from "@/lib/dataService";
+import { getStorefrontItems, getMyStorefronts } from "@/lib/dataService";
 import { Package, ShoppingCart } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import PageShell from "@/components/page-shell";
@@ -15,6 +15,7 @@ import { Action, Chip, SearchInput } from "@/components/console/controls";
 
 interface Item {
   id: string;
+  orgId?: string;
   modelId: string;
   barcode: string;
   displayName?: string;
@@ -22,7 +23,8 @@ interface Item {
   category?: string;
   quantity?: number;
   imageUrl?: string;
-  costPrice?: number;
+  /** Null when the supplier has prices switched off. */
+  sellingPrice?: number | null;
 }
 
 export default function BuyerCatalogPage() {
@@ -37,6 +39,7 @@ export default function BuyerCatalogPage() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
+  const [storefrontId, setStorefrontId] = useState<string | null>(null);
 
   const [allCategories, setAllCategories] = useState<string[]>([]);
 
@@ -49,13 +52,16 @@ export default function BuyerCatalogPage() {
         setStorefronts(my as Record<string, unknown>[]);
         const first = (my?.[0] as Record<string, unknown> | undefined) || undefined;
         const sf = (first?.storefront as Record<string, unknown> | undefined) || undefined;
-        const orgId = String(sf?.orgId || "");
-        if (!orgId) {
+        const sfId = String(first?.storefrontId || sf?.id || "");
+        setStorefrontId(sfId || null);
+        if (!sfId) {
           setItems([]);
           return;
         }
-        const res = await getInventoryPaginated(orgId, { status: "available" }, 0, 500);
-        const loadedItems = (res.items || []) as unknown as Item[];
+        /* What this store offers this buyer, from the database. Reading the
+           vendor's inventory directly has returned nothing since buyers lost
+           that access - and it showed the cost price as the price. */
+        const loadedItems = (await getStorefrontItems(sfId)) as unknown as Item[];
         setItems(loadedItems);
         
         // Extract unique categories from items
@@ -91,7 +97,8 @@ export default function BuyerCatalogPage() {
         modelId: item.modelId || "", 
         barcode: item.barcode || "", 
         displayName: item.displayName || "",
-        storefrontId: null 
+        storefrontId,
+        orgId: item.orgId ?? null,
       }, 1);
       toast(`Added ${item.displayName || item.modelId}`, "success");
     } catch (e) {
@@ -206,9 +213,9 @@ export default function BuyerCatalogPage() {
                         </p>
 
                         <div className="mt-3 flex items-baseline justify-between gap-3">
-                          {item.costPrice !== undefined ? (
+                          {typeof item.sellingPrice === "number" ? (
                             <span className="font-display text-lg font-bold tabular-nums tracking-[-0.02em]">
-                              ${item.costPrice.toFixed(2)}
+                              ${item.sellingPrice.toFixed(2)}
                             </span>
                           ) : (
                             <span className="text-[12px] text-muted-foreground">
