@@ -407,15 +407,19 @@ export async function deleteStorefront(id: string) {
   if (error) throw error;
 }
 
+/**
+ * A store by its join code, through lookup_storefront_by_code. A buyer cannot
+ * read a store they are not connected to, so reading storefronts directly
+ * found nothing; the lookup also counts wrong guesses, and is what lets
+ * connectStorefrontByCode go ahead.
+ */
 export async function getStorefrontByCode(code: string) {
-  const { data, error } = await supabase
-    .from("storefronts")
-    .select("*")
-    .eq("invite_code", code.toUpperCase())
-    .eq("active", true)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("lookup_storefront_by_code", {
+    p_code: code.trim().toUpperCase(),
+  });
   if (error) throw error;
-  return data ? toCamel(data) : null;
+  const row = (Array.isArray(data) ? data[0] : data) as AnyRow | null | undefined;
+  return row ? toCamel(row) : null;
 }
 
 export async function getMyStorefronts(buyerId: string) {
@@ -431,47 +435,28 @@ export async function getMyStorefronts(buyerId: string) {
   }));
 }
 
-export async function connectToStorefront(buyerId: string, storefrontId: string) {
-  // Connect to storefront
-  const { data: connection, error } = await supabase
-    .from("storefront_buyers")
-    .upsert(
-      { buyer_id: buyerId, storefront_id: storefrontId, status: "active", connected_at: new Date().toISOString() },
-      { onConflict: "storefront_id,buyer_id" }
-    )
-    .select()
-    .single();
-  if (error) throw error;
-  
-  // Get storefront owner org_id and create message thread with owner
-  const { data: sf } = await supabase
-    .from("storefronts")
-    .select("org_id, organizations(owner_id)")
-    .eq("id", storefrontId)
-    .single();
-  
-  if (sf?.org_id && sf?.organizations && sf.organizations[0]?.owner_id) {
-    // Check if conversation already exists
-    const { data: existing } = await supabase
-      .from("messages")
-      .select("id")
-      .eq("sender_id", buyerId)
-      .eq("receiver_id", sf.organizations[0].owner_id)
-      .eq("org_id", sf.org_id)
-      .limit(1);
-    
-    // Create welcome message if no conversation exists
-    if (!existing || existing.length === 0) {
-      await supabase.from("messages").insert({
-        org_id: sf.org_id,
-        sender_id: buyerId,
-        receiver_id: sf.organizations[0].owner_id,
-        text: "Hi! I just connected to your storefront. Looking forward to working with you!",
-      });
+/**
+ * Connects the signed-in buyer to the store behind a code they have just
+ * looked up (getStorefrontByCode), through connect_storefront_by_code.
+ *
+ * This used to write storefront_buyers directly, which the database has
+ * refused since buyers stopped being able to join any store without its code
+ * (2026-09-26): connecting on the web failed for every buyer.
+ */
+export async function connectStorefrontByCode(code: string) {
+  const { data, error } = await supabase.rpc("connect_storefront_by_code", {
+    p_code: code.trim().toUpperCase(),
+  });
+  if (error) {
+    const m = error.message || "";
+    if (m.includes("already_connected")) return null;
+    if (m.includes("connection_blocked")) {
+      throw new Error("This supplier has removed you from their store. Ask them to add you back.");
     }
+    if (m.includes("storefront_not_found")) throw new Error("Look the code up again, then connect.");
+    throw error;
   }
-  
-  return toCamel(connection);
+  return data as string;
 }
 
 export async function disconnectStorefront(buyerId: string, storefrontId: string) {

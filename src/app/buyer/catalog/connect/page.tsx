@@ -12,7 +12,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { connectToStorefront, getStorefrontByCode, getMyStorefronts } from "@/lib/dataService";
+import { connectStorefrontByCode, getStorefrontByCode, getMyStorefronts } from "@/lib/dataService";
 import { useToast } from "@/components/Toast";
 import { ArrowRight } from "lucide-react";
 import PageShell from "@/components/page-shell";
@@ -24,8 +24,9 @@ type Preview = {
   id?: string;
   name?: string;
   description?: string;
+  orgName?: string;
+  productCount?: number;
   inviteCode?: string;
-  filterType?: string;
 } | null;
 
 export default function ConnectStorefrontPage() {
@@ -47,8 +48,11 @@ export default function ConnectStorefrontPage() {
   const lookUp = async () => {
     try {
       setLoading(true);
-      const sf = await getStorefrontByCode(code.trim());
-      setPreview(sf as Preview);
+      const looked = code.trim();
+      const sf = await getStorefrontByCode(looked);
+      /* Connect uses the code that was looked up, not whatever the box holds
+         by the time Connect is pressed. */
+      setPreview(sf ? { ...(sf as Preview), inviteCode: looked } : null);
       if (!sf) toast("No supplier uses that code", "error");
     } catch (e) {
       toast((e as Error).message || "Could not look that up", "error");
@@ -58,10 +62,10 @@ export default function ConnectStorefrontPage() {
   };
 
   const connect = async () => {
-    if (!user || !preview?.id) return;
+    if (!user || !preview?.id || !preview.inviteCode) return;
     try {
       setLoading(true);
-      await connectToStorefront(user.id, String(preview.id));
+      await connectStorefrontByCode(preview.inviteCode);
       toast("Connected. Their catalog is open now.", "success");
       router.push("/buyer/catalog");
     } catch (e) {
@@ -108,8 +112,9 @@ export default function ConnectStorefrontPage() {
                     {preview.name || "Storefront"}
                   </p>
                   <p className="mt-1 text-[12px] text-muted-foreground">
+                    {preview.orgName ? `${preview.orgName} · ` : ""}
                     {preview.inviteCode || code}
-                    {preview.filterType ? ` · ${preview.filterType} items` : ""}
+                    {typeof preview.productCount === "number" ? ` · ${preview.productCount} items` : ""}
                   </p>
                   {preview.description && (
                     <p className="mt-3 text-sm leading-relaxed text-muted-foreground">

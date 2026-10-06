@@ -19,7 +19,7 @@
  */
 
 import { supabase } from "@/lib/supabase";
-import { connectToStorefront, getStorefrontByCode } from "@/lib/dataService";
+import { connectStorefrontByCode, getStorefrontByCode } from "@/lib/dataService";
 
 export type JoinResult = {
   orgId: string;
@@ -67,11 +67,8 @@ export async function redeemInviteCode(code: string): Promise<JoinResult> {
      code that supposedly worked. */
   if (result.role === "buyer") {
     try {
-      const { data: session } = await supabase.auth.getUser();
       const storefront = (await getStorefrontByCode(inviteCode)) as { id?: string } | null;
-      if (session.user?.id && storefront?.id) {
-        await connectToStorefront(session.user.id, String(storefront.id));
-      }
+      if (storefront?.id) await connectStorefrontByCode(inviteCode);
     } catch {
       /* They are in the organization either way; they can finish connecting
          from Suppliers. Failing the whole join here would be worse. */
