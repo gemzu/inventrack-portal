@@ -432,7 +432,11 @@ export default function InventoryPage() {
     try {
       const key = editItem.barcode || editItem.modelId || editItem.id;
       const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      const path = `items/${key}/${Date.now()}.${ext}`;
+      /* Photos are served from public links, so the name has to be
+         unguessable - the upload time alone could be found by trying times. */
+      const alphabet = "abcdefghijkmnpqrstuvwxyz23456789";
+      const tail = Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => alphabet[b % 32]).join("");
+      const path = `items/${key}/${Date.now()}_${tail}.${ext}`;
       let bucketUsed = "product-images";
       let upErr = (await supabase.storage.from("product-images").upload(path, file, { contentType: file.type, upsert: true })).error;
       if (upErr) {
