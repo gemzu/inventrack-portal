@@ -126,6 +126,33 @@ function ResetPageContent() {
         return;
       }
 
+      /* Someone is already signed in here. A reset link signs the browser
+         into the account it was sent for, and anyone can send one for their
+         own account - so switching away from the person here is their call. */
+      if (params.tokenHash || params.code || params.accessToken) {
+        const { data: current } = await supabase.auth.getSession();
+        const signedIn = current.session?.user;
+        let linkUser: string | null = null;
+        if (params.accessToken) {
+          try {
+            const part = params.accessToken.split(".")[1] || "";
+            const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
+            linkUser = JSON.parse(atob(b64.padEnd(Math.ceil(b64.length / 4) * 4, "=")))?.sub ?? null;
+          } catch {
+            linkUser = null;
+          }
+        }
+        if (signedIn && linkUser !== signedIn.id) {
+          const go = window.confirm(
+            `You are signed in as ${signedIn.email ?? "another account"}. This link resets the password of the account it was sent for, and signs this browser into it. Continue only if you asked for this link.`
+          );
+          if (!go) {
+            if (!cancelled) setState("needlink");
+            return;
+          }
+        }
+      }
+
       try {
         // Preferred: token_hash + verifyOtp. The single-use check runs here in
         // client JS, so email link-scanners (Gmail/Outlook/corporate) can't
@@ -151,6 +178,13 @@ function ResetPageContent() {
         }
 
         if (params.accessToken && params.refreshToken) {
+          if (params.type !== "recovery") {
+            if (!cancelled) {
+              setState("invalid");
+              setError("This link is not a password recovery link.");
+            }
+            return;
+          }
           const { error } = await supabase.auth.setSession({
             access_token: params.accessToken,
             refresh_token: params.refreshToken,
