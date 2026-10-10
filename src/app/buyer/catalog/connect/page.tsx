@@ -92,7 +92,7 @@ export default function ConnectStorefrontPage() {
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
                   onKeyDown={(e) => e.key === "Enter" && lookUp()}
-                  placeholder="STORE-XXXX"
+                  placeholder="STORE-XXXXXXXX"
                   className="mono text-base"
                 />
               </Field>

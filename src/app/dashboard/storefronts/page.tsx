@@ -5,9 +5,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
   createStorefront, deleteStorefront, getStorefronts, updateStorefront,
-  getFacilities, getBoxes, getInventoryPaginated,
+  getFacilities, getBoxes, getInventoryPaginated, rotateStorefrontCode,
 } from "@/lib/dataService";
-import { ShoppingBag, Plus, Pencil, Trash2, Copy } from "lucide-react";
+import { ShoppingBag, Plus, Pencil, Trash2, Copy, RefreshCw } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
 import PageShell from "@/components/page-shell";
@@ -156,6 +156,26 @@ export default function StorefrontsPage() {
     }
   };
 
+  const replaceCode = async (sf: Storefront) => {
+    if (!confirm(`Replace the join code for "${sf.name}"? The old code stops working. Buyers already connected stay connected.`)) return;
+    try {
+      const code = await rotateStorefrontCode(sf.id);
+      setStorefronts((prev) => prev.map((s) => (s.id === sf.id ? { ...s, inviteCode: code } : s)));
+      toast("New code ready", "success");
+    } catch (e) {
+      toast((e as Error).message || "Could not replace the code", "error");
+    }
+  };
+
+  const copyCode = async (sf: Storefront) => {
+    try {
+      await navigator.clipboard.writeText(sf.inviteCode);
+      toast("Code copied", "success");
+    } catch {
+      toast("Could not copy - select the code instead", "error");
+    }
+  };
+
   if (loading) return <ListSkeleton />;
 
   return (
@@ -221,13 +241,24 @@ export default function StorefrontsPage() {
                           {sf.inviteCode}
                         </p>
                       </div>
-                      <button
-                        onClick={() => navigator.clipboard.writeText(sf.inviteCode)}
-                        aria-label="Copy join code"
-                        className="shrink-0 text-muted-foreground transition-colors duration-300 hover:text-[var(--brand-2)]"
-                      >
-                        <Copy className="h-3.5 w-3.5" />
-                      </button>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <button
+                          onClick={() => replaceCode(sf)}
+                          aria-label={`Replace the join code for ${sf.name}`}
+                          title="Replace code"
+                          className="grid h-9 w-9 place-items-center text-muted-foreground transition-colors duration-300 hover:text-foreground"
+                        >
+                          <RefreshCw className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => copyCode(sf)}
+                          aria-label="Copy join code"
+                          title="Copy code"
+                          className="grid h-9 w-9 place-items-center text-muted-foreground transition-colors duration-300 hover:text-[var(--brand-2)]"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
 
                     <p className="mt-3 truncate text-[12px] text-muted-foreground">

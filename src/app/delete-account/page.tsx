@@ -63,7 +63,16 @@ export default function DeleteAccountPage() {
       const { error } = await supabase.functions.invoke("delete-account", {
         body: { reason: reason.trim() || null },
       });
-      if (error) throw error;
+      if (error) {
+        /* The reason is in the response body - for an owner, which company to
+           hand over or delete first. supabase-js only says "non-2xx". */
+        let message = error.message;
+        try {
+          const body = await (error as { context?: Response }).context?.json();
+          if (body?.error) message = String(body.error);
+        } catch { /* keep the generic message */ }
+        throw new Error(message);
+      }
       await supabase.auth.signOut();
       setStep("success");
     } catch (err: unknown) {

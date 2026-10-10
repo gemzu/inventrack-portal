@@ -391,6 +391,24 @@ export async function createStorefront(orgId: string, input: AnyRow) {
   return toCamel(data);
 }
 
+/* A fresh join code, made by the database (rotate_storefront_code): the old
+   code stops working at once, buyers already connected stay connected. */
+export async function rotateStorefrontCode(id: string): Promise<string> {
+  const { data, error } = await supabase.rpc("rotate_storefront_code", { p_storefront_id: id });
+  if (error) throw error;
+  return String(data || "");
+}
+
+/* Hand the organization to another admin (transfer_org_ownership). Only the
+   owner can; the new owner must be an admin here whose account is on. */
+export async function transferOrgOwnership(orgId: string, newOwnerId: string) {
+  const { error } = await supabase.rpc("transfer_org_ownership", {
+    p_org_id: orgId,
+    p_new_owner_id: newOwnerId,
+  });
+  if (error) throw error;
+}
+
 export async function updateStorefront(id: string, patch: AnyRow) {
   const { data, error } = await supabase
     .from("storefronts")

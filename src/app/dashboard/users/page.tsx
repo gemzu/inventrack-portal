@@ -4,7 +4,7 @@ import AdminGuard from "@/components/AdminGuard";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { Users as UsersIcon, Search, UserCheck, UserX, Trash2 } from "lucide-react";
+import { Users as UsersIcon, Search, UserCheck, UserX, Trash2, Award } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import Status from "@/components/Status";
 import { Panel, ListSkeleton } from "@/components/console/surfaces";
 import { Modal } from "@/components/console/controls";
 import { canManage, isOwner, roleBadgeLabel } from "@/lib/roles";
-import { adminCreateUser, adminUpdateUserRole } from "@/lib/dataService";
+import { adminCreateUser, adminUpdateUserRole, transferOrgOwnership } from "@/lib/dataService";
 
 interface UserDoc {
   id: string;
@@ -61,7 +61,9 @@ function mapUser(row: Record<string, unknown>): UserDoc {
 }
 
 export default function UsersPage() {
-  const { user: currentUser, orgId, userRole, userPermissions, facilities } = useAuth();
+  const { user: currentUser, orgId, orgData, userRole, userPermissions, facilities, refreshProfile } = useAuth();
+  /* The org's owner_id is who owns it; a membership label can lag behind. */
+  const callerOwns = !!currentUser?.id && (orgData?.ownerId === currentUser.id || isOwner(userPermissions));
   const [users, setUsers] = useState<UserDoc[]>([]);
   const [filtered, setFiltered] = useState<UserDoc[]>([]);
   const [search, setSearch] = useState("");
@@ -167,6 +169,25 @@ export default function UsersPage() {
       toast(`Role updated to ${newRole}`, "success");
     } catch (e) {
       toast((e as Error).message || "Failed to change role", "error");
+    }
+  };
+
+  /* Hand the organization to another admin (transfer_org_ownership). The
+     database checks the same rules; the old owner stays on as a super admin. */
+  const makeOwner = async (user: UserDoc) => {
+    if (!orgId) return;
+    const who = user.name || user.email;
+    const company = orgData?.name || "this organization";
+    if (!confirm(`Make ${who} the owner of ${company}?
+
+They can then delete the company, decide who may delete records, replace the admin code and change super admins. You stay on as a super admin. Only the new owner can hand it back.`)) return;
+    try {
+      await transferOrgOwnership(orgId, user.id);
+      toast(`${who} is now the owner`, "success");
+      await refreshProfile();
+      setUsers(await fetchMembers(orgId));
+    } catch (e) {
+      toast((e as Error).message || "Could not hand over", "error");
     }
   };
 
@@ -283,6 +304,17 @@ export default function UsersPage() {
                     label={user.active ? "Active" : "Inactive"}
                   />
                   {/* Actions — always visible */}
+                  {callerOwns && user.id !== currentUser?.id && user.role === "admin" && user.active && (
+                    <Button
+                      variant="ghost" size="icon-sm"
+                      onClick={() => makeOwner(user)}
+                      className="h-9 w-9 text-muted-foreground hover:text-foreground"
+                      title="Make owner"
+                      aria-label={`Make ${user.name || user.email} the owner`}
+                    >
+                      <Award className="w-4 h-4" />
+                    </Button>
+                  )}
                   {canEditDeleteAccess && user.role !== "buyer" && !isOwner(user.permissions) && (
                     <Button
                       variant="ghost" size="icon-sm"
