@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { Download, Package, Boxes, ChevronRight, Upload, Loader2, X, FileSpreadsheet, Save, Trash2 } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
+import PhotoViewer from "@/components/PhotoViewer";
 import { useToast } from "@/components/Toast";
 import Status from "@/components/Status";
 import { Panel, Figure, Rule, ColHead, CrateSkeleton } from "@/components/console/surfaces";
@@ -80,6 +81,7 @@ export default function InventoryPage() {
   const [facilityFilter, setFacilityFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [editItem, setEditItem] = useState<Item | null>(null);
+  const [viewer, setViewer] = useState<{ photos: string[]; start: number } | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [importData, setImportData] = useState<{ modelId: string; quantity: number }[]>([]);
   const [importing, setImporting] = useState(false);
@@ -688,7 +690,14 @@ export default function InventoryPage() {
                         <img
                           src={item.imageUrl}
                           alt=""
-                          className="h-9 w-9 shrink-0 rounded-md border border-border object-cover"
+                          role="button"
+                          title="View photo"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const all = item.imageUrls && item.imageUrls.length ? item.imageUrls : [item.imageUrl as string];
+                            setViewer({ photos: all, start: 0 });
+                          }}
+                          className="h-9 w-9 shrink-0 cursor-zoom-in rounded-md border border-border object-cover"
                         />
                       ) : (
                         /* No photo is a hairline square, not a grey chip with an
@@ -910,7 +919,10 @@ export default function InventoryPage() {
                       <img
                         src={url}
                         alt=""
-                        className="h-20 w-20 rounded-md border border-border object-cover"
+                        role="button"
+                        title="View photo"
+                        onClick={() => setViewer({ photos: editItem.imageUrls || [url], start: i })}
+                        className="h-20 w-20 cursor-zoom-in rounded-md border border-border object-cover"
                       />
                       {i === 0 && (
                         <span className="mono absolute bottom-1 left-1 rounded-sm bg-background/80 px-1.5 py-0.5 text-[10px]">
@@ -1105,6 +1117,7 @@ export default function InventoryPage() {
           )}
         </Drawer>
       </PageShell>
+      {viewer && <PhotoViewer photos={viewer.photos} start={viewer.start} onClose={() => setViewer(null)} />}
     </AdminGuard>
   );
 }

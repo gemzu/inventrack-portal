@@ -11,6 +11,7 @@ import { useToast } from "@/components/Toast";
 import PageShell from "@/components/page-shell";
 import EmptyState from "@/components/EmptyState";
 import { Figure, CrateSkeleton } from "@/components/console/surfaces";
+import PhotoViewer from "@/components/PhotoViewer";
 import { Action, Chip, SearchInput } from "@/components/console/controls";
 
 interface Item {
@@ -35,6 +36,7 @@ export default function BuyerCatalogPage() {
   
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<Item[]>([]);
+  const [viewer, setViewer] = useState<string | null>(null);
   const [storefronts, setStorefronts] = useState<Record<string, unknown>[]>([]);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
@@ -198,7 +200,10 @@ export default function BuyerCatalogPage() {
                           <img
                             src={item.imageUrl}
                             alt=""
-                            className="h-full w-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.30,1)] hover:scale-[1.03]"
+                            role="button"
+                            title="View photo"
+                            onClick={(e) => { e.stopPropagation(); e.preventDefault(); setViewer(item.imageUrl || null); }}
+                            className="h-full w-full cursor-zoom-in object-cover transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.30,1)] hover:scale-[1.03]"
                           />
                         ) : null}
                       </div>
@@ -248,6 +253,7 @@ export default function BuyerCatalogPage() {
           </div>
         )}
       </PageShell>
+      {viewer && <PhotoViewer photos={[viewer]} onClose={() => setViewer(null)} />}
     </div>
   );
 }
