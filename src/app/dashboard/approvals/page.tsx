@@ -134,9 +134,29 @@ function ApprovalsContent() {
       const add = Number.isFinite(qty) && qty > 0 ? qty : 1;
       const barcode = item.barcode ? String(item.barcode).trim() : "";
 
-      const existing = barcode
-        ? (await supabase.from("inventory").select("id, quantity").eq("org_id", orgId).eq("barcode", barcode).limit(1)).data
-        : null;
+      /* Same item already in stock: by barcode, or - for an item with no
+         barcode - by model id among barcode-less rows that are not held or
+         sold. Matching on barcode alone left every barcode-less approval as
+         a line of its own: 18 approvals of one part were 18 lines of 1
+         (Asset Recovery M, 2026-10-14). */
+      const model = (item.modelId || "").trim();
+      let existing: { id: string; quantity: number | null }[] | null = null;
+      if (barcode) {
+        existing = (await supabase.from("inventory").select("id, quantity").eq("org_id", orgId).eq("barcode", barcode).limit(1)).data;
+      } else if (model) {
+        const { data: sameModel } = await supabase
+          .from("inventory")
+          .select("id, quantity, barcode")
+          .eq("org_id", orgId)
+          .ilike("model_id", model.replace(/[%_\\]/g, (c) => "\\" + c))
+          .is("reserved_by", null)
+          .is("sold_to", null)
+          .is("box_id", null)
+          .order("created_at", { ascending: true })
+          .limit(20);
+        const match = (sameModel || []).find((r) => !String(r.barcode || "").trim());
+        existing = match ? [match] : null;
+      }
 
       if (existing && existing.length) {
         const { error: updErr } = await supabase
