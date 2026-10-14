@@ -35,6 +35,8 @@ function mapApproval(row: Record<string, unknown>): ApprovalDoc {
     barcode: row.barcode as string | undefined,
     submittedBy: row.submitted_by as string | undefined,
     orgId: row.org_id as string | undefined,
+    kind: row.kind as string | undefined,
+    note: row.note as string | undefined,
   };
 }
 
@@ -95,54 +97,80 @@ function ApprovalsContent() {
     };
   }, [orgId]);
 
-  const handleApprove = async (item: ApprovalDoc) => {
+  /* Approve the way the app does (screens/ApprovalsScreen.js):
+     1. Claim it: pending -> approved, only if still pending, so a double
+        click, auto-approve or a colleague in the app cannot add it twice.
+     2. Add the stock. A barcode already in stock is added to that row:
+        stock is unique per company and barcode (unique_org_barcode), and
+        this page always inserted a new row - so approving anything already
+        in stock failed with a duplicate-key error (reported 2026-10-14;
+        30 of one customer's pending items were already in stock).
+     3. Remove the submission. If the stock could not be added, it goes
+        back in the queue. */
+  const handleApprove = async (item: ApprovalDoc, quiet = false): Promise<boolean> => {
+    if (!orgId) return false;
+    if (item.kind === "box") {
+      toast("Box submissions are approved in the app for now (Approvals).", "info");
+      return false;
+    }
     setActionId(item.id);
+    let claimed = false;
     try {
-      /* An approval and an inventory row are not the same shape, and this was
-         copying one into the other field for field.
+      const { data: won, error: claimErr } = await supabase
+        .from("approvals")
+        .update({ status: "approved", updated_at: new Date().toISOString() })
+        .eq("id", item.id)
+        .eq("status", "pending")
+        .select("id");
+      if (claimErr) throw claimErr;
+      if (!won?.length) {
+        setApprovals((prev) => prev.filter((a) => a.id !== item.id));
+        if (!quiet) toast("Someone already decided this one", "info");
+        return false;
+      }
+      claimed = true;
 
-         `approvals` carries type and note. `inventory` has neither — it has
-         category and description. PostgREST rejects an insert naming a column
-         that does not exist, so every approval from this page failed on
-         `type`, every time, and said only "Failed to approve item". It has
-         never worked.
-
-         `approvals` also has no brand or part_number at all, so those two read
-         undefined off the record and were never sending anything.
-
-         Same mapping the mobile app uses, so the two agree about what an
-         approved item becomes. */
       const qty = Number(item.quantity);
+      const add = Number.isFinite(qty) && qty > 0 ? qty : 1;
+      const barcode = item.barcode ? String(item.barcode).trim() : "";
 
-      const { error: insertErr } = await supabase.from("inventory").insert({
-        org_id: orgId,
-        barcode: item.barcode || null,
-        /* Falls back to the barcode so an approval submitted without a model
-           id does not land in inventory as "Unnamed item". */
-        model_id: item.modelId || item.barcode || null,
-        quantity: Number.isFinite(qty) ? qty : 0,
-        category: item.type || null,
-        description: item.note ? String(item.note).trim() : null,
-        status: "available",
-      });
-      if (insertErr) throw insertErr;
+      const existing = barcode
+        ? (await supabase.from("inventory").select("id, quantity").eq("org_id", orgId).eq("barcode", barcode).limit(1)).data
+        : null;
 
-      const { error: delErr } = await supabase.from("approvals").delete().eq("id", item.id);
-      if (delErr) throw delErr;
+      if (existing && existing.length) {
+        const { error: updErr } = await supabase
+          .from("inventory")
+          .update({ quantity: (Number(existing[0].quantity) || 0) + add })
+          .eq("id", existing[0].id);
+        if (updErr) throw updErr;
+      } else {
+        const { error: insertErr } = await supabase.from("inventory").insert({
+          org_id: orgId,
+          barcode: barcode || null,
+          /* Falls back to the barcode so an approval submitted without a model
+             id does not land in inventory as "Unnamed item". */
+          model_id: item.modelId || barcode || null,
+          quantity: add,
+          category: item.type || null,
+          description: item.note ? String(item.note).trim() : null,
+          status: "available",
+        });
+        if (insertErr) throw insertErr;
+      }
 
-      /* Take it out of the list. The row was being deleted from the database
-         and left on screen, so the queue still showed work that no longer
-         existed until the page was reloaded. */
+      await supabase.from("approvals").delete().eq("id", item.id);
       setApprovals((prev) => prev.filter((a) => a.id !== item.id));
-
-      toast("Item approved and added to inventory", "success");
+      if (!quiet) toast(existing && existing.length ? "Approved - added to the existing stock" : "Item approved and added to inventory", "success");
+      return true;
     } catch (err) {
       console.error("Approve error:", err);
-      /* Say what went wrong. A generic failure message is why this sat broken:
-         the database was naming the column it rejected and nobody could see
-         it without opening the browser console. */
-      const why = err instanceof Error ? err.message : String(err);
+      if (claimed) {
+        await supabase.from("approvals").update({ status: "pending" }).eq("id", item.id).eq("status", "approved");
+      }
+      const why = err instanceof Error ? err.message : String((err as { message?: string })?.message || err);
       toast(`Could not approve: ${why}`, "error");
+      return false;
     } finally {
       setActionId(null);
     }
@@ -157,10 +185,11 @@ function ApprovalsContent() {
         toast("No approvals matched automation rules", "info");
         return;
       }
+      let done = 0;
       for (const item of eligible) {
-        await handleApprove(item);
+        if (await handleApprove(item, true)) done += 1;
       }
-      toast(`Auto-approved ${eligible.length} item${eligible.length === 1 ? "" : "s"}`, "success");
+      toast(`Auto-approved ${done} of ${eligible.length} item${eligible.length === 1 ? "" : "s"}`, done ? "success" : "error");
     } catch (err) {
       console.error("Auto-approve error:", err);
       toast("Failed to run automation", "error");
