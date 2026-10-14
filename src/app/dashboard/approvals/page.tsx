@@ -37,6 +37,7 @@ function mapApproval(row: Record<string, unknown>): ApprovalDoc {
     submittedBy: row.submitted_by as string | undefined,
     orgId: row.org_id as string | undefined,
     kind: row.kind as string | undefined,
+    imageUrls: (Array.isArray(row.image_urls) ? row.image_urls : []).filter((u) => typeof u === "string" && (u as string).startsWith("https://")) as string[],
     note: row.note as string | undefined,
   };
 }
@@ -138,6 +139,7 @@ function ApprovalsContent() {
         barcode: item.barcode ? String(item.barcode) : null,
         modelId: item.modelId || null,
         quantity: Number(item.quantity),
+        photos: (item.imageUrls as string[] | undefined) || [],
         fields: {
           category: item.type || null,
           description: item.note ? String(item.note).trim() : null,

@@ -20,6 +20,9 @@ type AddStock = {
   /* Only used when a new line is created. */
   fields?: Record<string, unknown>;
   facilityId?: string | null;
+  /* The submission's photos. Approving never carried them over, so once
+     a submission was approved its pictures were gone from view. */
+  photos?: string[];
 };
 
 const escapeLike = (s: string) => s.replace(/[%_\\]/g, (c) => "\\" + c);
@@ -54,29 +57,36 @@ async function findLine(orgId: string, barcode: string, model: string, facilityI
   );
 }
 
-async function addTo(line: { id: string; quantity: number | null }, quantity: number) {
+async function addTo(line: { id: string; quantity: number | null }, quantity: number, photos: string[] = []) {
+  const patch: Record<string, unknown> = { quantity: (Number(line.quantity) || 0) + quantity };
+  if (photos.length) {
+    /* A line with no picture yet takes the submission's. */
+    const { data: cur } = await supabase.from("inventory").select("image_url").eq("id", line.id).maybeSingle();
+    if (!cur?.image_url) { patch.image_url = photos[0]; patch.image_urls = photos.slice(0, 5); }
+  }
   const { data, error } = await supabase
     .from("inventory")
-    .update({ quantity: (Number(line.quantity) || 0) + quantity })
+    .update(patch)
     .eq("id", line.id)
     .select("id");
   if (error) throw error;
   if (!data?.length) throw new Error("That stock line could not be updated (it may have just been deleted).");
 }
 
-export async function addStock({ orgId, barcode, modelId, quantity, fields, facilityId }: AddStock): Promise<"restocked" | "added"> {
+export async function addStock({ orgId, barcode, modelId, quantity, fields, facilityId, photos = [] }: AddStock): Promise<"restocked" | "added"> {
   const code = String(barcode || "").trim();
   const model = String(modelId || "").trim();
   const qty = Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
 
   const existing = await findLine(orgId, code, model, facilityId);
   if (existing) {
-    await addTo(existing, qty);
+    await addTo(existing, qty, photos);
     return "restocked";
   }
 
   const { error } = await supabase.from("inventory").insert({
     ...(fields || {}),
+    ...(photos.length ? { image_url: photos[0], image_urls: photos.slice(0, 5) } : {}),
     org_id: orgId,
     barcode: code || null,
     model_id: model || code || null,
@@ -90,7 +100,7 @@ export async function addStock({ orgId, barcode, modelId, quantity, fields, faci
   if ((error as { code?: string }).code === "23505" && code) {
     const again = await findLine(orgId, code, model, facilityId);
     if (again) {
-      await addTo(again, qty);
+      await addTo(again, qty, photos);
       return "restocked";
     }
   }
