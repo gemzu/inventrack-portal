@@ -18,6 +18,7 @@
 import { useMemo, useState } from "react";
 import { Loader2, PackageCheck, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { addStock } from "@/lib/stock";
 import { useToast } from "@/components/Toast";
 
 export type Line = {
@@ -78,48 +79,40 @@ export default function ReceivePo({
     setBusy(true);
     try {
       let restocked = 0, added = 0, skipped = 0;
+      /* Each line's stock write is checked (src/lib/stock.ts). A line that
+         could not be saved is not recorded as received, so the order stays
+         open for it - before, a failed write was ignored and the order was
+         marked received with the stock missing. */
+      const failed: string[] = [];
+      const savedCounts = [...counts];
 
       for (let i = 0; i < po.items.length; i++) {
         const line = po.items[i];
         const got = counts[i] ?? 0;
-        const code = (line.barcode || line.modelId || "").trim();
-        if (!code || got <= 0) { skipped++; continue; }
-
-        const { data: found } = await supabase
-          .from("inventory")
-          .select("id,quantity")
-          .eq("org_id", orgId)
-          .eq("barcode", code)
-          .limit(1);
-
-        if (found && found.length > 0) {
-          const row = found[0] as { id: string; quantity: number };
-          await supabase
-            .from("inventory")
-            .update({ quantity: (row.quantity || 0) + got })
-            .eq("id", row.id);
-          restocked++;
-        } else {
-          await supabase.from("inventory").insert({
-            org_id: orgId,
-            barcode: code,
-            model_id: line.modelId || code,
-            display_name: line.name || null,
+        const name = (line.barcode || line.modelId || line.name || "").trim();
+        if (!name || got <= 0) { skipped++; continue; }
+        try {
+          const how = await addStock({
+            orgId,
+            barcode: line.barcode || null,
+            modelId: line.modelId || line.barcode || null,
             quantity: got,
-            cost_price: line.cost ?? null,
-            status: "available",
-            facility_id: po.facility_id ?? null,
+            facilityId: po.facility_id ?? null,
+            fields: { display_name: line.name || null, cost_price: line.cost ?? null },
           });
-          added++;
+          if (how === "restocked") restocked++; else added++;
+        } catch (e) {
+          failed.push(`${name}: ${(e as { message?: string })?.message || "not saved"}`);
+          savedCounts[i] = 0;
         }
       }
 
       /* Keep what actually arrived on the record, and only close the PO when
          every line was met. A short delivery stays open. */
-      const items = po.items.map((l, i) => ({ ...l, received: counts[i] ?? 0 }));
+      const items = po.items.map((l, i) => ({ ...l, received: savedCounts[i] ?? 0 }));
       const complete = items.every((l) => (l.received ?? 0) >= l.qty);
 
-      await supabase
+      const { error: poErr } = await supabase
         .from("purchase_orders")
         .update({
           items,
@@ -128,10 +121,15 @@ export default function ReceivePo({
         })
         .eq("id", po.id);
 
-      toast(
-        `${summary.units} units in. ${restocked} restocked, ${added} new${skipped ? `, ${skipped} skipped` : ""}.`,
-        "success"
-      );
+      if (poErr) failed.push(`Order record: ${poErr.message}`);
+      if (failed.length) {
+        toast(`${restocked + added} line(s) received, ${failed.length} not saved - ${failed[0]}`, "error");
+      } else {
+        toast(
+          `${summary.units} units in. ${restocked} restocked, ${added} new${skipped ? `, ${skipped} skipped` : ""}.`,
+          "success"
+        );
+      }
       onDone();
     } catch {
       toast("Could not receive this delivery", "error");

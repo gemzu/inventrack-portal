@@ -219,7 +219,16 @@ export default function InventoryPage() {
           status: "available", reserved_by: null, reserved_at: null, reservation_expiry: null,
           org_id: orgId,
         }).select("id").single();
-        if (error) { result.errors++; } else {
+        /* Already in stock but not in the list loaded on this page (the
+           barcode is unique per company): set that line instead of
+           counting a failure. */
+        if (error && (error as { code?: string }).code === "23505") {
+          const { data: same } = await supabase.from("inventory").select("id").eq("org_id", orgId).eq("barcode", item.modelId).limit(1);
+          const id = same?.[0]?.id as string | undefined;
+          const upd = id ? await supabase.from("inventory").update({ quantity: item.quantity }).eq("id", id).select("id") : null;
+          if (id && upd && !upd.error && upd.data?.length) { result.updated++; existingMap.set(item.modelId, id); }
+          else result.errors++;
+        } else if (error) { result.errors++; } else {
           result.added++;
           if (newRow) existingMap.set(item.modelId, newRow.id);
           // Remember in the permanent UPC catalog (fire-and-forget).
@@ -230,7 +239,10 @@ export default function InventoryPage() {
 
     setImportResult(result);
     setImporting(false);
-    toast(`Import complete: ${result.added} added, ${result.updated} updated`, "success");
+    toast(
+      `Import complete: ${result.added} added, ${result.updated} updated${result.errors ? `, ${result.errors} could not be saved` : ""}`,
+      result.errors ? "error" : "success"
+    );
     // Reload inventory
     const { data } = await supabase.from("inventory").select("*").eq("org_id", orgId);
     const mapped = (data || []).map(mapItem);

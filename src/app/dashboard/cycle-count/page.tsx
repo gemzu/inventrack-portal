@@ -113,9 +113,14 @@ export default function CycleCountPage() {
 
     setApplying(true);
     try {
+      /* Each change is checked: a refused or failed update used to be
+         counted as adjusted all the same. */
+      let failed = 0;
       for (const it of changes) {
         const to = counts[it.id];
-        await supabase.from("inventory").update({ quantity: to }).eq("id", it.id);
+        const { data: saved, error: saveErr } = await supabase
+          .from("inventory").update({ quantity: to }).eq("id", it.id).select("id");
+        if (saveErr || !saved?.length) { failed++; continue; }
         /* One row per adjustment, so the change is attributable later. A
            failed log must not abort the rest of the count. */
         try {
@@ -131,7 +136,9 @@ export default function CycleCountPage() {
           /* ignored on purpose */
         }
       }
-      toast(`Adjusted ${changes.length} ${changes.length === 1 ? "item" : "items"}`, "success");
+      const done = changes.length - failed;
+      if (failed) toast(`Adjusted ${done} of ${changes.length}; ${failed} could not be saved - try those again`, "error");
+      else toast(`Adjusted ${done} ${done === 1 ? "item" : "items"}`, "success");
       setCounts({});
       load();
     } catch {

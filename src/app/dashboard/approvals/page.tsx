@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { addStock } from "@/lib/stock";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/Toast";
 import EmptyState from "@/components/EmptyState";
@@ -130,54 +131,19 @@ function ApprovalsContent() {
       }
       claimed = true;
 
-      const qty = Number(item.quantity);
-      const add = Number.isFinite(qty) && qty > 0 ? qty : 1;
-      const barcode = item.barcode ? String(item.barcode).trim() : "";
-
-      /* Same item already in stock: by barcode, or - for an item with no
-         barcode - by model id among barcode-less rows that are not held or
-         sold. Matching on barcode alone left every barcode-less approval as
-         a line of its own: 18 approvals of one part were 18 lines of 1
-         (Asset Recovery M, 2026-10-14). */
-      const model = (item.modelId || "").trim();
-      let existing: { id: string; quantity: number | null }[] | null = null;
-      if (barcode) {
-        existing = (await supabase.from("inventory").select("id, quantity").eq("org_id", orgId).eq("barcode", barcode).limit(1)).data;
-      } else if (model) {
-        const { data: sameModel } = await supabase
-          .from("inventory")
-          .select("id, quantity, barcode")
-          .eq("org_id", orgId)
-          .ilike("model_id", model.replace(/[%_\\]/g, (c) => "\\" + c))
-          .is("reserved_by", null)
-          .is("sold_to", null)
-          .is("box_id", null)
-          .order("created_at", { ascending: true })
-          .limit(20);
-        const match = (sameModel || []).find((r) => !String(r.barcode || "").trim());
-        existing = match ? [match] : null;
-      }
-
-      if (existing && existing.length) {
-        const { error: updErr } = await supabase
-          .from("inventory")
-          .update({ quantity: (Number(existing[0].quantity) || 0) + add })
-          .eq("id", existing[0].id);
-        if (updErr) throw updErr;
-      } else {
-        const { error: insertErr } = await supabase.from("inventory").insert({
-          org_id: orgId,
-          barcode: barcode || null,
-          /* Falls back to the barcode so an approval submitted without a model
-             id does not land in inventory as "Unnamed item". */
-          model_id: item.modelId || barcode || null,
-          quantity: add,
+      /* src/lib/stock.ts: by barcode, else by model among barcode-less
+         lines; checks every write. */
+      const how = await addStock({
+        orgId,
+        barcode: item.barcode ? String(item.barcode) : null,
+        modelId: item.modelId || null,
+        quantity: Number(item.quantity),
+        fields: {
           category: item.type || null,
           description: item.note ? String(item.note).trim() : null,
-          status: "available",
-        });
-        if (insertErr) throw insertErr;
-      }
+        },
+      });
+      const existing = how === "restocked" ? [true] : null;
 
       await supabase.from("approvals").delete().eq("id", item.id);
       setApprovals((prev) => prev.filter((a) => a.id !== item.id));
