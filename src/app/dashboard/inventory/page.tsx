@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import AdminGuard from "@/components/AdminGuard";
 import PageShell from "@/components/page-shell";
 import { supabase } from "@/lib/supabase";
+import { fetchAll } from "@/lib/fetchAll";
 import { useAuth } from "@/context/AuthContext";
 import { Download, Package, Boxes, ChevronRight, Upload, Loader2, X, FileSpreadsheet, Save, Trash2 } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
@@ -246,8 +247,8 @@ export default function InventoryPage() {
       result.errors ? "error" : "success"
     );
     // Reload inventory
-    const { data } = await supabase.from("inventory").select("*").eq("org_id", orgId);
-    const mapped = (data || []).map(mapItem);
+    const data = await fetchAll(() => supabase.from("inventory").select("*").eq("org_id", orgId).order("id"));
+    const mapped = data.map(mapItem);
     setItems(mapped);
     setFiltered(mapped);
   };
@@ -255,11 +256,11 @@ export default function InventoryPage() {
   useEffect(() => {
     if (!orgId) { setLoading(false); return; }
     const load = async () => {
-      const [{ data }, { data: bData }] = await Promise.all([
-        supabase.from("inventory").select("*").eq("org_id", orgId),
+      const [data, { data: bData }] = await Promise.all([
+        fetchAll(() => supabase.from("inventory").select("*").eq("org_id", orgId).order("id")),
         supabase.from("boxes").select("*").eq("org_id", orgId),
       ]);
-      const mapped = (data || []).map(mapItem);
+      const mapped = data.map(mapItem);
       setItems(mapped);
       setFiltered(mapped);
       setBoxes((bData as Array<Record<string, unknown>>) || []);

@@ -21,6 +21,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { fetchAll } from "@/lib/fetchAll";
 import { useAuth } from "@/context/AuthContext";
 import { formatDateTime } from "@/lib/utils";
 import { normalizeOrderStatus } from "@/lib/orderStatus";
@@ -74,8 +75,7 @@ export default function DashboardPage() {
 
     (async () => {
       try {
-        const { data: invData } = await supabase.from("inventory").select("*").eq("org_id", orgId);
-        const items = invData || [];
+        const items = await fetchAll(() => supabase.from("inventory").select("*").eq("org_id", orgId).order("id"));
         const countBy = (s: string) => items.filter((d) => d.status === s).length;
 
         setComposition(

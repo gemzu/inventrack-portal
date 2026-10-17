@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { fetchAll } from "@/lib/fetchAll";
 import { useAuth } from "@/context/AuthContext";
 import { FileBarChart, Download, Loader2 } from "lucide-react";
 
@@ -127,8 +128,7 @@ export default function ReportsPage() {
     setGenerating(type);
     try {
       if (type === "inventory") {
-        const { data } = await supabase.from("inventory").select("*").eq("org_id", orgId);
-        const items = data || [];
+        const items = await fetchAll(() => supabase.from("inventory").select("*").eq("org_id", orgId).order("id"));
         const header = "Model ID,Barcode,Brand,Part Number,Quantity,Status,Category,Type";
         const rows = items.map((i) => [
           i.model_id || "", i.barcode || "", i.brand || "", i.part_number || "",
@@ -136,8 +136,7 @@ export default function ReportsPage() {
         ]);
         downloadCsv("inventory_report.csv", header, rows);
       } else if (type === "orders") {
-        const { data } = await supabase.from("orders").select("*").eq("org_id", orgId);
-        const items = data || [];
+        const items = await fetchAll(() => supabase.from("orders").select("*").eq("org_id", orgId).order("id"));
         const header = "ID,Buyer Name,Buyer Email,Status,Item Count,Created At";
         const rows = items.map((o) => [
           o.id || "", o.buyer_name || o.buyer_email || "", o.buyer_email || "",
@@ -159,8 +158,7 @@ export default function ReportsPage() {
         ]);
         downloadCsv("activity_report.csv", header, rows);
       } else if (type === "valuation") {
-        const { data } = await supabase.from("inventory").select("*").eq("org_id", orgId).eq("status", "available");
-        const items = data || [];
+        const items = await fetchAll(() => supabase.from("inventory").select("*").eq("org_id", orgId).eq("status", "available").order("id"));
         const header = "Model ID,Brand,Category,Quantity,Unit Cost,Unit Price,Cost Value,Retail Value";
         const rows = items.map((i) => {
           const q = Number(i.quantity) || 0;

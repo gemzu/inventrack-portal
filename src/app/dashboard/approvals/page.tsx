@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { fetchAll } from "@/lib/fetchAll";
 import { addStock } from "@/lib/stock";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/Toast";
@@ -64,14 +65,12 @@ function ApprovalsContent() {
 
     // Initial fetch
     const fetchApprovals = async () => {
-      const { data, error } = await supabase
-        .from("approvals")
-        .select("*")
-        .eq("org_id", orgId)
-        .eq("status", "pending");
-      if (!error) {
-        setApprovals((data || []).map(mapApproval));
-      }
+      try {
+        /* All of them - a queue past 1,000 was cut off at the first 1,000. */
+        const data = await fetchAll(() =>
+          supabase.from("approvals").select("*").eq("org_id", orgId).eq("status", "pending").order("created_at").order("id"));
+        setApprovals(data.map(mapApproval));
+      } catch { /* keep what is on screen */ }
       setLoading(false);
     };
     fetchApprovals();
