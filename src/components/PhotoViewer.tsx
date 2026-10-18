@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import Layer from "@/components/Layer";
 
 /* Full-size photos. Every photo on the site was a thumbnail with nothing
    behind it - "when I select the picture does it not maximize" (customer,
@@ -34,6 +35,7 @@ export default function PhotoViewer({ photos, start = 0, onClose }: Props) {
   if (!photos.length) return null;
 
   return (
+    <Layer>
     <div
       role="dialog"
       aria-modal="true"
@@ -79,5 +81,6 @@ export default function PhotoViewer({ photos, start = 0, onClose }: Props) {
         </>
       )}
     </div>
+    </Layer>
   );
 }

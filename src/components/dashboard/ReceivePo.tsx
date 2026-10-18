@@ -15,6 +15,7 @@
  * rather than closed.
  */
 
+import Layer from "@/components/Layer";
 import { useMemo, useState } from "react";
 import { Loader2, PackageCheck, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -139,6 +140,7 @@ export default function ReceivePo({
   };
 
   return (
+    <Layer>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button
         aria-label="Close"
@@ -234,5 +236,6 @@ export default function ReceivePo({
         </footer>
       </div>
     </div>
+    </Layer>
   );
 }

@@ -12,6 +12,7 @@ import PageShell from "@/components/page-shell";
 import { ClipboardCheck } from "lucide-react";
 import { Panel, Figure, ColHead, ListSkeleton } from "@/components/console/surfaces";
 import { Action } from "@/components/console/controls";
+import PhotoViewer from "@/components/PhotoViewer";
 
 interface ApprovalDoc {
   id: string;
@@ -58,6 +59,7 @@ function ApprovalsContent() {
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
   const [autoRunning, setAutoRunning] = useState(false);
+  const [viewer, setViewer] = useState<{ photos: string[]; start: number } | null>(null);
   const autoApproveThreshold = orgData?.lowStockThreshold || 2;
 
   useEffect(() => {
@@ -244,6 +246,7 @@ function ApprovalsContent() {
              not easier. */
           <Panel className="reveal">
             <div className="hidden items-center gap-4 border-b border-border px-5 py-2.5 md:flex">
+              <span className="w-12 shrink-0" />
               <ColHead className="min-w-0 flex-1">Item</ColHead>
               <ColHead className="w-16 shrink-0 text-right">Qty</ColHead>
               <ColHead className="w-40 shrink-0">Submitted by</ColHead>
@@ -253,8 +256,27 @@ function ApprovalsContent() {
             {approvals.map((item) => {
               const busy = actionId === item.id;
               const detail = [item.brand, item.type].filter(Boolean).join(" · ");
+              const photos = (item.imageUrls as string[] | undefined) || [];
               return (
                 <div key={item.id} className="row-line flex items-center gap-4 px-5 py-3.5">
+                  {/* The photos the worker took. They were sent with the
+                      submission but never shown here, so an approval on the
+                      website was made blind. */}
+                  {photos.length ? (
+                    <button
+                      onClick={() => setViewer({ photos, start: 0 })}
+                      aria-label="View photos"
+                      className="relative h-12 w-12 shrink-0 cursor-zoom-in overflow-hidden rounded-md border border-border transition-[border-color] duration-300 hover:border-[var(--brand-2)]"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={photos[0]} alt="" className="h-full w-full object-cover" />
+                      {photos.length > 1 && (
+                        <span className="mono absolute bottom-0 right-0 rounded-tl-sm bg-background/85 px-1 text-[10px]">{photos.length}</span>
+                      )}
+                    </button>
+                  ) : (
+                    <span className="h-12 w-12 shrink-0 rounded-md border border-dashed border-border" aria-hidden />
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">
                       {item.modelId || item.partNumber || "Unnamed item"}
@@ -294,6 +316,7 @@ function ApprovalsContent() {
           </Panel>
         )}
       </div>
+      {viewer && <PhotoViewer photos={viewer.photos} start={viewer.start} onClose={() => setViewer(null)} />}
     </PageShell>
   );
 }

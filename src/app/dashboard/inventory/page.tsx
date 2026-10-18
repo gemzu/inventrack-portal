@@ -62,7 +62,11 @@ function mapItem(row: Record<string, unknown>): Item {
     lotNumber: (row.lot_number ?? null) as string | null,
     serialNumber: (row.serial_number ?? null) as string | null,
     imageUrl: row.image_url as string | undefined,
-    imageUrls: Array.isArray(row.image_urls) ? (row.image_urls as string[]) : [],
+    /* A line can have a cover and an empty list (109 did, 2026-10-18); the
+       panel reads the list, so the cover counts as its first photo. */
+    imageUrls: Array.isArray(row.image_urls) && row.image_urls.length
+      ? (row.image_urls as string[])
+      : row.image_url ? [row.image_url as string] : [],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -923,7 +927,7 @@ export default function InventoryPage() {
                         role="button"
                         title="View photo"
                         onClick={() => setViewer({ photos: editItem.imageUrls || [url], start: i })}
-                        className="h-20 w-20 cursor-zoom-in rounded-md border border-border object-cover"
+                        className="h-28 w-28 cursor-zoom-in rounded-md border border-border object-cover transition-[border-color] duration-300 hover:border-[var(--brand-2)]"
                       />
                       {i === 0 && (
                         <span className="mono absolute bottom-1 left-1 rounded-sm bg-background/80 px-1.5 py-0.5 text-[10px]">
@@ -939,7 +943,7 @@ export default function InventoryPage() {
                       </button>
                     </div>
                   ))}
-                  <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed border-border transition-colors duration-300 hover:border-[var(--brand-2)]">
+                  <label className="flex h-28 w-28 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed border-border transition-colors duration-300 hover:border-[var(--brand-2)]">
                     {uploadingImg ? (
                       <Loader2 className="h-4 w-4 animate-spin text-[var(--brand-2)]" />
                     ) : (
