@@ -37,6 +37,10 @@ interface Item {
   serialNumber?: string | null;
   imageUrl?: string;
   imageUrls?: string[];
+  /* What each photo shows, by link: item, upc (barcode) or label. */
+  photoTypes?: Record<string, string>;
+  /* Everything printed on the label, read from a photo of it. */
+  labelText?: string | null;
   createdAt: unknown;
   updatedAt: unknown;
 }
@@ -67,6 +71,8 @@ function mapItem(row: Record<string, unknown>): Item {
     imageUrls: Array.isArray(row.image_urls) && row.image_urls.length
       ? (row.image_urls as string[])
       : row.image_url ? [row.image_url as string] : [],
+    photoTypes: (row.photo_types && typeof row.photo_types === "object" ? row.photo_types : {}) as Record<string, string>,
+    labelText: (row.label_text ?? null) as string | null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -276,14 +282,18 @@ export default function InventoryPage() {
   useEffect(() => {
     let result = items;
     if (search) {
-      const s = search.toLowerCase();
-      result = result.filter(
-        (i) =>
-          i.modelId?.toLowerCase().includes(s) ||
-          i.barcode?.toLowerCase().includes(s) ||
-          i.displayName?.toLowerCase().includes(s) ||
-          i.brand?.toLowerCase().includes(s)
-      );
+      /* Every word typed, anywhere in the item - its label text and part
+         number too - and spaces or dashes do not matter: "0612 BEETL"
+         finds 0612BEETL. */
+      const squash = (v: string) => v.replace(/[\s\-_./]/g, "");
+      const words = search.toLowerCase().split(/\s+/).filter(Boolean);
+      const whole = squash(search.toLowerCase());
+      result = result.filter((i) => {
+        const hay = [i.modelId, i.barcode, i.displayName, i.brand, i.partNumber, i.labelText]
+          .filter(Boolean).join(" ").toLowerCase();
+        const flat = squash(hay);
+        return flat.includes(whole) || words.every((w) => hay.includes(w) || flat.includes(squash(w)));
+      });
     }
     if (statusFilter !== "all") result = result.filter((i) => i.status === statusFilter);
     if (facilityFilter !== "all") result = result.filter((i) => i.facilityId === facilityFilter);
@@ -929,9 +939,9 @@ export default function InventoryPage() {
                         onClick={() => setViewer({ photos: editItem.imageUrls || [url], start: i })}
                         className="h-28 w-28 cursor-zoom-in rounded-md border border-border object-cover transition-[border-color] duration-300 hover:border-[var(--brand-2)]"
                       />
-                      {i === 0 && (
+                      {(i === 0 || (editItem.photoTypes?.[url] && editItem.photoTypes[url] !== "item")) && (
                         <span className="mono absolute bottom-1 left-1 rounded-sm bg-background/80 px-1.5 py-0.5 text-[10px]">
-                          Cover
+                          {editItem.photoTypes?.[url] === "upc" ? "Barcode" : editItem.photoTypes?.[url] === "label" ? "Label" : "Cover"}
                         </span>
                       )}
                       <button
@@ -964,6 +974,16 @@ export default function InventoryPage() {
                   </label>
                 </div>
               </Field>
+
+              {/* Everything printed on the box label, read from a photo of it
+                  in the app ("Read label" on the item). Found by search. */}
+              {editItem.labelText ? (
+                <Field label="Label text">
+                  <p className="mono whitespace-pre-wrap rounded-md border border-border px-3 py-2 text-[12px] leading-relaxed">
+                    {editItem.labelText}
+                  </p>
+                </Field>
+              ) : null}
 
               <Field label="Name">
                 <Input
