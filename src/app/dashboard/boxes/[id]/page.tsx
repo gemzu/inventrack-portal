@@ -24,6 +24,7 @@ import Status from "@/components/Status";
 import { Panel, Figure, ColHead, ListSkeleton } from "@/components/console/surfaces";
 import { Action, Drawer, Field, Input, Modal } from "@/components/console/controls";
 import EmptyState from "@/components/EmptyState";
+import PhotoViewer from "@/components/PhotoViewer";
 import { useToast } from "@/components/Toast";
 
 interface Item {
@@ -35,6 +36,8 @@ interface Item {
   quantity?: number;
   status?: string;
   createdAt?: string;
+  imageUrl?: string;
+  imageUrls?: string[];
 }
 
 export default function BoxDetailPage() {
@@ -44,6 +47,8 @@ export default function BoxDetailPage() {
   const { toast } = useToast();
   const [box, setBox] = useState<Box | null>(null);
   const [items, setItems] = useState<Item[]>([]);
+  /* The items' photos, full size. The box page listed them with none. */
+  const [viewer, setViewer] = useState<{ photos: string[]; start: number } | null>(null);
   const [stats, setStats] = useState<BoxStats>({ total: 0, available: 0, reserved: 0, sold: 0 });
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
@@ -348,6 +353,7 @@ export default function BoxDetailPage() {
                   aria-label="Select everything in this box"
                   className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-[var(--brand-2)]"
                 />
+                <span className="w-10 shrink-0" aria-hidden />
                 <ColHead className="min-w-0 flex-1">
                   {items.length} {items.length === 1 ? "line" : "lines"}
                 </ColHead>
@@ -374,6 +380,18 @@ export default function BoxDetailPage() {
                       aria-label={`Select ${id.title}`}
                       className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-[var(--brand-2)]"
                     />
+                    {(() => {
+                      const photos = (it.imageUrls && it.imageUrls.length ? it.imageUrls : it.imageUrl ? [it.imageUrl] : []).filter(Boolean);
+                      return photos.length ? (
+                        <button type="button" onClick={() => setViewer({ photos, start: 0 })} aria-label="View photos"
+                          className="h-10 w-10 shrink-0 cursor-zoom-in overflow-hidden rounded-md border border-border transition-[border-color] duration-300 hover:border-[var(--brand-2)]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={photos[0]} alt="" className="h-full w-full object-cover" />
+                        </button>
+                      ) : (
+                        <span className="h-10 w-10 shrink-0 rounded-md border border-dashed border-border" aria-hidden />
+                      );
+                    })()}
                     <div className="min-w-0 flex-1">
                       <p className={`truncate text-sm font-medium ${id.unnamed ? "mono" : ""}`}>
                         {id.title}
@@ -577,7 +595,8 @@ export default function BoxDetailPage() {
             </Panel>
           )}
         </Drawer>
-      </PageShell>
+        {viewer && <PhotoViewer photos={viewer.photos} start={viewer.start} onClose={() => setViewer(null)} />}
+    </PageShell>
     </AdminGuard>
   );
 }

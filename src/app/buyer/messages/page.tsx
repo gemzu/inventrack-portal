@@ -15,7 +15,9 @@ import { useToast } from "@/components/Toast";
 import Mark from "@/components/Mark";
 import { Panel, ColHead, CrateSkeleton } from "@/components/console/surfaces";
 import { Action, Input } from "@/components/console/controls";
-import { Send } from "lucide-react";
+import { Send, ImagePlus, X, Loader2 } from "lucide-react";
+import PhotoViewer from "@/components/PhotoViewer";
+import { chatPhotoProblem, uploadChatPhoto } from "@/lib/chatPhoto";
 
 interface OrgUser {
   id: string;
@@ -31,6 +33,9 @@ interface Message {
   senderId: string;
   receiverId: string;
   text: string;
+  /* Photos from either side; this page could neither send nor show them
+     (2026-10-19). */
+  imageUrl?: string | null;
   read?: boolean;
   createdAt?: string;
 }
@@ -71,6 +76,21 @@ export default function BuyerMessagesPage() {
   const [loadingConvos, setLoadingConvos] = useState(true);
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [photo, setPhoto] = useState<{ file: File; url: string } | null>(null);
+  const [viewer, setViewer] = useState<string | null>(null);
+  const clearPhoto = () => {
+    setPhoto((p) => { if (p) URL.revokeObjectURL(p.url); return null; });
+    if (fileRef.current) fileRef.current.value = "";
+  };
+  const pickPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const problem = chatPhotoProblem(file);
+    if (problem) { toast(problem, "error"); return; }
+    clearPhoto();
+    setPhoto({ file, url: URL.createObjectURL(file) });
+  };
 
   /* The admins of every supplier this buyer is connected to - who they can
      write to, and under which supplier each conversation is filed. A buyer
@@ -168,6 +188,7 @@ export default function BuyerMessagesPage() {
                 senderId,
                 receiverId,
                 text: String(row.text || ""),
+                imageUrl: (row.image_url as string) || null,
                 createdAt: String(row.created_at || ""),
                 read: Boolean(row.read),
               },
@@ -203,12 +224,14 @@ export default function BuyerMessagesPage() {
 
   const onSend = async () => {
     const org = threadOrg(peerId);
-    if (!user || !org || !peerId || !text.trim()) return;
+    if (!user || !org || !peerId || (!text.trim() && !photo)) return;
     const body = text.trim();
     setSending(true);
     try {
-      await sendMessage(org, user.id, peerId, body);
+      const imageUrl = photo ? await uploadChatPhoto(org, user.id, photo.file) : null;
+      await sendMessage(org, user.id, peerId, body, imageUrl);
       setText("");
+      clearPhoto();
       // Realtime will append; but we also optimistic-refresh as a fallback
       const rows = await getMessages(user.id, peerId);
       setMessages(rows as unknown as Message[]);
@@ -282,7 +305,7 @@ export default function BuyerMessagesPage() {
                         unread ? "font-medium text-foreground" : "text-muted-foreground"
                       }`}
                     >
-                      {c.last?.text || ""}
+                      {c.last?.text || (c.last?.createdAt ? "Photo" : "")}
                     </p>
                   </button>
                 );
@@ -325,22 +348,32 @@ export default function BuyerMessagesPage() {
                     return (
                       <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                         <div
-                          className={`max-w-[75%] rounded-md px-3.5 py-2.5 text-sm ${
+                          className={`max-w-[75%] overflow-hidden rounded-md text-sm ${
                             mine
                               ? "bg-primary text-primary-foreground"
                               : "border border-border"
                           }`}
                         >
-                          <p className="whitespace-pre-wrap break-words leading-relaxed">
-                            {m.text}
-                          </p>
-                          <p
-                            className={`mt-1.5 text-[11px] ${
-                              mine ? "text-primary-foreground/70" : "text-muted-foreground"
-                            }`}
-                          >
-                            {formatTime(m.createdAt)}
-                          </p>
+                          {m.imageUrl ? (
+                            <button type="button" onClick={() => setViewer(m.imageUrl as string)} className="block cursor-zoom-in" aria-label="View photo">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={m.imageUrl} alt="" className="max-h-64 w-full max-w-xs object-cover" />
+                            </button>
+                          ) : null}
+                          <div className="px-3.5 py-2.5">
+                            {m.text ? (
+                              <p className="whitespace-pre-wrap break-words leading-relaxed">
+                                {m.text}
+                              </p>
+                            ) : null}
+                            <p
+                              className={`${m.text ? "mt-1.5" : ""} text-[11px] ${
+                                mine ? "text-primary-foreground/70" : "text-muted-foreground"
+                              }`}
+                            >
+                              {formatTime(m.createdAt)}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     );
@@ -348,7 +381,21 @@ export default function BuyerMessagesPage() {
                 )}
               </div>
 
+              {photo ? (
+                <div className="flex shrink-0 items-center gap-3 border-t border-border px-3 pt-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={photo.url} alt="" className="h-14 w-14 rounded-md border border-border object-cover" />
+                  <span className="min-w-0 flex-1 truncate text-[12px] text-muted-foreground">{photo.file.name}</span>
+                  <button onClick={clearPhoto} aria-label="Remove photo" className="text-muted-foreground hover:text-foreground">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : null}
               <div className="flex shrink-0 gap-2 border-t border-border p-3">
+                <input ref={fileRef} type="file" accept="image/*" onChange={pickPhoto} className="hidden" />
+                <Action onClick={() => fileRef.current?.click()} disabled={sending} aria-label="Attach a photo" className="px-3">
+                  <ImagePlus className="h-4 w-4" />
+                </Action>
                 <Input
                   value={text}
                   onChange={(e) => setText(e.target.value)}
@@ -358,19 +405,20 @@ export default function BuyerMessagesPage() {
                       onSend();
                     }
                   }}
-                  placeholder="Type a message"
+                  placeholder={photo ? "Add a caption (optional)" : "Type a message"}
                   aria-label="Message"
                   disabled={sending}
                   className="flex-1"
                 />
-                <Action solid onClick={onSend} disabled={sending || !text.trim()} className="px-3.5">
-                  <Send className="h-3.5 w-3.5" />
+                <Action solid onClick={onSend} disabled={sending || (!text.trim() && !photo)} className="px-3.5" aria-label="Send">
+                  {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                 </Action>
               </div>
             </>
           )}
         </Panel>
       </div>
+      {viewer ? <PhotoViewer photos={[viewer]} onClose={() => setViewer(null)} /> : null}
     </div>
   );
 }

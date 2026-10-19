@@ -26,6 +26,7 @@ import { useToast } from "@/components/Toast";
 import { Panel, ColHead, CrateSkeleton } from "@/components/console/surfaces";
 import { Action, Input, Modal, SearchInput } from "@/components/console/controls";
 import { Send, Loader2, ImagePlus, X, PenSquare } from "lucide-react";
+import { chatPhotoProblem, uploadChatPhoto } from "@/lib/chatPhoto";
 
 interface Message {
   id: string;
@@ -53,8 +54,6 @@ interface Conversation {
   unreadCount: number;
 }
 
-const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
-
 function roleLabel(p?: Person | null) {
   if (!p) return "";
   if (p.permissions === "owner") return "Owner";
@@ -68,13 +67,6 @@ function preview(m: Message) {
   const t = (m.text || "").trim();
   if (t) return t;
   return m.image_url ? "Photo" : "";
-}
-
-function randomName(n = 12) {
-  const a = "abcdefghijkmnpqrstuvwxyz23456789";
-  const bytes = new Uint8Array(n);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => a[b % a.length]).join("");
 }
 
 export default function ChatPage() {
@@ -220,8 +212,8 @@ export default function ChatPage() {
   function pickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) { toast("That is not a photo", "error"); return; }
-    if (file.size > MAX_PHOTO_BYTES) { toast("Photo is over 10 MB", "error"); return; }
+    const problem = chatPhotoProblem(file);
+    if (problem) { toast(problem, "error"); return; }
     clearPhoto();
     setPhoto({ file, url: URL.createObjectURL(file) });
   }
@@ -232,18 +224,7 @@ export default function ChatPage() {
     setSending(true);
     try {
       let imageUrl: string | null = null;
-      if (photo) {
-        const raw = (photo.file.name.split(".").pop() || "jpg").toLowerCase();
-        const ext = /^[a-z0-9]{2,5}$/.test(raw) ? raw : "jpg";
-        /* Same place and naming as the phone; the name is unguessable
-           because the link is public. */
-        const path = `${orgId}/${userId}_${Date.now()}_${randomName()}.${ext}`;
-        const { error: upErr } = await supabase.storage
-          .from("chat-images")
-          .upload(path, photo.file, { contentType: photo.file.type, upsert: false });
-        if (upErr) throw upErr;
-        imageUrl = supabase.storage.from("chat-images").getPublicUrl(path).data.publicUrl;
-      }
+      if (photo) imageUrl = await uploadChatPhoto(orgId, userId, photo.file);
       const { data, error } = await supabase
         .from("messages")
         .insert({ sender_id: userId, receiver_id: activeChat, org_id: orgId, text, image_url: imageUrl })

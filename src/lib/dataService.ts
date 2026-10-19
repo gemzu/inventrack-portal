@@ -602,10 +602,10 @@ export async function getMyOrder(orderId: string) {
   return data ? toCamel(data as AnyRow) : null;
 }
 
-export async function sendMessage(orgId: string, senderId: string, receiverId: string, text: string) {
+export async function sendMessage(orgId: string, senderId: string, receiverId: string, text: string, imageUrl: string | null = null) {
   const { data, error } = await supabase
     .from("messages")
-    .insert({ org_id: orgId, sender_id: senderId, receiver_id: receiverId, text, read: false })
+    .insert({ org_id: orgId, sender_id: senderId, receiver_id: receiverId, text, read: false, ...(imageUrl ? { image_url: imageUrl } : {}) })
     .select()
     .single();
   if (error) throw error;

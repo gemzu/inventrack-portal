@@ -106,7 +106,13 @@ export default function PurchaseOrdersPage() {
 
   const removePo = async (po: PO) => {
     if (!confirm("Delete this purchase order?")) return;
-    await supabase.from("purchase_orders").delete().eq("id", po.id);
+    /* Said nothing either way: a refused delete looked done until a reload. */
+    const { data, error } = await supabase.from("purchase_orders").delete().eq("id", po.id).select("id");
+    if (error || !data?.length) {
+      toast(error?.message ? `Could not delete: ${error.message}` : "Could not delete this purchase order", "error");
+      return;
+    }
+    toast("Purchase order deleted", "success");
     load();
   };
 
