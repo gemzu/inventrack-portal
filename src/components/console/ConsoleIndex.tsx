@@ -212,7 +212,7 @@ export default function ConsoleIndex({
                 onKeyDown={onKeyDown}
                 placeholder="Barcode, item, buyer, or a page"
                 autoComplete="off"
-                className="font-display mt-2 w-full bg-transparent text-[1.5rem] font-bold tracking-[-0.02em] outline-none placeholder:font-body placeholder:text-[1rem] placeholder:font-normal placeholder:tracking-normal placeholder:text-muted-foreground sm:text-[2rem]"
+                className="font-display mt-2 w-full bg-transparent text-[1.5rem] font-bold tracking-[-0.02em] outline-none focus-visible:underline focus-visible:decoration-[var(--brand-2)] focus-visible:decoration-2 focus-visible:underline-offset-8 placeholder:font-body placeholder:text-[1rem] placeholder:font-normal placeholder:tracking-normal placeholder:text-muted-foreground sm:text-[2rem]"
               />
             </div>
 

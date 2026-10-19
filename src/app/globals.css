@@ -70,28 +70,30 @@
 }
 
 /* ══════════════════════════════════════════════════════════════
-   KINETIC INK — Light. Bold indigo→violet brand on a cool paper base.
-   Color lives in the neutrals (subtle indigo tint), not flat gray.
+   KINETIC INK — Light. Ink on violet paper: white sheets on a deeper
+   paper ground, hairlines you can see, ink-dark secondary text, one
+   violet. It was near-white on near-white, so nothing had an edge
+   (2026-10-19).
    ══════════════════════════════════════════════════════════════ */
 :root {
-  --background: #f6f6fb;
-  --foreground: #14121f;
+  --background: #eeecf6;
+  --foreground: #121022;
   --card: #ffffff;
-  --card-foreground: #14121f;
+  --card-foreground: #121022;
   --popover: #ffffff;
-  --popover-foreground: #14121f;
+  --popover-foreground: #121022;
   --primary: #5b3df5;
   --primary-foreground: #ffffff;
   --primary-dark: #4a2fe0;
-  --secondary: #ecebfb;
+  --secondary: #e4e1f4;
   --secondary-foreground: #2a2340;
-  --muted: #eeeef4;
-  --muted-foreground: #6a6580;
-  --accent: #e8e6fd;
+  --muted: #e6e3f0;
+  --muted-foreground: #56516b;
+  --accent: #e0dcfa;
   --accent-foreground: #3a2f66;
   --destructive: #ef4444;
-  --border: #e5e3f0;
-  --input: #e5e3f0;
+  --border: #d6d2e5;
+  --input: #f5f4fb;  /* the fill of a text field: a pale well, edged by --border */
   --ring: #5b3df5;
   --btn-bg: #5b3df5;
   --btn-fg: #ffffff;
@@ -100,7 +102,7 @@
 
   /* Brand gradient + glow — used for atmosphere, accents, focus */
   --brand-1: #5b3df5;
-  --brand-2: #8b5cf6;
+  --brand-2: #6d4af0;
   --brand-3: #22d3ee;
   --brand-gradient: linear-gradient(135deg, #5b3df5 0%, #8b5cf6 50%, #22d3ee 130%);
   --glow: 0 0 0 1px rgba(91,61,245,0.08), 0 12px 40px -12px rgba(91,61,245,0.28);
@@ -111,13 +113,13 @@
   --chart-4: #f59e0b;
   --chart-5: #ec4899;
   --radius: 0.85rem;
-  --sidebar: #ffffff;
+  --sidebar: #e7e4f2;
   --sidebar-foreground: #14121f;
   --sidebar-primary: #5b3df5;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #ecebfb;
   --sidebar-accent-foreground: #2a2340;
-  --sidebar-border: #e5e3f0;
+  --sidebar-border: #d6d2e5;
   --sidebar-ring: #5b3df5;
 }
 
@@ -168,106 +170,6 @@
   --sidebar-accent-foreground: #f4f2ff;
   --sidebar-border: #201d33;
   --sidebar-ring: #8b5cf6;
-}
-
-/* ── Pink Accent Theme (E398CA) ───────────────────────────────── */
-:root.pink-accent {
-  --primary: #E398CA !important;
-  --primary-foreground: #3d2a35 !important;
-  --primary-dark: #c87aad !important;
-  --secondary: #fdf2f7 !important;
-  --secondary-foreground: #3d2a35 !important;
-  --accent: #fce4ec !important;
-  --accent-foreground: #3d2a35 !important;
-  --muted: #fdf2f7 !important;
-  --muted-foreground: #78716c !important;
-  --ring: #E398CA !important;
-  --border: #f8dce8 !important;
-  --input: #f8dce8 !important;
-  --chart-1: #E398CA !important;
-  --chart-2: #c87aad !important;
-  --chart-3: #ad5c8f !important;
-  --chart-4: #923e72 !important;
-  --chart-5: #772055 !important;
-  --btn-bg: #E398CA !important;
-  --btn-fg: #3d2a35 !important;
-  --btn-border: #E398CA !important;
-  --btn-shadow: 0 4px 12px rgba(227,152,202,0.4) !important;
-}
-
-.dark.pink-accent {
-  --primary: #E398CA !important;
-  --primary-foreground: #1f1a1d !important;
-  --primary-dark: #c87aad !important;
-  --secondary: #1f1518 !important;
-  --secondary-foreground: #fce4f0 !important;
-  --accent: #2a1a20 !important;
-  --accent-foreground: #E398CA !important;
-  --muted: #1f1518 !important;
-  --muted-foreground: #a3878f !important;
-  --ring: #E398CA !important;
-  --border: #2a1f24 !important;
-  --input: #2a1f24 !important;
-  --chart-1: #E398CA !important;
-  --chart-2: #c87aad !important;
-  --chart-3: #ad5c8f !important;
-  --chart-4: #923e72 !important;
-  --chart-5: #772055 !important;
-  --btn-bg: #E398CA !important;
-  --btn-fg: #1f1a1d !important;
-  --btn-border: #d88ab8 !important;
-  --btn-shadow: 0 4px 12px rgba(227,152,202,0.4) !important;
-}
-
-/* Pink background - always #F2D3E6 */
-:root.pink-accent,
-.dark.pink-accent {
-  background-color: #F2D3E6 !important;
-}
-
-:root.pink-accent body,
-.dark.pink-accent body,
-:root.pink-accent .bg-background,
-.dark.pink-accent .bg-background,
-:root.pink-accent .bg-card,
-.dark.pink-accent .bg-card {
-  background-color: #F2D3E6 !important;
-}
-
-/* Pink card styling */
-:root.pink-accent .card-luxury,
-.dark.pink-accent .card-luxury {
-  background-color: rgba(255, 255, 255, 0.7) !important;
-  backdrop-filter: blur(10px);
-}
-
-:root.pink-accent .bg-card,
-.dark.pink-accent .bg-card {
-  background-color: rgba(255, 255, 255, 0.8) !important;
-}
-
-.dark.pink-accent {
-  --primary: #E398CA;
-  --primary-foreground: #1f1a1d;
-  --primary-dark: #c87aad;
-  --secondary: #1f1518;
-  --secondary-foreground: #fce4f0;
-  --accent: #2a1a20;
-  --accent-foreground: #E398CA;
-  --muted: #1f1518;
-  --muted-foreground: #a3878f;
-  --ring: #E398CA;
-  --border: #2a1f24;
-  --input: #2a1f24;
-  --chart-1: #E398CA;
-  --chart-2: #c87aad;
-  --chart-3: #ad5c8f;
-  --chart-4: #923e72;
-  --chart-5: #772055;
-  --btn-bg: #E398CA;
-  --btn-fg: #1f1a1d;
-  --btn-border: #d88ab8;
-  --btn-shadow: 0 4px 12px rgba(227,152,202,0.4);
 }
 
 /* Hover shade for solid primary buttons. Defined as a real utility so the
@@ -1218,6 +1120,11 @@ html[data-boot="on"] .boot-mark { animation: boot-mark-out 0.5s var(--ease-out-e
   --hair: color-mix(in oklab, var(--foreground) 12%, transparent);
   --hair-soft: color-mix(in oklab, var(--foreground) 7%, transparent);
 }
+/* Light: on paper the dark-theme hairline strengths vanish. */
+:root:not(.dark) .console {
+  --hair: color-mix(in oklab, var(--foreground) 17%, transparent);
+  --hair-soft: color-mix(in oklab, var(--foreground) 10%, transparent);
+}
 
 /* There was a fixed grid of hairlines here, meant to echo the crate lattice.
    Its radial mask left exactly one or two verticals visible, and because it
@@ -1241,6 +1148,11 @@ html[data-boot="on"] .boot-mark { animation: boot-mark-out 0.5s var(--ease-out-e
     border-radius: var(--console-radius);
     background: color-mix(in oklab, var(--card) 82%, transparent);
     transition: border-color 0.4s var(--ease-out-expo);
+  }
+  /* A sheet on the paper: solid white and a shadow you only half notice. */
+  :root:not(.dark) .panel {
+    background: var(--card);
+    box-shadow: 0 1px 2px rgba(18, 16, 34, 0.05), 0 10px 28px -18px rgba(18, 16, 34, 0.18);
   }
 }
 

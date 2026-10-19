@@ -19,20 +19,15 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 
 type Theme = "light" | "dark";
-type Accent = "neutral" | "pink";
 
 interface ThemeContextType {
   theme: Theme;
-  accent: Accent;
   toggleTheme: () => void;
-  setAccent: (accent: Accent) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
   theme: "light",
-  accent: "neutral",
   toggleTheme: () => {},
-  setAccent: () => {},
 });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -41,12 +36,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
      the class is the source of truth for the paint; this is only so the theme
      toggle draws the right icon. */
   const [theme, setTheme] = useState<Theme>("light");
-  const [accent, setAccentState] = useState<Accent>("neutral");
 
   useEffect(() => {
     const el = document.documentElement;
     setTheme(el.classList.contains("dark") ? "dark" : "light");
-    setAccentState(el.classList.contains("pink-accent") ? "pink" : "neutral");
   }, []);
 
   const toggleTheme = () => {
@@ -60,18 +53,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     document.documentElement.classList.toggle("dark", next === "dark");
   };
 
-  const setAccent = (next: Accent) => {
-    setAccentState(next);
-    try {
-      localStorage.setItem("inventrack-accent", next);
-    } catch {
-      /* As above. */
-    }
-    document.documentElement.classList.toggle("pink-accent", next === "pink");
-  };
 
   return (
-    <ThemeContext.Provider value={{ theme, accent, toggleTheme, setAccent }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

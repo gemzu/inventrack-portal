@@ -106,7 +106,7 @@ function AutoSaveInput({
 
 export default function SettingsPage() {
   const { orgId, orgData } = useAuth();
-  const { theme, toggleTheme, accent, setAccent } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const [, startTransition] = useTransition();
 
@@ -285,15 +285,11 @@ export default function SettingsPage() {
           <section className="space-y-2">
             <Rule label="Appearance" className="mb-5" />
             <div className="reveal">
-              <Row label="Dark" description="Follows whatever you pick here, on every device you sign in from.">
+              {/* The pink accent is gone (2026-10-19): it was a stack of
+                  !important overrides that also painted a pink page under the
+                  dark theme's white text. One accent, the brand violet. */}
+              <Row label="Dark" description="Saved in this browser. The header's sun and moon switch it too.">
                 <Toggle label="Dark mode" value={theme === "dark"} onChange={toggleTheme} />
-              </Row>
-              <Row label="Pink accent" description="Swaps the violet for a softer pink throughout.">
-                <Toggle
-                  label="Pink accent"
-                  value={accent === "pink"}
-                  onChange={(v) => setAccent(v ? "pink" : "neutral")}
-                />
               </Row>
             </div>
           </section>

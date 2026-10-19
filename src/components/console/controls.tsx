@@ -21,8 +21,9 @@ import Layer from "@/components/Layer";
 const FIELD =
   "w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-foreground outline-none " +
   "transition-[border-color,box-shadow] duration-300 ease-[cubic-bezier(0.16,1,0.30,1)] " +
-  "placeholder:text-muted-foreground focus:border-[var(--brand-2)] " +
-  "focus:shadow-[0_0_0_1px_color-mix(in_oklab,var(--brand-2)_60%,transparent)]";
+  "placeholder:text-muted-foreground focus:border-[var(--brand-2)] focus-visible:border-[var(--brand-2)] " +
+  "focus:shadow-[0_0_0_1px_color-mix(in_oklab,var(--brand-2)_60%,transparent)] " +
+  "focus-visible:shadow-[0_0_0_2px_color-mix(in_oklab,var(--brand-2)_70%,transparent)]";
 
 export function Label({ children, htmlFor }: { children: ReactNode; htmlFor?: string }) {
   return (
@@ -188,7 +189,7 @@ export function Action({
       className={cn(
         "inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold",
         "transition-[transform,background-color,border-color,color] duration-300 ease-[cubic-bezier(0.16,1,0.30,1)]",
-        "disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0",
+        "active:translate-y-0 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0",
         solid
           ? "bg-primary text-primary-foreground shadow-[var(--btn-shadow)] hover:-translate-y-0.5 hover:bg-primary-dark"
           : "border border-border hover:-translate-y-0.5 hover:border-[var(--brand-2)] hover:text-[var(--brand-2)]",

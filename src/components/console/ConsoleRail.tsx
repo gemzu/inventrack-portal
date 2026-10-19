@@ -53,7 +53,7 @@ export default function ConsoleRail({
   const active = activeHref(pathname, flatten(sections));
 
   return (
-    <div className="flex h-full flex-col border-r border-border bg-background">
+    <div className="flex h-full flex-col border-r border-border bg-sidebar">
       {/* Identity. The mark, at the size the header uses it. */}
       <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-border px-5">
         <Link href="/" onClick={onNavigate} className="group flex items-center gap-2.5">

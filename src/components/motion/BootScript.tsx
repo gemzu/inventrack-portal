@@ -56,9 +56,8 @@ const SCRIPT = `
     }
     if (theme === 'dark') el.classList.add('dark');
 
-    var accent = null;
-    try { accent = localStorage.getItem('inventrack-accent'); } catch (e) {}
-    if (accent === 'pink') el.classList.add('pink-accent');
+    /* The pink accent was removed; forget anyone's old choice. */
+    try { localStorage.removeItem('inventrack-accent'); } catch (e) {}
   } catch (e) {}
 
   try {
