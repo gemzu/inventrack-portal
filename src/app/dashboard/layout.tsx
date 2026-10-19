@@ -33,6 +33,7 @@ import { activeHref, flatten, visibleSections } from "@/components/console/nav";
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const {
     user, userName, userRole, userActive, userPermissions, orgId, orgData, loading, logout, mfaPending,
+    memberships, switchOrganization,
   } = useAuth();
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
@@ -149,6 +150,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           userRole={userRole}
           orgName={orgName}
           onLogout={handleLogout}
+          memberships={memberships}
+          activeOrgId={orgId}
+          onSwitchOrg={switchOrganization}
         />
       </aside>
 
@@ -192,7 +196,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   ) : null}
                 </button>
                 {notifOpen ? (
-                  <div className="panel panel-live absolute right-0 z-40 mt-2 w-80 bg-popover backdrop-blur-xl">
+                  <div className="panel panel-live absolute right-0 z-40 mt-2 w-80 bg-background/95 shadow-xl backdrop-blur-xl">
                     <p className="mono border-b border-border px-4 py-3 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
                       Notifications
                     </p>

@@ -20,9 +20,11 @@
  * every admin template ships with.
  */
 
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Mark from "@/components/Mark";
-import { LogOut } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2, LogOut } from "lucide-react";
+import type { Membership } from "@/context/AuthContext";
 import { activeHref, flatten, type Section } from "./nav";
 
 export default function ConsoleRail({
@@ -33,6 +35,9 @@ export default function ConsoleRail({
   orgName,
   onNavigate,
   onLogout,
+  memberships = [],
+  activeOrgId = null,
+  onSwitchOrg,
 }: {
   sections: Section[];
   pathname: string;
@@ -41,6 +46,9 @@ export default function ConsoleRail({
   orgName?: string | null;
   onNavigate?: () => void;
   onLogout: () => void;
+  memberships?: Membership[];
+  activeOrgId?: string | null;
+  onSwitchOrg?: (orgId: string) => Promise<void>;
 }) {
   const active = activeHref(pathname, flatten(sections));
 
@@ -85,13 +93,23 @@ export default function ConsoleRail({
         ))}
       </nav>
 
-      {/* Who you are, and the way out. */}
+      {/* Who you are, which company, and the way out. */}
       <div className="shrink-0 border-t border-border px-5 py-4">
         <p className="truncate text-[13px] font-medium">{userName || "Signed in"}</p>
-        <p className="truncate text-[12px] text-muted-foreground">
-          {userRole || "member"}
-          {orgName ? ` · ${orgName}` : ""}
-        </p>
+        {memberships.length > 1 && onSwitchOrg ? (
+          <OrgSwitcher
+            memberships={memberships}
+            activeOrgId={activeOrgId}
+            role={userRole}
+            fallbackName={orgName || null}
+            onSwitch={onSwitchOrg}
+          />
+        ) : (
+          <p className="truncate text-[12px] text-muted-foreground">
+            {userRole || "member"}
+            {orgName ? ` · ${orgName}` : ""}
+          </p>
+        )}
         <button
           onClick={onLogout}
           className="mt-3 inline-flex items-center gap-2 text-[12px] text-muted-foreground transition-colors duration-300 hover:text-destructive"
@@ -100,6 +118,108 @@ export default function ConsoleRail({
           Sign out
         </button>
       </div>
+    </div>
+  );
+}
+
+/* The company switcher, for accounts in more than one company - what the
+   phone app has under Organizations. The website opened whichever company
+   the account was last switched to on a phone and offered no way to change
+   it (2026-10-19). Same switch underneath, so the phone follows too. */
+function OrgSwitcher({
+  memberships,
+  activeOrgId,
+  role,
+  fallbackName,
+  onSwitch,
+}: {
+  memberships: Membership[];
+  activeOrgId: string | null;
+  role: string | null;
+  fallbackName: string | null;
+  onSwitch: (orgId: string) => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const box = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: MouseEvent) => { if (!box.current?.contains(e.target as Node)) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", away);
+    window.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", away); window.removeEventListener("keydown", esc); };
+  }, [open]);
+
+  /* Several companies can share a name ("Asset Recovery" three times); the
+     start of the id tells them apart. */
+  const counts = memberships.reduce<Record<string, number>>((m, x) => ((m[x.name] = (m[x.name] || 0) + 1), m), {});
+  const label = (m: Membership) => (counts[m.name] > 1 ? `${m.name} · ${m.orgId.slice(0, 4)}` : m.name);
+  const current = memberships.find((m) => m.orgId === activeOrgId);
+
+  const pick = async (orgId: string) => {
+    if (orgId === activeOrgId || busy) { setOpen(false); return; }
+    setBusy(orgId);
+    setError(null);
+    try {
+      await onSwitch(orgId);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not switch company");
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div ref={box} className="relative mt-0.5">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className="group flex w-full items-center gap-1.5 rounded-md py-0.5 text-left text-[12px] text-muted-foreground transition-colors duration-300 hover:text-foreground"
+      >
+        <span className="min-w-0 flex-1 truncate">
+          {role || "member"} · {current ? label(current) : fallbackName || "Choose a company"}
+        </span>
+        <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-70" />
+      </button>
+
+      {open ? (
+        <div
+          role="listbox"
+          aria-label="Switch company"
+          className="panel panel-live absolute bottom-full left-0 right-0 z-40 mb-2 max-h-72 overflow-y-auto bg-background py-1 shadow-xl"
+        >
+          <p className="mono px-3 pb-1 pt-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Companies</p>
+          {memberships.map((m) => {
+            const on = m.orgId === activeOrgId;
+            return (
+              <button
+                key={m.orgId}
+                type="button"
+                role="option"
+                aria-selected={on}
+                onClick={() => pick(m.orgId)}
+                disabled={!!busy}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] transition-colors duration-200 hover:bg-[color-mix(in_oklab,var(--brand-2)_8%,transparent)] disabled:opacity-60"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">{label(m)}</span>
+                  <span className="block truncate text-[11px] text-muted-foreground">{m.role || "member"}</span>
+                </span>
+                {busy === m.orgId ? (
+                  <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-[var(--brand-2)]" />
+                ) : on ? (
+                  <Check className="h-3.5 w-3.5 shrink-0 text-[var(--brand-2)]" />
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+      {error ? <p className="mt-1 text-[11px] text-destructive">{error}</p> : null}
     </div>
   );
 }

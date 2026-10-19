@@ -24,6 +24,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { useToast } from "@/components/Toast";
 import { Check, Loader2 } from "lucide-react";
 import { Rule } from "@/components/console/surfaces";
+import { Toggle } from "@/components/console/controls";
 import { Field, Input, Select } from "@/components/console/controls";
 
 /* A row is a label, what it does, and the control. The hairline between rows
@@ -50,38 +51,6 @@ function Row({
   );
 }
 
-/* The switch. Square knob, hairline track, brand fill when on — the same
-   vocabulary as the rest of the console rather than a phone's. */
-function Toggle({
-  value,
-  onChange,
-  label,
-}: {
-  value: boolean;
-  onChange: (v: boolean) => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={value}
-      aria-label={label}
-      onClick={() => onChange(!value)}
-      className={`relative h-6 w-11 shrink-0 rounded-md border transition-colors duration-300 ease-[cubic-bezier(0.16,1,0.30,1)] ${
-        value
-          ? "border-[var(--brand-2)] bg-[color-mix(in_oklab,var(--brand-2)_28%,transparent)]"
-          : "border-border bg-transparent"
-      }`}
-    >
-      <span
-        className={`absolute top-1 h-3.5 w-3.5 rounded-sm transition-[transform,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.30,1)] ${
-          value ? "translate-x-6 bg-[var(--brand-2)]" : "translate-x-1 bg-muted-foreground"
-        }`}
-      />
-    </button>
-  );
-}
 
 /* Saves on blur, and says so. The tick is the only feedback this screen needs;
    a Save button would be a lie about when the write happens. */

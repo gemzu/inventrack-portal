@@ -1229,12 +1229,19 @@ html[data-boot="on"] .boot-mark { animation: boot-mark-out 0.5s var(--ease-out-e
    A hairline box with one edge that can light. No blur, no radius
    worth noticing, no shadow — the border does the work, the way
    the header and the index do it. */
-.panel {
-  position: relative;
-  border: 1px solid var(--hair);
-  border-radius: var(--console-radius);
-  background: color-mix(in oklab, var(--card) 82%, transparent);
-  transition: border-color 0.4s var(--ease-out-expo);
+/* In @layer components so the classes written on a panel win. Unlayered,
+   it beat every Tailwind utility: "panel absolute" and "panel sticky" stayed
+   relative, and "panel bg-popover" stayed see-through - the notifications
+   popup sat inside the header, the inventory filter bar did not stick, and
+   the company list opened in the wrong place (found 2026-10-19). */
+@layer components {
+  .panel {
+    position: relative;
+    border: 1px solid var(--hair);
+    border-radius: var(--console-radius);
+    background: color-mix(in oklab, var(--card) 82%, transparent);
+    transition: border-color 0.4s var(--ease-out-expo);
+  }
 }
 
 /* The lit edge. Draws in from the left on hover — the same gesture

@@ -22,7 +22,7 @@ import ConsoleRail from "@/components/console/ConsoleRail";
 import ConsoleIndex from "@/components/console/ConsoleIndex";
 import AppGate from "@/components/console/AppGate";
 import { visibleSections } from "@/components/console/nav";
-import { Action, Chip, Field, Input, SearchInput, Segmented, Select } from "@/components/console/controls";
+import { Action, Chip, Field, Input, SearchInput, Segmented, Select, Toggle } from "@/components/console/controls";
 
 const COUNT = [
   { label: "Units on hand", value: 1284, note: "across 3 sites" },
@@ -217,6 +217,8 @@ export default function ConsoleReference() {
                   </Field>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
+                  <Toggle value onChange={() => {}} label="On" />
+                  <Toggle value={false} onChange={() => {}} label="Off" />
                   <Chip on>Available</Chip>
                   <Chip>Reserved</Chip>
                   <Chip>Sold</Chip>

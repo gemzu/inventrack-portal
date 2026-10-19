@@ -29,6 +29,13 @@ interface OrgData {
   notifySubmissions?: boolean;
 }
 
+/** A company this account belongs to, for the switcher. */
+export interface Membership {
+  orgId: string;
+  name: string;
+  role: string | null;
+}
+
 interface AuthContextType {
   user: User | null;
   userRole: string | null;
@@ -49,6 +56,11 @@ interface AuthContextType {
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
+  /** Every company this account is in (active memberships). */
+  memberships: Membership[];
+  /** Make another of them the active company - the same switch the phone
+      app makes, so both open in the company last chosen. */
+  switchOrganization: (orgId: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -66,6 +78,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userFacilityId, setUserFacilityId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [mfaPending, setMfaPending] = useState(false);
+  const [memberships, setMemberships] = useState<Membership[]>([]);
+
+  /* The website had no way to change company: it opened whichever one the
+     account was last switched to on a phone (reported 2026-10-19). */
+  const fetchMemberships = async (uid: string) => {
+    try {
+      const { data } = await supabase
+        .from("organization_memberships")
+        .select("org_id, role, organizations(name)")
+        .eq("user_id", uid)
+        .eq("active", true);
+      const list = (data || [])
+        .map((m: Record<string, unknown>) => {
+          const org = (Array.isArray(m.organizations) ? m.organizations[0] : m.organizations) as { name?: string } | null;
+          return { orgId: m.org_id as string, name: org?.name || "Unnamed company", role: (m.role as string) || null };
+        })
+        .filter((m) => m.orgId)
+        .sort((a, b) => a.name.localeCompare(b.name));
+      setMemberships(list);
+    } catch {
+      setMemberships([]);
+    }
+  };
 
   const fetchUserProfile = async (supabaseUser: User) => {
     try {
@@ -90,6 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUserPermissions(data.permissions || null);
       setOrgId(data.org_id || null);
       setUserFacilityId(data.facility_id || null);
+      fetchMemberships(supabaseUser.id);
 
       if (data.org_id) {
         try {
@@ -169,6 +205,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setOrgData(null);
         setFacilities([]);
         setUserFacilityId(null);
+        setMemberships([]);
         setLoading(false);
       }
     });
@@ -219,12 +256,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await fetchUserProfile(user);
   };
 
+  const switchOrganization = async (nextOrgId: string) => {
+    if (!user || !nextOrgId || nextOrgId === orgId) return;
+    const { data, error } = await supabase.functions.invoke("switch-active-organization", {
+      body: { orgId: nextOrgId },
+    });
+    if (error) {
+      /* The reason is in the response body; supabase-js only says non-2xx. */
+      let why = error.message || "Could not switch company";
+      try {
+        const body = await (error as { context?: Response }).context?.json();
+        if (body?.error) why = body.error;
+      } catch { /* keep the generic reason */ }
+      throw new Error(why);
+    }
+    if (data?.error) throw new Error(data.error);
+    /* Every page holds the old company's rows in its own state; start clean. */
+    window.location.assign("/dashboard");
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user, userRole, userName, userCompany, userActive, userPermissions,
         orgId, orgData, facilities, userFacilityId, loading, mfaPending, verifyMfa,
         login, signup, logout, resetPassword, refreshProfile,
+        memberships, switchOrganization,
       }}
     >
       {children}
