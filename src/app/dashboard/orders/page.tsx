@@ -21,6 +21,8 @@ import {
   normalizeOrderStatus, orderStatusLabel, ORDER_STATUS_FLOW, ORDER_STATUS,
 } from "@/lib/orderStatus";
 import EmptyState from "@/components/EmptyState";
+import AdminGuard from "@/components/AdminGuard";
+import Link from "next/link";
 import Status from "@/components/Status";
 import { useToast } from "@/components/Toast";
 import PageShell from "@/components/page-shell";
@@ -65,8 +67,19 @@ function mapOrder(row: Record<string, unknown>): Order {
 
 const ORDER_STATUSES = [...ORDER_STATUS_FLOW];
 
+/* Admins only: workers had the menu entry and could open the page (the
+   database showed them nothing). Sales orders, for people with Sales and
+   invoices ticked, are one click away. */
 export default function OrdersPage() {
-  const { orgId } = useAuth();
+  return (
+    <AdminGuard>
+      <StorefrontOrders />
+    </AdminGuard>
+  );
+}
+
+function StorefrontOrders() {
+  const { orgId, canSales } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [filtered, setFiltered] = useState<Order[]>([]);
   const [search, setSearch] = useState("");
@@ -157,6 +170,11 @@ export default function OrdersPage() {
     <PageShell
       title="Orders"
       subtitle="Everything going out, and what it is waiting on."
+      actions={canSales ? (
+        <Link href="/dashboard/orders/sales" className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-[var(--btn-shadow)]">
+          Sales orders
+        </Link>
+      ) : undefined}
     >
       <div className="space-y-8">
         <div className="reveal flex flex-wrap items-baseline gap-x-10 gap-y-4">

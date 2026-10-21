@@ -11,6 +11,7 @@ import EmptyState from "@/components/EmptyState";
 import PhotoViewer from "@/components/PhotoViewer";
 import { useToast } from "@/components/Toast";
 import Status from "@/components/Status";
+import { SalesOrderButton } from "@/components/sales/CreateSalesOrder";
 import { Panel, Figure, Rule, ColHead, CrateSkeleton } from "@/components/console/surfaces";
 import {
   Action, Chip, Drawer, Field, Input, Modal, SearchInput, Segmented, Select,
@@ -79,7 +80,7 @@ function mapItem(row: Record<string, unknown>): Item {
 }
 
 export default function InventoryPage() {
-  const { orgId, facilities, user, userPermissions, orgData } = useAuth();
+  const { orgId, facilities, user, userPermissions, orgData, canSales } = useAuth();
   const { toast } = useToast();
   const [myCanDelete, setMyCanDelete] = useState(false);
   const [view, setView] = useState<"items" | "boxes">("items");
@@ -641,6 +642,9 @@ export default function InventoryPage() {
                 >
                   Delete
                 </button>
+                {canSales && (
+                  <SalesOrderButton items={items.filter((i) => selected.has(i.id))} />
+                )}
                 <button
                   onClick={clearSelection}
                   className="px-2 py-1.5 text-[12px] text-muted-foreground transition-colors duration-300 hover:text-foreground"

@@ -44,10 +44,10 @@ export const SECTIONS: Section[] = [
   {
     label: "Movement",
     items: [
-      { href: "/dashboard/orders", label: "Orders", meta: "Going out", icon: ShoppingCart },
-      { href: "/dashboard/purchase-orders", label: "Purchase orders", meta: "Coming in", icon: ClipboardList },
+      { href: "/dashboard/orders", label: "Orders", meta: "Going out", icon: ShoppingCart, admin: true },
+      { href: "/dashboard/purchase-orders", label: "Purchase orders", meta: "Coming in", icon: ClipboardList, admin: true },
       { href: "/dashboard/approvals", label: "Approvals", meta: "Waiting on you", icon: ClipboardCheck, admin: true },
-      { href: "/dashboard/invoices", label: "Invoices", meta: "Billed and owed", icon: FileText },
+      { href: "/dashboard/invoices", label: "Invoices", meta: "Billed and owed", icon: FileText, admin: true },
     ],
   },
   {

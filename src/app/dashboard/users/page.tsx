@@ -105,6 +105,31 @@ export default function UsersPage() {
     load();
   }, [orgId, canEditDeleteAccess]);
 
+  /* Sales and invoices: the owner ticks which admins may use sales orders.
+     Through org_sales_access / org_set_sales_access, since a membership row
+     is only readable and writable by its own person. */
+  const [salesMap, setSalesMap] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    if (!orgId || !callerOwns) return;
+    supabase.rpc("org_sales_access", { p_org_id: orgId }).then(({ data }) => {
+      const map: Record<string, boolean> = {};
+      (data || []).forEach((r: Record<string, unknown>) => { map[r.user_id as string] = r.can_sales === true; });
+      setSalesMap(map);
+    });
+  }, [orgId, callerOwns]);
+
+  const toggleSales = async (u: UserDoc) => {
+    const next = !salesMap[u.id];
+    setSalesMap((m) => ({ ...m, [u.id]: next }));
+    const { error } = await supabase.rpc("org_set_sales_access", { p_org_id: orgId, p_user_id: u.id, p_on: next });
+    if (error) {
+      setSalesMap((m) => ({ ...m, [u.id]: !next }));
+      toast(`Sales and invoices not changed: ${error.message}`, "error");
+    } else {
+      toast(`${u.name || u.email}: Sales and invoices ${next ? "on" : "off"}`, "success");
+    }
+  };
+
   const toggleDeleteAccess = async (u: UserDoc) => {
     const next = !deleteAccessMap[u.id];
     setDeleteAccessMap((m) => ({ ...m, [u.id]: next }));
@@ -314,6 +339,18 @@ They can then delete the company, decide who may delete records, replace the adm
                     >
                       <Award className="w-4 h-4" />
                     </Button>
+                  )}
+                  {callerOwns && user.role === "admin" && user.active && !user.elsewhere && (
+                    <button
+                      onClick={() => toggleSales(user)}
+                      aria-pressed={!!salesMap[user.id]}
+                      title={salesMap[user.id] ? "Sales and invoices: on (click to switch off)" : "Sales and invoices: off (click to switch on)"}
+                      className={`h-9 rounded-md border px-2.5 text-[12px] font-semibold transition-colors ${salesMap[user.id]
+                        ? "border-[var(--brand-2)] bg-[color-mix(in_oklab,var(--brand-2)_12%,transparent)] text-[var(--brand-2)]"
+                        : "border-border text-muted-foreground hover:text-foreground"}`}
+                    >
+                      Sales {salesMap[user.id] ? "on" : "off"}
+                    </button>
                   )}
                   {canEditDeleteAccess && user.role !== "buyer" && !isOwner(user.permissions) && (
                     <Button

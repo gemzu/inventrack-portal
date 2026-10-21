@@ -61,6 +61,8 @@ interface AuthContextType {
   /** Make another of them the active company - the same switch the phone
       app makes, so both open in the company last chosen. */
   switchOrganization: (orgId: string) => Promise<void>;
+  /** Has Sales and invoices ticked (owner's choice, checked by the database). */
+  canSales: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -79,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [mfaPending, setMfaPending] = useState(false);
   const [memberships, setMemberships] = useState<Membership[]>([]);
+  const [canSales, setCanSales] = useState(false);
 
   /* The website had no way to change company: it opened whichever one the
      account was last switched to on a phone (reported 2026-10-19). */
@@ -126,6 +129,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setOrgId(data.org_id || null);
       setUserFacilityId(data.facility_id || null);
       fetchMemberships(supabaseUser.id);
+      /* The database decides (caller_can_sales): admin, ticked by the owner,
+         switched on. Before that function exists it errors, and the answer
+         stays no. */
+      supabase.rpc("caller_can_sales").then(({ data, error }) => setCanSales(!error && data === true));
 
       if (data.org_id) {
         try {
@@ -206,6 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setFacilities([]);
         setUserFacilityId(null);
         setMemberships([]);
+        setCanSales(false);
         setLoading(false);
       }
     });
@@ -281,7 +289,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user, userRole, userName, userCompany, userActive, userPermissions,
         orgId, orgData, facilities, userFacilityId, loading, mfaPending, verifyMfa,
         login, signup, logout, resetPassword, refreshProfile,
-        memberships, switchOrganization,
+        memberships, switchOrganization, canSales,
       }}
     >
       {children}
