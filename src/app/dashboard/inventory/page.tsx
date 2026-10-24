@@ -12,6 +12,7 @@ import PhotoViewer from "@/components/PhotoViewer";
 import { useToast } from "@/components/Toast";
 import Status from "@/components/Status";
 import { SalesOrderButton } from "@/components/sales/CreateSalesOrder";
+import { BulkPriceButton } from "@/components/sales/BulkPrice";
 import { Panel, Figure, Rule, ColHead, CrateSkeleton } from "@/components/console/surfaces";
 import {
   Action, Chip, Drawer, Field, Input, Modal, SearchInput, Segmented, Select,
@@ -642,6 +643,12 @@ export default function InventoryPage() {
                 >
                   Delete
                 </button>
+                <BulkPriceButton
+                  items={items.filter((i) => selected.has(i.id)).map((i) => ({
+                    id: i.id, name: i.displayName || i.modelId || i.barcode || "Item", status: i.status, sellingPrice: i.sellingPrice,
+                  }))}
+                  onSaved={(prices) => setItems((prev) => prev.map((i) => (i.id in prices ? { ...i, sellingPrice: prices[i.id] } : i)))}
+                />
                 {canSales && (
                   <SalesOrderButton items={items.filter((i) => selected.has(i.id))} />
                 )}
