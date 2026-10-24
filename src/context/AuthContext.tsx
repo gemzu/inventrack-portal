@@ -232,6 +232,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           role: role || "buyer",
           company: company || "",
         },
+        /* The confirmation link lands on sign-in, which says it worked. */
+        emailRedirectTo: `${window.location.origin}/login?confirmed=1`,
       },
     });
     if (error) throw error;

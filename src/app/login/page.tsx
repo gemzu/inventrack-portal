@@ -1,7 +1,8 @@
 "use client";
 
 import Mark from "@/components/Mark";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
@@ -22,6 +23,32 @@ export default function LoginPage() {
   const [resetSent, setResetSent] = useState(false);
   const [code, setCode] = useState("");
   const [askedForCode, setAskedForCode] = useState(false);
+  /* Arriving from the confirmation email (or a link that no longer works),
+     and the unconfirmed-email case at sign-in. */
+  const [notice, setNotice] = useState<{ text: string; app?: boolean } | null>(null);
+  const [unconfirmed, setUnconfirmed] = useState(false);
+  const [resent, setResent] = useState(false);
+
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const h = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    if (h.get("error_code") || h.get("error")) {
+      setError("That confirmation link has expired or was already used. Type your email and password below and we can send a new one.");
+    } else if (q.get("confirmed") === "1" || h.get("type") === "signup") {
+      setNotice(q.get("from") === "app"
+        ? { text: "Email confirmed. Go back to the Invems app and sign in there.", app: true }
+        : { text: "Email confirmed. Sign in to continue." });
+    }
+    if (window.location.hash) history.replaceState(null, "", window.location.pathname + window.location.search);
+  }, []);
+
+  const resendConfirmation = async () => {
+    if (!email) { setError("Type your email above first."); return; }
+    const { error: e } = await supabase.auth.resend({ type: "signup", email, options: { emailRedirectTo: `${window.location.origin}/login?confirmed=1` } });
+    if (e) { setError(/many|rate/i.test(e.message) ? "Too many emails. Wait a minute, then try again." : "The email would not send. Try again in a moment."); return; }
+    setResent(true);
+    setError("");
+  };
   const { user, login, logout, resetPassword, mfaPending, verifyMfa, loading: authLoading } = useAuth();
   const router = useRouter();
 
@@ -66,7 +93,8 @@ export default function LoginPage() {
       await finishSignIn();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Login failed";
-      if (msg.includes("invalid") || msg.includes("Invalid")) setError("That email and password do not match.");
+      if (/not confirmed/i.test(msg)) { setUnconfirmed(true); setError("Confirm your email first: open the link we sent when you signed up."); }
+      else if (msg.includes("invalid") || msg.includes("Invalid")) setError("That email and password do not match.");
       else if (msg.includes("many")) setError("Too many tries. Wait a minute, then try again.");
       else setError("That did not go through. Try again.");
     } finally { setLoading(false); }
@@ -203,6 +231,24 @@ export default function LoginPage() {
                 className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-xs text-destructive"
               >
                 {error}
+              </div>
+            )}
+            {notice && (
+              <div role="status" className="rounded-lg border border-success/30 bg-success/10 px-3 py-2.5 text-xs text-success">
+                {notice.text}
+                {notice.app ? (
+                  <a href="inventrack://" className="mt-2 block font-semibold underline">Open the Invems app</a>
+                ) : null}
+              </div>
+            )}
+            {unconfirmed && !resent && (
+              <button type="button" onClick={resendConfirmation} className="text-xs font-semibold text-[var(--brand-2)] underline">
+                Send the confirmation email again
+              </button>
+            )}
+            {resent && (
+              <div role="status" className="rounded-lg border border-success/30 bg-success/10 px-3 py-2.5 text-xs text-success">
+                Sent. Check your inbox (and spam) for the new link.
               </div>
             )}
             {resetSent && (

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -15,6 +16,14 @@ import SmoothScroll from "@/components/motion/SmoothScroll";
 export default function LandingPage() {
   const { user, loading } = useAuth();
   const isLoggedIn = !loading && !!user;
+
+  /* A confirmation email sent before 25 Oct points here (the site address).
+     Hand it to the sign-in page, which says it worked (or that the link
+     expired), instead of leaving them on the homepage wondering. */
+  useEffect(() => {
+    const h = window.location.hash;
+    if (/type=signup|error_code=|error=/.test(h)) window.location.replace(`/login${h.includes("type=signup") ? "?confirmed=1" : ""}${h}`);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
