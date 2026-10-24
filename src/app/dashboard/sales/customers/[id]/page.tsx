@@ -15,20 +15,20 @@ import { useToast } from "@/components/Toast";
 import SalesGuard from "@/components/SalesGuard";
 import PageShell from "@/components/page-shell";
 import { Panel, Figure, CrateSkeleton } from "@/components/console/surfaces";
-import { Action, Field, Input, Textarea } from "@/components/console/controls";
+import { Action, Field, Input, Select, Textarea } from "@/components/console/controls";
 import {
   balances, fmtDate, fmtMoney, invoiceState, STATUS_LABEL, STATUS_TONE, todayIso,
-  type Customer, type SalesInvoice, type SalesOrder,
+  type Customer, type SalesInvoice, type SalesOrder, type StorefrontBuyer,
 } from "@/lib/sales";
 
 type Form = {
   name: string; contact_name: string; email: string; phone: string; billing_address: string;
-  terms: string; w9_url: string; w9_received_at: string; notes: string;
+  terms: string; w9_url: string; w9_received_at: string; notes: string; buyer_id: string;
 };
 const toForm = (c: Customer): Form => ({
   name: c.name || "", contact_name: c.contact_name || "", email: c.email || "", phone: c.phone || "",
   billing_address: c.billing_address || "", terms: c.terms || "Net 30", w9_url: c.w9_url || "",
-  w9_received_at: c.w9_received_at || "", notes: c.notes || "",
+  w9_received_at: c.w9_received_at || "", notes: c.notes || "", buyer_id: c.buyer_id || "",
 });
 
 export default function CustomerPage() {
@@ -48,9 +48,11 @@ function CustomerView() {
   const [invoices, setInvoices] = useState<SalesInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [buyers, setBuyers] = useState<StorefrontBuyer[]>([]);
 
   const load = useCallback(async () => {
     if (!id) return;
+    supabase.rpc("sales_storefront_buyers").then(({ data }) => setBuyers((data || []) as StorefrontBuyer[]));
     const [cu, o, i] = await Promise.all([
       supabase.from("customers").select("*").eq("id", id).maybeSingle(),
       supabase.from("sales_orders").select("*").eq("customer_id", id).order("created_at", { ascending: false }),
@@ -79,7 +81,7 @@ function CustomerView() {
       phone: f.phone.trim() || null, billing_address: f.billing_address.trim() || null,
       terms: f.terms.trim() || "Net 30", w9_url: f.w9_url.trim() || null,
       w9_received_at: f.w9_url.trim() ? (f.w9_received_at || todayIso()) : null,
-      notes: f.notes.trim() || null, updated_at: new Date().toISOString(),
+      notes: f.notes.trim() || null, buyer_id: f.buyer_id || null, updated_at: new Date().toISOString(),
     }).eq("id", c.id);
     setSaving(false);
     if (error) { toast(`Not saved: ${error.message}`, "error"); return; }
@@ -167,6 +169,14 @@ function CustomerView() {
                 Open the W-9 <ArrowUpRight className="h-3.5 w-3.5" />
               </a>
             ) : null}
+            <Field label="Linked buyer account" hint="A buyer on one of your storefronts. Their storefront orders can then be billed to this customer in one step.">
+              <Select value={f.buyer_id} onChange={(e) => setF({ ...f, buyer_id: e.target.value })} aria-label="Linked buyer account">
+                <option value="">Not linked</option>
+                {buyers.filter((b) => !b.customer_id || b.customer_id === c.id).map((b) => (
+                  <option key={b.buyer_id} value={b.buyer_id}>{[b.company || b.name || b.email, b.email].filter(Boolean).join(" · ")} ({b.storefronts})</option>
+                ))}
+              </Select>
+            </Field>
             <Field label="Notes (only for you)"><Textarea rows={3} value={f.notes} onChange={set("notes")} /></Field>
             {dirty ? <p className="text-[12px] text-muted-foreground">Unsaved changes. Invoices already issued keep the details they were issued with.</p> : null}
           </Panel>

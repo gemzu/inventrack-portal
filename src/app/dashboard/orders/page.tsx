@@ -28,6 +28,7 @@ import { useToast } from "@/components/Toast";
 import PageShell from "@/components/page-shell";
 import { Panel, Figure, ColHead, CrateSkeleton } from "@/components/console/surfaces";
 import { Action, Chip, Drawer, SearchInput } from "@/components/console/controls";
+import StorefrontBilling from "@/components/sales/StorefrontBilling";
 
 interface OrderItem {
   modelId: string;
@@ -382,6 +383,8 @@ function StorefrontOrders() {
                 )}
               </Panel>
             </div>
+
+            <StorefrontBilling key={selectedOrder.id} orderId={selectedOrder.id} status={String(selectedOrder.status || "")} />
           </div>
         )}
       </Drawer>

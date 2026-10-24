@@ -247,7 +247,7 @@ function SalesOrderEditor() {
       }
       actions={
         <div className="flex flex-wrap gap-2">
-          {!dirty && (
+          {!dirty && !order.storefront_order_id && (
             <Action onClick={duplicate} disabled={!!busy} title="Start a new draft with the same customer, lines and prices">
               {busy === "dup" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Copy className="h-3.5 w-3.5" />} Duplicate
             </Action>
@@ -415,11 +415,13 @@ function SalesOrderEditor() {
             </div>
           ) : null}
           <p className="rounded-md bg-[color-mix(in_oklab,var(--brand-2)_8%,transparent)] p-3 text-[13px] text-[var(--brand-2)]">
-            {order.status === "draft" && "Draft: nothing is reserved yet. Mark sent reserves the units."}
-            {order.status === "sent" && "Sent: these units are reserved for this order. Back to draft or Void releases them."}
+            {order.storefront_order_id
+              ? "From a storefront order: for billing only. The storefront order keeps its units, so sending or invoicing this changes no stock."
+              : order.status === "draft" && "Draft: nothing is reserved yet. Mark sent reserves the units."}
+            {!order.storefront_order_id && order.status === "sent" && "Sent: these units are reserved for this order. Back to draft or Void releases them."}
             {order.status === "void" && `Void: ${order.void_reason || "no reason given"}. The units were released.`}
-            {order.status === "invoiced" && "Invoiced: the units are sold. Void the invoice to undo."}
-            {order.status === "paid" && "Paid: the invoice has been paid."}
+            {order.status === "invoiced" && (order.storefront_order_id ? " Invoiced." : "Invoiced: the units are sold. Void the invoice to undo.")}
+            {order.status === "paid" && (order.storefront_order_id ? " Paid." : "Paid: the invoice has been paid.")}
           </p>
           {invoices.length > 0 && (
             <Panel className="p-5">

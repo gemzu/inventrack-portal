@@ -14,8 +14,9 @@ export interface BillingCompany {
 export interface Customer {
   id: string; name: string; contact_name?: string | null; email?: string | null; phone?: string | null;
   billing_address?: string | null; terms: string; w9_url?: string | null; archived: boolean;
-  w9_received_at?: string | null; notes?: string | null; created_at?: string;
+  w9_received_at?: string | null; notes?: string | null; created_at?: string; buyer_id?: string | null;
 }
+export interface StorefrontBuyer { buyer_id: string; name: string | null; email: string | null; company: string | null; storefronts: string; customer_id: string | null }
 
 /** What a customer has been billed, has paid and still owes (void invoices left out). */
 export interface Balance { billed: number; paid: number; owed: number; overdue: number; lastIssued: string | null; invoices: number }
@@ -41,6 +42,7 @@ export interface SalesOrder {
   id: string; number: string; status: SalesStatus; billing_company_id: string; customer_id: string | null;
   customer_po: string | null; notes: string | null; terms: string; freight_cents: number;
   subtotal_cents: number; total_cents: number; void_reason: string | null; created_at: string; sent_at: string | null;
+  storefront_order_id?: string | null;
 }
 export interface SalesLine {
   id?: string; source_item_id: string | null; description: string; part_number: string | null; brand: string | null;
