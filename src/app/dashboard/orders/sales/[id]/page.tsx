@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { AlertTriangle, Loader2, Plus, X } from "lucide-react";
+import { AlertTriangle, Copy, Loader2, Plus, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/Toast";
@@ -22,7 +22,7 @@ import PageShell from "@/components/page-shell";
 import { Panel, ColHead, CrateSkeleton } from "@/components/console/surfaces";
 import { Action, Field, Input, Modal, Select, Textarea } from "@/components/console/controls";
 import {
-  centsToInput, createInvoice, dueFromTerms, fmtDate, fmtMoney, invoiceState, saveSalesOrder, sendSalesOrder,
+  centsToInput, createInvoice, createSalesOrder, dueFromTerms, fmtDate, fmtMoney, invoiceState, saveSalesOrder, sendSalesOrder,
   STATUS_LABEL, STATUS_TONE, toCents, todayIso, unsendSalesOrder, voidSalesOrder, why,
   type BillingCompany, type Customer, type SalesInvoice, type SalesLine, type SalesOrder,
 } from "@/lib/sales";
@@ -200,6 +200,28 @@ function SalesOrderEditor() {
   const customer = customers.find((c) => c.id === order.customer_id);
   const liveInvoice = invoices.find((v) => v.status !== "void");
 
+  /* A new draft from this one. The server only starts an order from stock
+     that is available now, so it starts from one such line and then gets the
+     full copy of the lines; any line no longer in stock shows its warning on
+     the new draft, and nothing is reserved until it is sent. */
+  const duplicate = async () => {
+    const seed = lines.find((l) => l.source_item_id && stock[l.source_item_id]?.status === "available" && stock[l.source_item_id].quantity > 0);
+    if (!seed?.source_item_id) { toast("None of these items are in stock now, so there is nothing to start a copy from.", "error"); return; }
+    setBusy("dup");
+    try {
+      const newId = await createSalesOrder(order.billing_company_id, order.customer_id, [{ id: seed.source_item_id, qty: 1 }]);
+      await saveSalesOrder(newId, {
+        customer_id: order.customer_id || "", billing_company_id: order.billing_company_id, customer_po: "",
+        notes: order.notes || "", terms: order.terms, freight_cents: Number(order.freight_cents) || 0,
+      }, payloadLines());
+      toast(`Copied ${order.number} into a new draft`, "success");
+      router.push(`/dashboard/orders/sales/${newId}`);
+    } catch (e) {
+      toast(`Not copied: ${why(e)}`, "error");
+      setBusy(null);
+    }
+  };
+
   const doInvoice = async () => {
     setBusy("invoice");
     try {
@@ -225,6 +247,11 @@ function SalesOrderEditor() {
       }
       actions={
         <div className="flex flex-wrap gap-2">
+          {!dirty && (
+            <Action onClick={duplicate} disabled={!!busy} title="Start a new draft with the same customer, lines and prices">
+              {busy === "dup" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Copy className="h-3.5 w-3.5" />} Duplicate
+            </Action>
+          )}
           {(order.status === "draft" || order.status === "sent") && (
             <Action onClick={() => { setVoidReason(""); setVoidOpen(true); }} disabled={!!busy}>Void</Action>
           )}

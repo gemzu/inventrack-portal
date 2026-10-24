@@ -28,6 +28,7 @@ import { normalizeOrderStatus } from "@/lib/orderStatus";
 import { itemIdentity } from "@/lib/itemIdentity";
 import PageShell from "@/components/page-shell";
 import Status from "@/components/Status";
+import SalesNudge from "@/components/sales/SalesNudge";
 import Mark from "@/components/Mark";
 import { AnimatedNumber } from "@/components/motion/primitives";
 import { Panel, Rule, Figure, CrateSkeleton } from "@/components/console/surfaces";
@@ -215,6 +216,7 @@ export default function DashboardPage() {
       }
     >
       <div className="space-y-12">
+        <SalesNudge />
         {announcement && (
           <div className="reveal panel panel-live flex items-start gap-4 p-4">
             <span className="mt-0.5 shrink-0 text-[12px] text-[var(--brand-2)]">
