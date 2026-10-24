@@ -101,7 +101,7 @@ function SalesOrders() {
             placeholder="Order number, customer, company or PO" aria-label="Search sales orders" />
           <div className="flex flex-wrap items-center gap-2">
             <Chip on={status === "all"} onClick={() => setStatus("all")}>Any state</Chip>
-            {(["draft", "sent", "void"] as SalesStatus[]).map((s) => (
+            {(["draft", "sent", "invoiced", "paid", "void"] as SalesStatus[]).map((s) => (
               <Chip key={s} on={status === s} onClick={() => setStatus(s)}>
                 {STATUS_LABEL[s]} · {rows.filter((r) => r.status === s).length}
               </Chip>

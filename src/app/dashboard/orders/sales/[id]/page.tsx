@@ -11,7 +11,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { AlertTriangle, Loader2, Plus, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -22,9 +22,9 @@ import PageShell from "@/components/page-shell";
 import { Panel, ColHead, CrateSkeleton } from "@/components/console/surfaces";
 import { Action, Field, Input, Modal, Select, Textarea } from "@/components/console/controls";
 import {
-  centsToInput, fmtMoney, saveSalesOrder, sendSalesOrder, STATUS_LABEL, STATUS_TONE, toCents,
-  unsendSalesOrder, voidSalesOrder, why,
-  type BillingCompany, type Customer, type SalesLine, type SalesOrder,
+  centsToInput, createInvoice, dueFromTerms, fmtDate, fmtMoney, invoiceState, saveSalesOrder, sendSalesOrder,
+  STATUS_LABEL, STATUS_TONE, toCents, todayIso, unsendSalesOrder, voidSalesOrder, why,
+  type BillingCompany, type Customer, type SalesInvoice, type SalesLine, type SalesOrder,
 } from "@/lib/sales";
 
 type EditLine = SalesLine & { key: string; priceText: string };
@@ -58,18 +58,24 @@ function SalesOrderEditor() {
   const [voidOpen, setVoidOpen] = useState(false);
   const [voidReason, setVoidReason] = useState("");
   const [addCustomer, setAddCustomer] = useState(false);
+  const [invoices, setInvoices] = useState<Pick<SalesInvoice, "id" | "number" | "status" | "due_on" | "issued_on">[]>([]);
+  const [invOpen, setInvOpen] = useState(false);
+  const [issuedOn, setIssuedOn] = useState(todayIso());
+  const router = useRouter();
 
   const load = useCallback(async () => {
     if (!orgId || !id) return;
-    const [o, l, c, b] = await Promise.all([
+    const [o, l, c, b, i] = await Promise.all([
       supabase.from("sales_orders").select("*").eq("id", id).maybeSingle(),
       supabase.from("sales_order_lines").select("*").eq("order_id", id).order("sort"),
       supabase.from("customers").select("*").eq("org_id", orgId).order("name"),
       supabase.from("billing_companies").select("*").eq("org_id", orgId).order("name"),
+      supabase.from("sales_invoices").select("id, number, status, due_on, issued_on").eq("order_id", id).order("created_at", { ascending: false }),
     ]);
     if (o.error || !o.data) { setLoading(false); return; }
     const ord = o.data as SalesOrder;
     setOrder(ord);
+    setInvoices((i.data || []) as typeof invoices);
     setFreightText(centsToInput(Number(ord.freight_cents)));
     const ls = (l.data || []) as SalesLine[];
     setLines(ls.map((x) => ({ ...x, unit_price_cents: x.unit_price_cents == null ? null : Number(x.unit_price_cents), key: nextKey(), priceText: centsToInput(x.unit_price_cents == null ? null : Number(x.unit_price_cents)) })));
@@ -192,6 +198,19 @@ function SalesOrderEditor() {
 
   const company = companies.find((c) => c.id === order.billing_company_id);
   const customer = customers.find((c) => c.id === order.customer_id);
+  const liveInvoice = invoices.find((v) => v.status !== "void");
+
+  const doInvoice = async () => {
+    setBusy("invoice");
+    try {
+      const invId = await createInvoice(order.id, issuedOn);
+      toast("Invoice created - the units are marked sold", "success");
+      router.push(`/dashboard/invoices/sales/${invId}`);
+    } catch (e) {
+      toast(`Invoice not created: ${why(e)}`, "error");
+      setBusy(null);
+    }
+  };
 
   return (
     <PageShell
@@ -210,7 +229,16 @@ function SalesOrderEditor() {
             <Action onClick={() => { setVoidReason(""); setVoidOpen(true); }} disabled={!!busy}>Void</Action>
           )}
           {order.status === "sent" && (
-            <Action onClick={unsend} disabled={!!busy}>{busy === "unsend" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}Back to draft</Action>
+            <>
+              <Action onClick={unsend} disabled={!!busy}>{busy === "unsend" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}Back to draft</Action>
+              <Action solid onClick={() => { setIssuedOn(todayIso()); setInvOpen(true); }} disabled={!!busy}>Create invoice</Action>
+            </>
+          )}
+          {(order.status === "invoiced" || order.status === "paid") && liveInvoice && (
+            <Link href={`/dashboard/invoices/sales/${liveInvoice.id}`}
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-[var(--btn-shadow)]">
+              Open invoice {liveInvoice.number}
+            </Link>
           )}
           {editable && (
             <>
@@ -363,7 +391,27 @@ function SalesOrderEditor() {
             {order.status === "draft" && "Draft: nothing is reserved yet. Mark sent reserves the units."}
             {order.status === "sent" && "Sent: these units are reserved for this order. Back to draft or Void releases them."}
             {order.status === "void" && `Void: ${order.void_reason || "no reason given"}. The units were released.`}
+            {order.status === "invoiced" && "Invoiced: the units are sold. Void the invoice to undo."}
+            {order.status === "paid" && "Paid: the invoice has been paid."}
           </p>
+          {invoices.length > 0 && (
+            <Panel className="p-5">
+              <p className="mb-2 text-[12px] text-muted-foreground">Invoices for this order</p>
+              <ul className="space-y-1.5">
+                {invoices.map((v) => {
+                  const st = invoiceState(v);
+                  return (
+                    <li key={v.id}>
+                      <Link href={`/dashboard/invoices/sales/${v.id}`} className="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 -mx-2 hover:bg-muted">
+                        <span className="mono text-[13px] font-semibold">{v.number}</span>
+                        <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${st.tone}`}>{st.label}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </Panel>
+          )}
           <Panel className="p-5">
             <Field label="Notes on the order">
               {editable
@@ -381,6 +429,37 @@ function SalesOrderEditor() {
         <div className="mt-5 flex justify-end gap-2">
           <Action onClick={() => setVoidOpen(false)}>Keep it</Action>
           <Action solid onClick={doVoid} disabled={!voidReason.trim() || busy === "void"}>Void order</Action>
+        </div>
+      </Modal>
+
+      <Modal open={invOpen} onClose={() => setInvOpen(false)} title={`Invoice ${order.number}`}
+        subtitle={`${customer?.name || "Customer"} · ${fmtMoney(order.total_cents)} · billed by ${company?.name || "your company"}`}>
+        <div className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Invoice date">
+              <Input type="date" value={issuedOn} onChange={(e) => setIssuedOn(e.target.value || todayIso())} />
+            </Field>
+            <Field label={`Due (${order.terms})`}>
+              <p className="flex h-10 items-center text-sm font-medium">{fmtDate(dueFromTerms(order.terms, issuedOn))}</p>
+            </Field>
+          </div>
+          <ul className="list-disc space-y-1 pl-5 text-[13px] text-muted-foreground">
+            <li>Takes the next invoice number for {company?.name || "this company"}{company ? ` (${company.invoice_prefix}-…)` : ""}.</li>
+            <li>The {lines.reduce((n, l) => n + l.quantity, 0).toLocaleString("en-US")} reserved units are marked sold.</li>
+            <li>Customer and company details are copied onto the invoice as they are today.</li>
+          </ul>
+          {!customer?.billing_address || !customer?.email ? (
+            <div className="flex gap-2 rounded-md bg-amber-500/10 p-3 text-[13px] text-amber-800 dark:text-amber-200">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{customer?.name || "This customer"} has no {[!customer?.billing_address && "billing address", !customer?.email && "billing email"].filter(Boolean).join(" or ")} yet. The invoice will show without it.</span>
+            </div>
+          ) : null}
+        </div>
+        <div className="mt-5 flex justify-end gap-2">
+          <Action onClick={() => setInvOpen(false)}>Cancel</Action>
+          <Action solid onClick={doInvoice} disabled={busy === "invoice"}>
+            {busy === "invoice" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null} Create invoice
+          </Action>
         </div>
       </Modal>
 

@@ -61,6 +61,75 @@ export const sendSalesOrder = (id: string) => rpc<void>("sales_order_send", { p_
 export const unsendSalesOrder = (id: string) => rpc<void>("sales_order_unsend", { p_order: id });
 export const voidSalesOrder = (id: string, reason: string) => rpc<void>("sales_order_void", { p_order: id, p_reason: reason });
 
+/* ── Invoices (phase 2) ─────────────────────────────────────────────────
+   Issued from a sent order by sales_invoice_create; the invoice keeps its
+   own copy of who billed whom, so it never changes after it is issued. */
+
+export type InvoiceStatus = "issued" | "paid" | "void";
+export type PayMethod = "ach" | "wire" | "check" | "card" | "cash" | "other";
+
+export interface SalesInvoice {
+  id: string; order_id: string; billing_company_id: string; customer_id: string;
+  number: string; status: InvoiceStatus; issued_on: string; due_on: string; terms: string;
+  customer_po: string | null; notes: string | null;
+  bill_to_name: string; bill_to_contact: string | null; bill_to_address: string | null; bill_to_email: string | null;
+  from_name: string; from_address: string | null; from_email: string | null; from_phone: string | null;
+  from_logo_url: string | null; payment_details: string | null;
+  subtotal_cents: number; freight_cents: number; total_cents: number;
+  paid_on: string | null; paid_method: PayMethod | null; paid_reference: string | null;
+  void_reason: string | null; created_at: string;
+}
+export interface SalesInvoiceLine {
+  id: string; sort: number; description: string; part_number: string | null; brand: string | null;
+  quantity: number; unit_price_cents: number; line_cents: number;
+}
+
+export const PAY_METHOD_LABEL: Record<PayMethod, string> = {
+  ach: "ACH", wire: "Wire", check: "Check", card: "Card", cash: "Cash", other: "Other",
+};
+
+/** Today in the browser's own calendar, as YYYY-MM-DD. */
+export const todayIso = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+const asDate = (iso: string) => {
+  const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
+  return new Date(y, m - 1, d);
+};
+/** "Oct 24, 2026" from a date-only value, with no time-zone shift. */
+export const fmtDate = (iso: string | null | undefined) =>
+  iso ? asDate(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
+/** Whole days from a to b (b later = positive). */
+export const daysBetween = (a: string, b: string) => Math.round((asDate(b).getTime() - asDate(a).getTime()) / 864e5);
+
+/** Same rule as the server's sales_due_date, for the preview before issuing. */
+export function dueFromTerms(terms: string, issued: string): string {
+  const net = /net\s*(\d+)/i.exec(terms || "");
+  const days = net ? Math.min(Number(net[1]), 365) : /receipt/i.test(terms || "") ? 0 : 30;
+  const d = asDate(issued);
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** What a person needs to know about an invoice right now. */
+export function invoiceState(inv: Pick<SalesInvoice, "status" | "due_on">, today = todayIso()):
+  { key: "paid" | "void" | "overdue" | "due"; label: string; tone: string } {
+  if (inv.status === "paid") return { key: "paid", label: "Paid", tone: STATUS_TONE.paid };
+  if (inv.status === "void") return { key: "void", label: "Void", tone: STATUS_TONE.void };
+  const late = daysBetween(inv.due_on, today);
+  if (late > 0) return { key: "overdue", label: `${late} day${late === 1 ? "" : "s"} overdue`, tone: "bg-destructive/12 text-destructive" };
+  const left = -late;
+  return { key: "due", label: left === 0 ? "Due today" : `Due in ${left} day${left === 1 ? "" : "s"}`, tone: STATUS_TONE.invoiced };
+}
+
+export const createInvoice = (orderId: string, issuedOn: string) =>
+  rpc<string>("sales_invoice_create", { p_order: orderId, p_issued_on: issuedOn });
+export const markInvoicePaid = (id: string, paidOn: string, method: PayMethod, reference: string) =>
+  rpc<void>("sales_invoice_mark_paid", { p_invoice: id, p_paid_on: paidOn, p_method: method, p_reference: reference });
+export const markInvoiceUnpaid = (id: string) => rpc<void>("sales_invoice_mark_unpaid", { p_invoice: id });
+export const voidInvoice = (id: string, reason: string) => rpc<void>("sales_invoice_void", { p_invoice: id, p_reason: reason });
+
 export const STATUS_TONE: Record<SalesStatus, string> = {
   draft: "bg-muted text-foreground/80",
   sent: "bg-[color-mix(in_oklab,var(--brand-2)_14%,transparent)] text-[var(--brand-2)]",

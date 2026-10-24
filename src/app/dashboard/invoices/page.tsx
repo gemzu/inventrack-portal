@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import AdminGuard from "@/components/AdminGuard";
 import { Plus, X, Download, FileText } from "lucide-react";
+import Link from "next/link";
 import PageShell from "@/components/page-shell";
 import EmptyState from "@/components/EmptyState";
 import Status from "@/components/Status";
@@ -43,7 +44,7 @@ const NEXT_STATUS: Record<string, string> = {
 };
 
 export default function InvoicesPage() {
-  const { orgId } = useAuth();
+  const { orgId, canSales } = useAuth();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -197,6 +198,11 @@ export default function InvoicesPage() {
         subtitle="What has been billed, and what is still owed."
         actions={
           <>
+            {canSales && (
+              <Link href="/dashboard/invoices/sales" className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted">
+                Sales invoices
+              </Link>
+            )}
             {invoices.length > 0 && (
               <Action onClick={downloadCsv}>
                 <Download className="h-3.5 w-3.5" /> Export
