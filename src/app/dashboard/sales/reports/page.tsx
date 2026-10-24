@@ -116,9 +116,9 @@ function Reports() {
     try {
       const rows = await invoicesInRange();
       saveFile(toCsv(
-        ["Invoice", "Billed by", "Customer", "Customer PO", "Issued", "Due", "Terms", "Subtotal", "Freight", "Tax", "Total", "Status", "Paid on", "Method", "Payment ref", "Void reason"],
+        ["Invoice", "Billed by", "Customer", "Customer PO", "Issued", "Due", "Terms", "Subtotal", "Freight", "Tax", "Tax rate %", "Total", "Status", "Paid on", "Method", "Payment ref", "Void reason"],
         rows.map((i) => [i.number, i.from_name, i.bill_to_name, i.customer_po, i.issued_on, i.due_on, i.terms,
-          centsPlain(i.subtotal_cents), centsPlain(i.freight_cents), "0.00", centsPlain(i.total_cents),
+          centsPlain(i.subtotal_cents), centsPlain(i.freight_cents), centsPlain(i.tax_cents), i.tax_rate != null ? String(Number(i.tax_rate)) : "", centsPlain(i.total_cents),
           i.status === "issued" ? "unpaid" : i.status, i.paid_on, i.paid_method ? PAY_METHOD_LABEL[i.paid_method] : "", i.paid_reference, i.void_reason]),
       ), `invoices_${fileTag}.csv`);
       toast(`${rows.length} invoice${rows.length === 1 ? "" : "s"} exported`, "success");

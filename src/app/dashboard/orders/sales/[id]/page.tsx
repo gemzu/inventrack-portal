@@ -23,7 +23,7 @@ import { Panel, ColHead, CrateSkeleton } from "@/components/console/surfaces";
 import { Action, Field, Input, Modal, Select, Textarea } from "@/components/console/controls";
 import {
   centsToInput, createInvoice, createSalesOrder, dueFromTerms, fmtDate, fmtMoney, invoiceState, saveSalesOrder, sendSalesOrder,
-  STATUS_LABEL, STATUS_TONE, toCents, todayIso, unsendSalesOrder, voidSalesOrder, why,
+  STATUS_LABEL, STATUS_TONE, taxLine, taxOn, toCents, todayIso, unsendSalesOrder, voidSalesOrder, why,
   type BillingCompany, type Customer, type SalesInvoice, type SalesLine, type SalesOrder,
 } from "@/lib/sales";
 
@@ -52,6 +52,8 @@ function SalesOrderEditor() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [stock, setStock] = useState<Stock>({});
   const [freightText, setFreightText] = useState("");
+  const [taxText, setTaxText] = useState("");
+  const [taxLabel, setTaxLabel] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
@@ -77,6 +79,8 @@ function SalesOrderEditor() {
     setOrder(ord);
     setInvoices((i.data || []) as typeof invoices);
     setFreightText(centsToInput(Number(ord.freight_cents)));
+    setTaxText(ord.tax_rate != null ? String(Number(ord.tax_rate)) : "");
+    setTaxLabel(ord.tax_label || "");
     const ls = (l.data || []) as SalesLine[];
     setLines(ls.map((x) => ({ ...x, unit_price_cents: x.unit_price_cents == null ? null : Number(x.unit_price_cents), key: nextKey(), priceText: centsToInput(x.unit_price_cents == null ? null : Number(x.unit_price_cents)) })));
     setCustomers((c.data || []) as Customer[]);
@@ -97,7 +101,10 @@ function SalesOrderEditor() {
   const editable = order?.status === "draft";
   const freight = toCents(freightText) ?? 0;
   const subtotal = lines.reduce((n, l) => n + l.quantity * (l.unit_price_cents ?? 0), 0);
-  const total = subtotal + freight;
+  const taxRate = taxText.trim() === "" ? null : Number(taxText.replace(/[^d.]/g, ""));
+  const taxBad = taxRate != null && (!Number.isFinite(taxRate) || taxRate <= 0 || taxRate > 25 || Math.round(taxRate * 1000) !== taxRate * 1000);
+  const tax = editable ? (taxBad ? 0 : taxOn(subtotal, taxRate)) : Number(order?.tax_cents || 0);
+  const total = subtotal + freight + tax;
 
   /* What stops this order being sent, in plain words, per line. */
   const problems = useMemo(() => {
@@ -138,7 +145,7 @@ function SalesOrderEditor() {
       await saveSalesOrder(order.id, {
         customer_id: order.customer_id || "", billing_company_id: order.billing_company_id,
         customer_po: order.customer_po || "", notes: order.notes || "", terms: order.terms,
-        freight_cents: freight,
+        freight_cents: freight, tax_rate: taxRate == null ? "" : taxRate, tax_label: taxLabel.trim(),
       }, payloadLines());
       if (!quiet) toast("Draft saved", "success");
       await load();
@@ -269,8 +276,8 @@ function SalesOrderEditor() {
           )}
           {editable && (
             <>
-              <Action onClick={() => save()} disabled={!!busy || !dirty}>{busy === "save" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}Save draft</Action>
-              <Action solid onClick={send} disabled={!!busy || blocked}
+              <Action onClick={() => save()} disabled={!!busy || !dirty || taxBad}>{busy === "save" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}Save draft</Action>
+              <Action solid onClick={send} disabled={!!busy || blocked || taxBad}
                 title={blocked ? "Fix the lines marked below first" : "Reserve the units and mark this order sent"}>
                 {busy === "send" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}Mark sent
               </Action>
@@ -393,7 +400,31 @@ function SalesOrderEditor() {
                     onChange={(e) => { setFreightText(e.target.value); setDirty(true); }} onBlur={() => setFreightText(centsToInput(toCents(freightText) ?? 0))} />
                 : <span className="mono">{fmtMoney(order.freight_cents)}</span>}
             </div>
-            <div className="flex justify-between py-1.5 text-sm text-muted-foreground"><span>Tax</span><span>not added</span></div>
+            {editable ? (
+              <div className="space-y-2 py-1.5">
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span>Sales tax</span>
+                  <span className="flex items-center gap-1.5">
+                    <Input value={taxText} inputMode="decimal" aria-label="Sales tax rate in percent" placeholder="none" aria-invalid={taxBad}
+                      className={`mono w-20 text-right ${taxBad ? "border-destructive" : ""}`}
+                      onChange={(e) => { setTaxText(e.target.value); setDirty(true); }} />
+                    <span className="text-muted-foreground">%</span>
+                    <span className="mono w-20 text-right">{fmtMoney(tax)}</span>
+                  </span>
+                </div>
+                {taxRate != null ? (
+                  <Input value={taxLabel} aria-label="Tax name on the invoice" placeholder="Sales tax" maxLength={60} className="text-[13px]"
+                    onChange={(e) => { setTaxLabel(e.target.value); setDirty(true); }} />
+                ) : null}
+                <p className={`text-[11.5px] ${taxBad ? "text-destructive" : "text-muted-foreground"}`}>
+                  {taxBad ? "A rate above 0% and up to 25%, e.g. 6.625." : "On the items only, never on freight. Leave empty for no tax (resale or exempt)."}
+                </p>
+              </div>
+            ) : Number(order.tax_cents) > 0 ? (
+              <div className="flex justify-between py-1.5 text-sm"><span>{taxLine(order.tax_label, order.tax_rate)}</span><span className="mono">{fmtMoney(order.tax_cents)}</span></div>
+            ) : (
+              <div className="flex justify-between py-1.5 text-sm text-muted-foreground"><span>Sales tax</span><span>none</span></div>
+            )}
             <div className="mt-2 flex items-baseline justify-between border-t border-border pt-3">
               <span className="font-display text-lg font-bold">Total</span>
               <span className="font-display text-2xl font-bold tracking-[-0.03em]">{fmtMoney(total)}</span>

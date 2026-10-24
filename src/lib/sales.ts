@@ -43,6 +43,7 @@ export interface SalesOrder {
   customer_po: string | null; notes: string | null; terms: string; freight_cents: number;
   subtotal_cents: number; total_cents: number; void_reason: string | null; created_at: string; sent_at: string | null;
   storefront_order_id?: string | null;
+  tax_rate?: string | number | null; tax_label?: string | null; tax_cents?: number;
 }
 export interface SalesLine {
   id?: string; source_item_id: string | null; description: string; part_number: string | null; brand: string | null;
@@ -59,6 +60,13 @@ export const toCents = (s: string): number | null => {
   const n = parseFloat(t);
   return Number.isFinite(n) ? Math.round(n * 100) : null;
 };
+/** Sales tax on the items only - never on freight or delivery. Same
+    rounding as the server (sales_order_recalc): to the nearest cent. */
+export const taxOn = (subtotalCents: number, rate: number | null) =>
+  rate == null || !(rate > 0) ? 0 : Math.round((subtotalCents * rate) / 100);
+/** "NJ sales tax (6.625%)" */
+export const taxLine = (label: string | null | undefined, rate: string | number | null | undefined) =>
+  `${label || "Sales tax"}${rate != null && rate !== "" ? ` (${Number(rate)}%)` : ""}`;
 export const centsToInput = (c: number | null | undefined) => (c == null ? "" : (c / 100).toFixed(2));
 
 export const STATUS_LABEL: Record<SalesStatus, string> = {
@@ -100,6 +108,7 @@ export interface SalesInvoice {
   from_name: string; from_address: string | null; from_email: string | null; from_phone: string | null;
   from_logo_url: string | null; payment_details: string | null;
   subtotal_cents: number; freight_cents: number; total_cents: number;
+  tax_rate?: string | number | null; tax_label?: string | null; tax_cents?: number;
   paid_on: string | null; paid_method: PayMethod | null; paid_reference: string | null;
   void_reason: string | null; created_at: string;
 }

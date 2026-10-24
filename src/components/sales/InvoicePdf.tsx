@@ -11,7 +11,7 @@
  */
 
 import { Document, Font, Image, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer";
-import { daysBetween, fmtDate, fmtMoney, PAY_METHOD_LABEL, type SalesInvoice, type SalesInvoiceLine } from "@/lib/sales";
+import { daysBetween, fmtDate, fmtMoney, PAY_METHOD_LABEL, taxLine, type SalesInvoice, type SalesInvoiceLine } from "@/lib/sales";
 
 const INK = "#14121f";
 const MUTE = "#5b5770";
@@ -164,6 +164,9 @@ function InvoiceDoc({ inv, lines, orderNumber, logo }: { inv: SalesInvoice; line
             <View style={s.totLine}><Text>Subtotal</Text><Text style={s.mono}>{fmtMoney(inv.subtotal_cents)}</Text></View>
             {Number(inv.freight_cents) > 0 ? (
               <View style={s.totLine}><Text>Freight</Text><Text style={s.mono}>{fmtMoney(inv.freight_cents)}</Text></View>
+            ) : null}
+            {Number(inv.tax_cents) > 0 ? (
+              <View style={s.totLine}><Text>{taxLine(inv.tax_label, inv.tax_rate)}</Text><Text style={s.mono}>{fmtMoney(inv.tax_cents)}</Text></View>
             ) : null}
             <View style={s.grand}>
               <Text style={s.grandLabel}>{paid || isVoid ? "Total" : "Amount due"}</Text>

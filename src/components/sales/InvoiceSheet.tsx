@@ -4,7 +4,7 @@
  * in the dark theme on purpose: it is a piece of paper, not part of the app.
  */
 
-import { daysBetween, fmtDate, fmtMoney, PAY_METHOD_LABEL, type SalesInvoice, type SalesInvoiceLine } from "@/lib/sales";
+import { daysBetween, fmtDate, fmtMoney, PAY_METHOD_LABEL, taxLine, type SalesInvoice, type SalesInvoiceLine } from "@/lib/sales";
 
 const label = "mono mb-1.5 text-[10px] uppercase tracking-[0.14em] text-[#5b5770]";
 
@@ -100,6 +100,9 @@ export default function InvoiceSheet({ inv, lines, orderNumber }: { inv: SalesIn
           <div className="flex justify-between py-1.5"><dt>Subtotal</dt><dd className="mono tabular-nums">{fmtMoney(inv.subtotal_cents)}</dd></div>
           {Number(inv.freight_cents) > 0 ? (
             <div className="flex justify-between py-1.5"><dt>Freight</dt><dd className="mono tabular-nums">{fmtMoney(inv.freight_cents)}</dd></div>
+          ) : null}
+          {Number(inv.tax_cents) > 0 ? (
+            <div className="flex justify-between py-1.5"><dt>{taxLine(inv.tax_label, inv.tax_rate)}</dt><dd className="mono tabular-nums">{fmtMoney(inv.tax_cents)}</dd></div>
           ) : null}
           <div className="mt-2 flex items-baseline justify-between border-t-[3px] border-[#14121f] pt-3">
             <dt className="font-display text-xl font-extrabold tracking-[-0.03em]">{paid || isVoid ? "Total" : "Amount due"}</dt>
