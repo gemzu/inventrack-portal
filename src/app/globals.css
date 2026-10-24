@@ -8,8 +8,6 @@
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
-  --color-indigo: #6366f1;
-  --color-indigo-dim: #4f46e5;
 
   /* Easing is the personality. Never ease / ease-in-out / linear for UI. */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.30, 1);
@@ -103,15 +101,15 @@
   /* Brand gradient + glow — used for atmosphere, accents, focus */
   --brand-1: #5b3df5;
   --brand-2: #6d4af0;
-  --brand-3: #22d3ee;
-  --brand-gradient: linear-gradient(135deg, #5b3df5 0%, #8b5cf6 50%, #22d3ee 130%);
+  --brand-3: #3ecdea;
+  --brand-gradient: linear-gradient(135deg, #5b3df5 0%, #6d4af0 50%, #3ecdea 130%);
   --glow: 0 0 0 1px rgba(91,61,245,0.08), 0 12px 40px -12px rgba(91,61,245,0.28);
 
   --chart-1: #5b3df5;
-  --chart-2: #8b5cf6;
-  --chart-3: #22d3ee;
+  --chart-2: #9d8cf7;
+  --chart-3: #3ecdea;
   --chart-4: #f59e0b;
-  --chart-5: #ec4899;
+  --chart-5: #c2410c;
   --radius: 0.85rem;
   --sidebar: #e7e4f2;
   --sidebar-foreground: #14121f;
@@ -133,9 +131,9 @@
   --card-foreground: #f4f2ff;
   --popover: #17152268;
   --popover-foreground: #f4f2ff;
-  --primary: #8b5cf6;
+  --primary: #8a74f7;
   --primary-foreground: #0a0912;
-  --primary-dark: #7c4ef0;
+  --primary-dark: #7a62f6;
   --secondary: #201d33;
   --secondary-foreground: #f4f2ff;
   --muted: #1b1930;
@@ -145,31 +143,31 @@
   --destructive: #f87171;
   --border: #262238;
   --input: #262238;
-  --ring: #8b5cf6;
-  --btn-bg: #8b5cf6;
+  --ring: #8a74f7;
+  --btn-bg: #8a74f7;
   --btn-fg: #0a0912;
-  --btn-border: #8b5cf6;
-  --btn-shadow: 0 8px 28px -6px rgba(139,92,246,0.5);
+  --btn-border: #8a74f7;
+  --btn-shadow: 0 8px 28px -6px rgba(138,116,247,0.45);
 
-  --brand-1: #7c4ef0;
-  --brand-2: #a78bfa;
-  --brand-3: #22d3ee;
-  --brand-gradient: linear-gradient(135deg, #7c4ef0 0%, #a78bfa 50%, #22d3ee 130%);
-  --glow: 0 0 0 1px rgba(139,92,246,0.12), 0 16px 48px -12px rgba(139,92,246,0.4);
+  --brand-1: #755cf5;
+  --brand-2: #927ef7;
+  --brand-3: #3ecdea;
+  --brand-gradient: linear-gradient(135deg, #755cf5 0%, #927ef7 50%, #3ecdea 130%);
+  --glow: 0 0 0 1px rgba(138,116,247,0.12), 0 16px 48px -12px rgba(138,116,247,0.35);
 
-  --chart-1: #a78bfa;
-  --chart-2: #8b5cf6;
-  --chart-3: #22d3ee;
+  --chart-1: #927ef7;
+  --chart-2: #c2b6fb;
+  --chart-3: #3ecdea;
   --chart-4: #fbbf24;
-  --chart-5: #f472b6;
+  --chart-5: #f08a4b;
   --sidebar: #0d0b17;
   --sidebar-foreground: #f4f2ff;
-  --sidebar-primary: #a78bfa;
+  --sidebar-primary: #927ef7;
   --sidebar-primary-foreground: #0a0912;
   --sidebar-accent: #201d33;
   --sidebar-accent-foreground: #f4f2ff;
   --sidebar-border: #201d33;
-  --sidebar-ring: #8b5cf6;
+  --sidebar-ring: #8a74f7;
 }
 
 /* Hover shade for solid primary buttons. Defined as a real utility so the
@@ -541,6 +539,21 @@ select option {
     transition: color 180ms var(--ease-out-expo), background-color 180ms var(--ease-out-expo),
                 border-color 180ms var(--ease-out-expo), box-shadow 220ms var(--ease-out-expo),
                 transform 220ms var(--ease-out-expo), opacity 180ms var(--ease-out-expo);
+  }
+
+  /* A press gets a receipt the moment the pointer goes down, not on release.
+     Compact controls settle 3%; full-width rows tint instead, because a 3%
+     shrink of a 1000px row is a 30px jump. Layered: a component that names
+     its own active: utility keeps it. */
+  button:not(:disabled):not(.w-full):not(.row-line):active,
+  [role="button"]:not(.w-full):not(.row-line):not([aria-disabled="true"]):active,
+  a.inline-flex:active {
+    transform: scale(0.97);
+    transition-duration: 60ms;
+  }
+  button.w-full:not(:disabled):active {
+    filter: brightness(0.94);
+    transition-duration: 60ms;
   }
 }
 
@@ -1163,7 +1176,7 @@ html[data-boot="on"] .boot-mark { animation: boot-mark-out 0.5s var(--ease-out-e
   position: absolute;
   inset: -1px -1px auto -1px;
   height: 1px;
-  background: linear-gradient(to right, var(--brand-1), var(--brand-3));
+  background: var(--brand-2);
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.55s var(--ease-out-expo);
@@ -1227,8 +1240,12 @@ a:hover > .panel::before,
   gap: 0.75rem;
   padding: 0.4rem 0 0.4rem 0.875rem;
   color: var(--muted-foreground);
-  transition: color 0.3s var(--ease-out-expo), padding-left 0.4s var(--ease-out-expo);
+  transition: color 0.3s var(--ease-out-expo);
 }
+/* The nudge on hover moves the label, not the padding: a transform runs on
+   the compositor, a padding change re-lays out the whole rail every frame. */
+.rail-link > * { transition: transform 0.4s var(--ease-out-expo); }
+.rail-link:hover > *, .rail-link[data-active="true"] > * { transform: translateX(0.25rem); }
 .rail-link::before {
   content: "";
   position: absolute;
@@ -1242,9 +1259,9 @@ a:hover > .panel::before,
   transform-origin: center;
   transition: transform 0.45s var(--ease-out-expo);
 }
-.rail-link:hover { color: var(--foreground); padding-left: 1.125rem; }
+.rail-link:hover { color: var(--foreground); }
 .rail-link:hover::before { transform: scaleY(0.45); }
-.rail-link[data-active="true"] { color: var(--foreground); padding-left: 1.125rem; }
+.rail-link[data-active="true"] { color: var(--foreground); }
 .rail-link[data-active="true"]::before { transform: scaleY(1); }
 
 /* The rail's section headings keep caps: five of them, marking the spine of
@@ -1293,6 +1310,7 @@ a:hover > .panel::before,
 }
 .row-line:last-child { border-bottom: 0; }
 .row-line:hover { background: color-mix(in oklab, var(--brand-2) 5%, transparent); }
+.row-line:active { background: color-mix(in oklab, var(--brand-2) 11%, transparent); transition-duration: 60ms; }
 
 .col-head {
   font-size: 0.75rem;
@@ -1328,7 +1346,7 @@ a:hover > .panel::before,
 @media (prefers-reduced-motion: reduce) {
   .bay-in, .bay-wipe, .crate-skeleton::after { animation: none; }
   .bay-wipe { display: none; }
-  .panel::before, .rail-link, .rail-link::before, .panel-hover { transition: none; }
+  .panel::before, .rail-link, .rail-link::before, .rail-link > *, .panel-hover { transition: none; }
 }
 
 /* Drawer and modal entrances, on the console's curve. The old ones came from

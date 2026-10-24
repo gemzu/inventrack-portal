@@ -23,8 +23,8 @@ export default function PrivacyPage() {
               Legal
             </span>
           </div>
-          <h1 className="text-5xl sm:text-6xl font-bold tracking-tight mb-4">
-            <span className="bg-gradient-to-r from-foreground via-foreground to-muted-foreground bg-clip-text text-transparent">
+          <h1 className="font-display text-4xl font-bold leading-none tracking-[-0.035em] sm:text-6xl mb-4">
+            <span>
               Privacy Policy
             </span>
           </h1>

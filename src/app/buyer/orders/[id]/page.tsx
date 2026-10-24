@@ -129,9 +129,9 @@ export default function BuyerOrderDetailPage() {
                   <div className="relative flex items-start justify-between gap-2">
                     <span className="absolute left-0 right-0 top-[7px] h-px bg-border" />
                     <span
-                      className="absolute left-0 top-[7px] h-px bg-[linear-gradient(to_right,var(--brand-1),var(--brand-3))] transition-[width] duration-700 ease-[cubic-bezier(0.16,1,0.30,1)]"
+                      className="absolute left-0 right-0 top-[7px] h-px origin-left bg-[var(--brand-1)] transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.30,1)]"
                       style={{
-                        width: `${(activeStep / Math.max(STATUS_STEPS.length - 1, 1)) * 100}%`,
+                        transform: `scaleX(${activeStep / Math.max(STATUS_STEPS.length - 1, 1)})`,
                       }}
                     />
                     {STATUS_STEPS.map((step, i) => {

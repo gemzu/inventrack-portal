@@ -196,7 +196,7 @@ export async function createBox(
     label: input.label ?? null,
     facility_id: input.facilityId ?? null,
     description: input.description ?? null,
-    color: input.color ?? "#6366f1",
+    color: input.color ?? "#5b3df5",
     category: input.category ?? null,
     capacity: input.capacity ?? null,
     location: input.location ?? null,

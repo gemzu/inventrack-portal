@@ -323,7 +323,7 @@ function ResetPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen text-foreground">
       <div className="border-b border-border">
         <div className="mx-auto flex h-14 max-w-5xl items-center px-6">
           <Link
@@ -568,7 +568,7 @@ export default function ResetPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-background text-foreground">
+        <div className="min-h-screen text-foreground">
           <div className="mx-auto flex min-h-screen max-w-5xl items-center justify-center px-6 py-12">
             <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 text-center shadow-sm">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">

@@ -102,7 +102,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
+    <div className="flex min-h-screen flex-col text-foreground">
       <div className="border-b border-border">
         <div className="mx-auto flex h-14 max-w-6xl items-center px-6">
           <Link

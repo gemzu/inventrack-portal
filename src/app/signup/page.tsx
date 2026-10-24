@@ -121,7 +121,7 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
+    <div className="flex min-h-screen flex-col text-foreground">
       <div className="border-b border-border">
         <div className="mx-auto flex h-14 max-w-6xl items-center px-6">
           <Link
@@ -176,7 +176,7 @@ export default function SignupPage() {
                 >
                   {o.label}
                   <span
-                    className={`absolute inset-x-0 bottom-0 h-px origin-left bg-[linear-gradient(to_right,var(--brand-1),var(--brand-3))] transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.30,1)] ${
+                    className={`absolute inset-x-0 bottom-0 h-px origin-left bg-[var(--brand-2)] transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.30,1)] ${
                       on ? "scale-x-100" : "scale-x-0"
                     }`}
                   />

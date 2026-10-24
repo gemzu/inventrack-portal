@@ -284,9 +284,9 @@ export default function BoxDetailPage() {
               </div>
               <div className="mt-2 h-1 w-full overflow-hidden rounded-sm bg-border">
                 <div
-                  className="h-full transition-[width] duration-700 ease-[cubic-bezier(0.16,1,0.30,1)]"
+                  className="h-full w-full origin-left transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.30,1)]"
                   style={{
-                    width: `${capacityPct}%`,
+                    transform: `scaleX(${Math.min(Math.max(capacityPct, 0), 100) / 100})`,
                     backgroundColor: box.color || "var(--brand-2)",
                   }}
                 />

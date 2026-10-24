@@ -138,7 +138,7 @@ export function Segmented<T extends string>({
             {o.label}
             <span
               className={cn(
-                "absolute inset-x-0 bottom-0 h-px origin-left bg-[linear-gradient(to_right,var(--brand-1),var(--brand-3))]",
+                "absolute inset-x-0 bottom-0 h-px origin-left bg-[var(--brand-2)]",
                 "transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.30,1)]",
                 on ? "scale-x-100" : "scale-x-0"
               )}

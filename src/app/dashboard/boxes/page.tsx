@@ -32,9 +32,11 @@ const BOX_CATEGORIES = [
   "heavy", "perishable", "documents", "other",
 ];
 
+/* Box tags: eight hues far enough apart to tell at a glance on the rack,
+   led by the brand violet. Boxes already made keep their colour. */
 const PRESET_COLORS = [
-  "#6366f1", "#ec4899", "#f59e0b", "#10b981",
-  "#06b6d4", "#8b5cf6", "#ef4444", "#64748b",
+  "#5b3df5", "#0f8fa6", "#15803d", "#b7791f",
+  "#c2410c", "#b91c1c", "#2a2340", "#6a6580",
 ];
 
 interface NewBoxForm {
