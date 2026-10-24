@@ -224,7 +224,7 @@ function SalesOrderEditor() {
         </div>
       }
     >
-      <div className="grid items-start gap-5 lg:grid-cols-[1fr_22rem]">
+      <div className="grid items-start gap-5 xl:grid-cols-[1fr_22rem]">
         <Panel className="min-w-0">
           {/* Who and by whom */}
           <div className="grid gap-4 border-b border-border p-5 md:grid-cols-2">
@@ -267,7 +267,7 @@ function SalesOrderEditor() {
           </div>
 
           {/* Lines */}
-          <div className="hidden items-center gap-3 border-b border-border px-5 py-2.5 md:flex">
+          <div className="hidden items-center gap-3 border-b border-border px-5 py-2.5 lg:flex">
             <ColHead className="min-w-0 flex-1">Item</ColHead>
             <ColHead className="w-24 shrink-0 text-right">Qty</ColHead>
             <ColHead className="w-32 shrink-0 text-right">Sale price</ColHead>
@@ -278,8 +278,8 @@ function SalesOrderEditor() {
             const p = problems[l.key];
             const s = l.source_item_id ? stock[l.source_item_id] : undefined;
             return (
-              <div key={l.key} className="row-line flex flex-wrap items-center gap-3 px-5 py-3 md:flex-nowrap">
-                <div className="min-w-0 flex-1 basis-full md:basis-auto">
+              <div key={l.key} className="row-line flex flex-wrap items-center gap-3 px-5 py-3 lg:flex-nowrap">
+                <div className="min-w-0 flex-1 basis-full lg:basis-auto">
                   {editable && !l.source_item_id
                     ? <Input value={l.description} onChange={(e) => setLine(l.key, { description: e.target.value })} placeholder="Description" />
                     : <p className="truncate text-sm font-medium">{l.description}</p>}

@@ -129,10 +129,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setOrgId(data.org_id || null);
       setUserFacilityId(data.facility_id || null);
       fetchMemberships(supabaseUser.id);
-      /* The database decides (caller_can_sales): admin, ticked by the owner,
-         switched on. Before that function exists it errors, and the answer
-         stays no. */
-      supabase.rpc("caller_can_sales").then(({ data, error }) => setCanSales(!error && data === true));
 
       if (data.org_id) {
         try {
@@ -263,6 +259,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     await fetchUserProfile(user);
   };
+
+  /* The database decides (caller_can_sales): admin, ticked by the owner,
+     switched on. Asked once per person and company; sign-in loads the profile
+     twice, and an early "no" arriving last used to hide Sales until the next
+     page. A late answer for an earlier person or company is ignored. */
+  useEffect(() => {
+    if (!user?.id || !orgId) return;
+    let stale = false;
+    supabase.rpc("caller_can_sales").then(({ data, error }) => {
+      if (!stale) setCanSales(!error && data === true);
+    });
+    return () => { stale = true; };
+  }, [user?.id, orgId]);
 
   const switchOrganization = async (nextOrgId: string) => {
     if (!user || !nextOrgId || nextOrgId === orgId) return;
