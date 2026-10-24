@@ -133,14 +133,12 @@ export default function UsersPage() {
   const toggleDeleteAccess = async (u: UserDoc) => {
     const next = !deleteAccessMap[u.id];
     setDeleteAccessMap((m) => ({ ...m, [u.id]: next }));
-    const { error } = await supabase
-      .from("organization_memberships")
-      .update({ can_delete: next })
-      .eq("org_id", orgId)
-      .eq("user_id", u.id);
+    /* Through org_set_delete_access: a plain update matched no row for
+       anyone but the owner, so it changed nothing and said nothing. */
+    const { error } = await supabase.rpc("org_set_delete_access", { p_org_id: orgId, p_user_id: u.id, p_on: next });
     if (error) {
       setDeleteAccessMap((m) => ({ ...m, [u.id]: !next }));
-      toast("Failed to update delete access", "error");
+      toast(`Delete access not changed: ${error.message}`, "error");
     } else {
       toast(next ? "Delete access granted" : "Delete access revoked", "success");
     }
