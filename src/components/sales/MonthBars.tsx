@@ -22,12 +22,15 @@ const monthLabel = (ym: string, long = false) => {
   return new Date(y, m - 1, 1).toLocaleDateString("en-US", long ? { month: "long", year: "numeric" } : { month: "short" });
 };
 
-/* A round top for the axis: 1, 2 or 5 times a power of ten. */
-function niceMax(v: number) {
-  if (v <= 0) return 100_00;
-  const p = Math.pow(10, Math.floor(Math.log10(v)));
-  for (const k of [1, 2, 2.5, 5, 10]) if (k * p >= v) return k * p;
-  return 10 * p;
+/* Round axis steps (1, 2 or 5 times a power of ten, whole dollars), about
+   four of them, with the top step at or above the biggest bar. */
+function axis(v: number): number[] {
+  const top = Math.max(v, 10_00);
+  const raw = top / 4;
+  const p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = Math.max(100, [1, 2, 5, 10].map((k) => k * p).find((x) => x >= raw) || 10 * p);
+  const n = Math.ceil(top / step);
+  return Array.from({ length: n + 1 }, (_, i) => i * step);
 }
 const short = (cents: number) => {
   const d = cents / 100;
@@ -38,8 +41,8 @@ export default function MonthBars({ rows }: { rows: Row[] }) {
   const [hover, setHover] = useState<number | null>(null);
   const [asTable, setAsTable] = useState(false);
   const W = 720, H = 240, L = 52, R = 8, T = 12, B = 28;
-  const max = useMemo(() => niceMax(Math.max(0, ...rows.flatMap((r) => [r.billed, r.received]))), [rows]);
-  const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => f * max);
+  const ticks = useMemo(() => axis(Math.max(0, ...rows.flatMap((r) => [r.billed, r.received]))), [rows]);
+  const max = ticks[ticks.length - 1];
   const slot = (W - L - R) / Math.max(rows.length, 1);
   const bar = Math.max(3, Math.min(18, (slot - 10) / 2));
   const y = (v: number) => T + (H - T - B) * (1 - v / max);
