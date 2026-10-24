@@ -58,8 +58,8 @@ export default function SignupPage() {
     e.preventDefault();
     setError("");
     setNotice("");
-    if (password.length < 6) {
-      setError("Passwords need at least 6 characters.");
+    if (password.length < 10) {
+      setError("Passwords need at least 10 characters.");
       return;
     }
     if (joining && !code.trim()) {
@@ -76,6 +76,13 @@ export default function SignupPage() {
       await signup(name, email, password, "", joining ? "buyer" : "admin");
 
       if (!joining) {
+        /* With email confirmation on there is no session yet; setup would
+           only bounce to sign-in. Say what to do instead. */
+        const { data: s } = await supabase.auth.getSession();
+        if (!s.session) {
+          setNotice("Account created. Confirm your email from the link we sent, then sign in to set up your organization.");
+          return;
+        }
         router.push("/setup/organization");
         return;
       }
@@ -98,7 +105,7 @@ export default function SignupPage() {
       if (/already/i.test(msg)) {
         setError("There is already an account on this email. Try signing in.");
       } else if (/weak|password/i.test(msg)) {
-        setError("That password is too easy to guess. Use at least 6 characters.");
+        setError("That password is too easy to guess. Use at least 10 characters.");
       } else if (/code not found|not found/i.test(msg)) {
         setError("No organization uses that code. Check it with whoever sent it.");
       } else if (msg) {
@@ -260,8 +267,8 @@ export default function SignupPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={6}
-                  placeholder="At least 6 characters"
+                  minLength={10}
+                  placeholder="At least 10 characters"
                   className={`${FIELD} pr-10`}
                 />
                 <button

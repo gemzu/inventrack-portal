@@ -228,8 +228,8 @@ function ResetPageContent() {
     const next = password.trim();
     const confirmNext = confirm.trim();
 
-    if (next.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (next.length < 10) {
+      setError("Password must be at least 10 characters.");
       return;
     }
     if (next !== confirmNext) {
@@ -392,7 +392,7 @@ function ResetPageContent() {
                         setPassword(e.target.value);
                         setError("");
                       }}
-                      placeholder="At least 6 characters"
+                      placeholder="At least 10 characters"
                       className={`${inputClass} pr-10`}
                     />
                     <button

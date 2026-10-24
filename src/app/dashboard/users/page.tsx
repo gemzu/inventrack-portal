@@ -415,7 +415,7 @@ They can then delete the company, decide who may delete records, replace the adm
               <Button
                 disabled={creating}
                 onClick={async () => {
-                  if (!newUser.name || !newUser.email || newUser.password.length < 6) {
+                  if (!newUser.name || !newUser.email || newUser.password.length < 10) {
                     toast("Name, email, and password (min 6) are required", "error");
                     return;
                   }
