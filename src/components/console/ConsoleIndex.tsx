@@ -30,16 +30,18 @@ export default function ConsoleIndex({
   onClose,
   role,
   permissions,
+  canSales = false,
   orgId,
 }: {
   open: boolean;
   onClose: () => void;
   role: string | null;
   permissions: string | null;
+  canSales?: boolean;
   orgId: string | null;
 }) {
   const router = useRouter();
-  const dests = useMemo(() => flatten(visibleSections(role, permissions)), [role, permissions]);
+  const dests = useMemo(() => flatten(visibleSections(role, permissions, canSales)), [role, permissions, canSales]);
 
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<Hit[]>([]);

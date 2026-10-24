@@ -15,6 +15,7 @@ import {
   Activity, Ban, BookOpen, Boxes, Building2, ClipboardCheck, ClipboardList,
   FileBarChart, FileText, LayoutDashboard, MessageCircle, Package, Bell,
   Settings, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, TrendingUp, Users,
+  Receipt, Contact, Landmark,
 } from "lucide-react";
 
 export type Dest = {
@@ -26,6 +27,8 @@ export type Dest = {
   admin?: boolean;
   /** Superadmins only. */
   platform?: boolean;
+  /** Admins the owner gave Sales and invoices (the database checks the same). */
+  sales?: boolean;
 };
 
 export type Section = { label: string; items: Dest[] };
@@ -48,6 +51,15 @@ export const SECTIONS: Section[] = [
       { href: "/dashboard/purchase-orders", label: "Purchase orders", meta: "Coming in", icon: ClipboardList, admin: true },
       { href: "/dashboard/approvals", label: "Approvals", meta: "Waiting on you", icon: ClipboardCheck, admin: true },
       { href: "/dashboard/invoices", label: "Invoices", meta: "Billed and owed", icon: FileText, admin: true },
+    ],
+  },
+  {
+    label: "Sales",
+    items: [
+      { href: "/dashboard/orders/sales", label: "Sales orders", meta: "Stock sold to customers", icon: ShoppingCart, sales: true },
+      { href: "/dashboard/invoices/sales", label: "Sales invoices", meta: "Billed, paid, owed", icon: Receipt, sales: true },
+      { href: "/dashboard/sales/customers", label: "Customers", meta: "Who you bill", icon: Contact, sales: true },
+      { href: "/dashboard/sales/companies", label: "Billing companies", meta: "Who sends the invoice", icon: Landmark, sales: true },
     ],
   },
   {
@@ -82,13 +94,14 @@ export const SECTIONS: Section[] = [
 ];
 
 /** The rail and the index both need the list already filtered for this user. */
-export function visibleSections(role: string | null, permissions: string | null): Section[] {
+export function visibleSections(role: string | null, permissions: string | null, canSales = false): Section[] {
   const isAdmin = role === "admin";
   const isPlatform = permissions === "superadmin";
   return SECTIONS.map((s) => ({
     label: s.label,
     items: s.items.filter((i) => {
       if (i.platform) return isPlatform;
+      if (i.sales) return isAdmin && canSales;
       if (i.admin) return isAdmin;
       return true;
     }),

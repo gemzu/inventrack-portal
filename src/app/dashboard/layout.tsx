@@ -33,7 +33,7 @@ import { activeHref, flatten, visibleSections } from "@/components/console/nav";
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const {
     user, userName, userRole, userActive, userPermissions, orgId, orgData, loading, logout, mfaPending,
-    memberships, switchOrganization,
+    memberships, switchOrganization, canSales,
   } = useAuth();
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
@@ -46,8 +46,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [notifPreview, setNotifPreview] = useState<Array<Record<string, unknown>>>([]);
 
   const sections = useMemo(
-    () => visibleSections(userRole, userPermissions),
-    [userRole, userPermissions]
+    () => visibleSections(userRole, userPermissions, canSales),
+    [userRole, userPermissions, canSales]
   );
   const dests = useMemo(() => flatten(sections), [sections]);
   const here = useMemo(() => {
@@ -267,6 +267,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         onClose={closeIndex}
         role={userRole}
         permissions={userPermissions}
+        canSales={canSales}
         orgId={orgId}
       />
       </div>

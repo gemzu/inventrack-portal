@@ -14,6 +14,28 @@ export interface BillingCompany {
 export interface Customer {
   id: string; name: string; contact_name?: string | null; email?: string | null; phone?: string | null;
   billing_address?: string | null; terms: string; w9_url?: string | null; archived: boolean;
+  w9_received_at?: string | null; notes?: string | null; created_at?: string;
+}
+
+/** What a customer has been billed, has paid and still owes (void invoices left out). */
+export interface Balance { billed: number; paid: number; owed: number; overdue: number; lastIssued: string | null; invoices: number }
+export function balances(invoices: Pick<SalesInvoice, "customer_id" | "status" | "total_cents" | "due_on" | "issued_on">[], today = todayIso()) {
+  const m = new Map<string, Balance>();
+  for (const i of invoices) {
+    if (i.status === "void") continue;
+    const b = m.get(i.customer_id) || { billed: 0, paid: 0, owed: 0, overdue: 0, lastIssued: null, invoices: 0 };
+    const t = Number(i.total_cents) || 0;
+    b.billed += t;
+    b.invoices += 1;
+    if (i.status === "paid") b.paid += t;
+    else {
+      b.owed += t;
+      if (i.due_on < today) b.overdue += t;
+    }
+    if (!b.lastIssued || i.issued_on > b.lastIssued) b.lastIssued = i.issued_on;
+    m.set(i.customer_id, b);
+  }
+  return m;
 }
 export interface SalesOrder {
   id: string; number: string; status: SalesStatus; billing_company_id: string; customer_id: string | null;
