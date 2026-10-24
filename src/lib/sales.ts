@@ -145,6 +145,44 @@ export function invoiceState(inv: Pick<SalesInvoice, "status" | "due_on">, today
   return { key: "due", label: left === 0 ? "Due today" : `Due in ${left} day${left === 1 ? "" : "s"}`, tone: STATUS_TONE.invoiced };
 }
 
+/* ── Money report (sales_report) ─────────────────────────────────────── */
+export interface Bucket { cents: number; count: number }
+export interface SalesReport {
+  from: string; to: string; today: string;
+  totals: { billed: number; invoices: number; received: number; owed_now: number; overdue_now: number };
+  months: { month: string; billed: number; received: number; invoices: number }[];
+  customers: { id: string; name: string; billed: number; paid: number; owed: number; overdue: number; invoices: number }[];
+  ageing: { current: Bucket; d1_30: Bucket; d31_60: Bucket; d61_90: Bucket; d90: Bucket };
+  missing_w9: { id: string; name: string; billed: number }[];
+}
+export const salesReport = (from: string, to: string, company: string | null) =>
+  rpc<SalesReport>("sales_report", { p_from: from, p_to: to, p_company: company });
+
+/* ── CSV for the accountant ────────────────────────────────────────────
+   Opens cleanly in Excel (BOM, CRLF, quotes doubled) and cannot run as a
+   formula when opened (a cell starting with = + - @ gets a leading quote). */
+function cell(v: unknown): string {
+  let s = v == null ? "" : String(v);
+  if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+(\.\d+)?$/.test(s)) s = `'${s}`;
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+export function toCsv(header: string[], rows: unknown[][]): Blob {
+  const text = [header, ...rows].map((r) => r.map(cell).join(",")).join("\r\n");
+  return new Blob(["﻿" + text + "\r\n"], { type: "text/csv;charset=utf-8" });
+}
+export function saveFile(blob: Blob, name: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+/** 12345 cents -> "123.45" (no symbol or commas: the accountant's sheet sums it). */
+export const centsPlain = (c: number | null | undefined) => (Number(c || 0) / 100).toFixed(2);
+
 export const createInvoice = (orderId: string, issuedOn: string) =>
   rpc<string>("sales_invoice_create", { p_order: orderId, p_issued_on: issuedOn });
 export const markInvoicePaid = (id: string, paidOn: string, method: PayMethod, reference: string) =>

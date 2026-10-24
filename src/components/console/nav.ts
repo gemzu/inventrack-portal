@@ -60,6 +60,7 @@ export const SECTIONS: Section[] = [
       { href: "/dashboard/invoices/sales", label: "Sales invoices", meta: "Billed, paid, owed", icon: Receipt, sales: true },
       { href: "/dashboard/sales/customers", label: "Customers", meta: "Who you bill", icon: Contact, sales: true },
       { href: "/dashboard/sales/companies", label: "Billing companies", meta: "Who sends the invoice", icon: Landmark, sales: true },
+      { href: "/dashboard/sales/reports", label: "Money reports", meta: "Billed, received, owed; CSV", icon: FileBarChart, sales: true },
     ],
   },
   {
