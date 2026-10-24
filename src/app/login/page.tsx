@@ -3,6 +3,7 @@
 import Mark from "@/components/Mark";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { setKeepSignedIn } from "@/lib/rememberMe";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
@@ -28,6 +29,7 @@ export default function LoginPage() {
   const [notice, setNotice] = useState<{ text: string; app?: boolean } | null>(null);
   const [unconfirmed, setUnconfirmed] = useState(false);
   const [resent, setResent] = useState(false);
+  const [keep, setKeep] = useState(true);
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
@@ -85,6 +87,7 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
+      setKeepSignedIn(keep);
       await login(email, password);
       if (await codeOwedNow()) {
         setAskedForCode(true);
@@ -302,7 +305,16 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between gap-3">
+              <label className="flex cursor-pointer select-none items-center gap-2 text-xs text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={keep}
+                  onChange={(e) => setKeep(e.target.checked)}
+                  className="h-3.5 w-3.5 cursor-pointer accent-[var(--brand-2)]"
+                />
+                Keep me signed in
+              </label>
               <button
                 type="button"
                 onClick={handleReset}

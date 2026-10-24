@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { codeOwed, verifyAuthenticatorCode } from "@/lib/mfa";
 import { ORG_COLUMNS } from "@/lib/orgColumns";
 import type { User } from "@supabase/supabase-js";
+import { forgetEphemeral, shouldEndOnOpen } from "@/lib/rememberMe";
 
 interface Facility {
   id: string;
@@ -180,8 +181,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Get initial session. A sign-in that asked not to be kept ends here once
+    // the browser has been closed (this browser only).
+    const opening = shouldEndOnOpen()
+      ? supabase.auth.signOut({ scope: "local" }).then(() => forgetEphemeral(), () => forgetEphemeral())
+      : Promise.resolve();
+    opening.then(() => supabase.auth.getSession()).then(({ data: { session } }) => {
       const currentUser = session?.user ?? null;
       setMfaPending(codeOwed(session));
       setUser(currentUser);
@@ -246,8 +251,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMfaPending(codeOwed(data.session));
   };
 
+  /* This browser only. The default ends the account's sessions on every
+     device, so signing out of the website used to sign the phone out too. */
   const logout = async () => {
-    await supabase.auth.signOut();
+    forgetEphemeral();
+    await supabase.auth.signOut({ scope: "local" });
   };
 
   const resetPassword = async (email: string) => {
