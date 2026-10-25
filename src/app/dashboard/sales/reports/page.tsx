@@ -53,7 +53,13 @@ export default function SalesReportsPage() {
 }
 
 function Reports() {
-  const { orgId } = useAuth();
+  const { orgId, switchOrganization } = useAuth();
+  const [opening, setOpening] = useState<string | null>(null);
+  const openCompany = async (id: string) => {
+    setOpening(id);
+    try { await switchOrganization(id, "/dashboard/sales/reports"); }
+    catch (e) { toast(`Not switched: ${why(e)}`, "error"); setOpening(null); }
+  };
   const { toast } = useToast();
   const [preset, setPreset] = useState<Preset>("12m");
   const [[from, to], setRange] = useState<[string, string]>(rangeOf("12m"));
@@ -241,7 +247,7 @@ function Reports() {
 
             <Panel className="p-5">
               <p className="font-display text-base font-bold">Each company</p>
-              <p className="mb-3 text-[12px] text-muted-foreground">Only companies where Sales and invoices is switched on for you. Switch company in the sidebar to open one.</p>
+              <p className="mb-3 text-[12px] text-muted-foreground">Only companies where Sales and invoices is switched on for you. Click a company to open its own report.</p>
               <div className="overflow-x-auto">
                 <table className="w-full text-[13px]">
                   <thead><tr className="border-b border-border text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -254,7 +260,18 @@ function Reports() {
                   <tbody>
                     {all.companies.map((c) => (
                       <tr key={c.id} className="border-b border-border/60">
-                        <td className="py-2 pr-3">{c.name}{c.id === orgId ? <span className="ml-1.5 text-[11px] text-muted-foreground">current</span> : null}
+                        <td className="py-2 pr-3">
+                          {c.id === orgId ? (
+                            <button onClick={() => setScope("one")} className="hover:underline">{c.name}</button>
+                          ) : (
+                            <button onClick={() => openCompany(c.id)} disabled={!!opening} title={`Switch to ${c.name} and open its report`}
+                              className="inline-flex items-center gap-1 hover:underline disabled:opacity-60">
+                              {opening === c.id ? <Loader2 className="h-3 w-3 animate-spin" /> : null}{c.name}
+                            </button>
+                          )}
+                          {all.companies.filter((o) => o.name === c.name).length > 1
+                            ? <span className="mono ml-1.5 text-[11px] text-muted-foreground" title="Same name as another company">#{c.id.slice(0, 4)}</span> : null}
+                          {c.id === orgId ? <span className="ml-1.5 text-[11px] text-muted-foreground">current</span> : null}
                           <span className="ml-1.5 text-[11px] text-muted-foreground">{c.invoices}</span></td>
                         <td className="mono py-2 text-right tabular-nums">{fmtMoney(c.billed)}</td>
                         <td className="mono py-2 text-right tabular-nums">{fmtMoney(c.received)}</td>

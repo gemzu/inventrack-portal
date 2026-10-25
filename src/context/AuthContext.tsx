@@ -61,7 +61,7 @@ interface AuthContextType {
   memberships: Membership[];
   /** Make another of them the active company - the same switch the phone
       app makes, so both open in the company last chosen. */
-  switchOrganization: (orgId: string) => Promise<void>;
+  switchOrganization: (orgId: string, landOn?: string) => Promise<void>;
   /** Has Sales and invoices ticked (owner's choice, checked by the database). */
   canSales: boolean;
 }
@@ -283,7 +283,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { stale = true; };
   }, [user?.id, orgId]);
 
-  const switchOrganization = async (nextOrgId: string) => {
+  const switchOrganization = async (nextOrgId: string, landOn = "/dashboard") => {
     if (!user || !nextOrgId || nextOrgId === orgId) return;
     const { data, error } = await supabase.functions.invoke("switch-active-organization", {
       body: { orgId: nextOrgId },
@@ -299,7 +299,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (data?.error) throw new Error(data.error);
     /* Every page holds the old company's rows in its own state; start clean. */
-    window.location.assign("/dashboard");
+    window.location.assign(landOn.startsWith("/dashboard") ? landOn : "/dashboard");
   };
 
   return (
