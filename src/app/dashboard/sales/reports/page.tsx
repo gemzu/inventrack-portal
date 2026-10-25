@@ -19,8 +19,8 @@ import { Panel, Figure, CrateSkeleton } from "@/components/console/surfaces";
 import { Action, Chip, Field, Input, Select } from "@/components/console/controls";
 import MonthBars from "@/components/sales/MonthBars";
 import {
-  centsPlain, fmtDate, fmtMoney, PAY_METHOD_LABEL, salesReport, saveFile, todayIso, toCsv, why,
-  type BillingCompany, type SalesInvoice, type SalesInvoiceLine, type SalesReport,
+  centsPlain, fmtDate, fmtMoney, PAY_METHOD_LABEL, salesReport, salesReportAll, saveFile, todayIso, toCsv, why,
+  type BillingCompany, type SalesInvoice, type SalesInvoiceLine, type SalesReport, type SalesReportAll,
 } from "@/lib/sales";
 
 type Preset = "month" | "3m" | "year" | "12m" | "custom";
@@ -64,6 +64,10 @@ function Reports() {
   const [error, setError] = useState<string | null>(null);
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({ key: "owed", desc: true });
   const [exporting, setExporting] = useState<string | null>(null);
+  /* This company is the main view; "All my companies" is there for someone
+     who runs several and wants each side by side plus the total. */
+  const [scope, setScope] = useState<"one" | "all">("one");
+  const [all, setAll] = useState<SalesReportAll | null>(null);
 
   useEffect(() => {
     if (!orgId) return;
@@ -81,6 +85,23 @@ function Reports() {
   }, [from, to, company]);
 
   useEffect(() => { run(); }, [run]);
+
+  // Also tells us whether the switch is worth showing (more than one company).
+  const runAll = useCallback(async () => {
+    if (!from || !to || to < from) return;
+    try { setAll(await salesReportAll(from, to)); } catch { setAll(null); }
+  }, [from, to, orgId]); // eslint-disable-line react-hooks/exhaustive-deps -- reload when the company changes
+  useEffect(() => { runAll(); }, [runAll]);
+  const multi = (all?.companies.length || 0) > 1;
+  const showAll = scope === "all" && multi && all;
+
+  const exportCompanies = () => {
+    if (!all) return;
+    saveFile(toCsv(["Company", "Invoices", "Billed", "Received", "Owed now", "Overdue now"], [
+      ...all.companies.map((c) => [c.name, c.invoices, centsPlain(c.billed), centsPlain(c.received), centsPlain(c.owed_now), centsPlain(c.overdue_now)]),
+      ["Total", all.totals.invoices, centsPlain(all.totals.billed), centsPlain(all.totals.received), centsPlain(all.totals.owed_now), centsPlain(all.totals.overdue_now)],
+    ]), `companies_${from}_to_${to}.csv`);
+  };
 
   const pick = (p: Preset) => {
     setPreset(p);
@@ -165,7 +186,9 @@ function Reports() {
       title="Money reports"
       subtitle="What was billed, what came in, and who still owes. Sale prices only."
       actions={
-        <div className="flex flex-wrap gap-2">
+        showAll ? (
+          <Action onClick={exportCompanies}><Download className="h-3.5 w-3.5" /> Companies CSV</Action>
+        ) : <div className="flex flex-wrap gap-2">
           <Action onClick={exportInvoices} disabled={!!exporting}>
             {exporting === "inv" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />} Invoices CSV
           </Action>
@@ -176,6 +199,13 @@ function Reports() {
       }
     >
       <div className="space-y-8">
+        {multi && (
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Which companies">
+            <Chip on={scope === "one"} onClick={() => setScope("one")}>This company</Chip>
+            <Chip on={scope === "all"} onClick={() => setScope("all")}>All my companies · {all!.companies.length}</Chip>
+          </div>
+        )}
+
         {/* Filters, one row */}
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-wrap gap-2">
@@ -189,18 +219,67 @@ function Reports() {
               <Field label="To"><Input type="date" value={to} min={from} max={todayIso()} onChange={(e) => e.target.value && setRange([from, e.target.value])} /></Field>
             </div>
           )}
-          {companies.length > 1 && (
+          {!showAll && companies.length > 1 && (
             <Select value={company} onChange={(e) => setCompany(e.target.value)} aria-label="Billing company" className="w-auto">
               <option value="">All billing companies</option>
               {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </Select>
           )}
-          <p className="ml-auto text-[12px] text-muted-foreground">{fmtDate(from)} – {fmtDate(to)}{companyName ? ` · ${companyName}` : ""}</p>
+          <p className="ml-auto text-[12px] text-muted-foreground">{fmtDate(from)} – {fmtDate(to)}{showAll ? " · all your companies" : companyName ? ` · ${companyName}` : ""}</p>
         </div>
 
-        {error ? <p className="text-sm text-destructive">Report not loaded: {error}</p> : null}
+        {error && !showAll ? <p className="text-sm text-destructive">Report not loaded: {error}</p> : null}
 
-        {!rep && loading ? (
+        {showAll ? (
+          <div className="space-y-8">
+            <div className="reveal flex flex-wrap items-baseline gap-x-10 gap-y-4">
+              <Figure label={`Billed · ${all.totals.invoices} invoice${all.totals.invoices === 1 ? "" : "s"}`} value={fmtMoney(all.totals.billed)} />
+              <Figure label="Received" value={fmtMoney(all.totals.received)} />
+              <Figure label="Owed now" value={fmtMoney(all.totals.owed_now)} />
+              <Figure label="Overdue now" value={fmtMoney(all.totals.overdue_now)} tone={all.totals.overdue_now ? "destructive" : undefined} />
+            </div>
+
+            <Panel className="p-5">
+              <p className="font-display text-base font-bold">Each company</p>
+              <p className="mb-3 text-[12px] text-muted-foreground">Only companies where Sales and invoices is switched on for you. Switch company in the sidebar to open one.</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-[13px]">
+                  <thead><tr className="border-b border-border text-[11px] uppercase tracking-wider text-muted-foreground">
+                    <th scope="col" className="py-2 text-left font-medium">Company</th>
+                    <th scope="col" className="py-2 text-right font-medium">Billed</th>
+                    <th scope="col" className="py-2 text-right font-medium">Received</th>
+                    <th scope="col" className="py-2 text-right font-medium">Owed now</th>
+                    <th scope="col" className="py-2 text-right font-medium">Overdue now</th>
+                  </tr></thead>
+                  <tbody>
+                    {all.companies.map((c) => (
+                      <tr key={c.id} className="border-b border-border/60">
+                        <td className="py-2 pr-3">{c.name}{c.id === orgId ? <span className="ml-1.5 text-[11px] text-muted-foreground">current</span> : null}
+                          <span className="ml-1.5 text-[11px] text-muted-foreground">{c.invoices}</span></td>
+                        <td className="mono py-2 text-right tabular-nums">{fmtMoney(c.billed)}</td>
+                        <td className="mono py-2 text-right tabular-nums">{fmtMoney(c.received)}</td>
+                        <td className="mono py-2 text-right tabular-nums">{fmtMoney(c.owed_now)}</td>
+                        <td className={`mono py-2 text-right tabular-nums ${Number(c.overdue_now) ? "font-semibold text-destructive" : ""}`}>{fmtMoney(c.overdue_now)}</td>
+                      </tr>
+                    ))}
+                    <tr className="font-semibold">
+                      <td className="py-2 pr-3">Total</td>
+                      <td className="mono py-2 text-right tabular-nums">{fmtMoney(all.totals.billed)}</td>
+                      <td className="mono py-2 text-right tabular-nums">{fmtMoney(all.totals.received)}</td>
+                      <td className="mono py-2 text-right tabular-nums">{fmtMoney(all.totals.owed_now)}</td>
+                      <td className="mono py-2 text-right tabular-nums">{fmtMoney(all.totals.overdue_now)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </Panel>
+
+            <Panel className="p-5">
+              <p className="font-display mb-3 text-base font-bold">By month, all companies</p>
+              <MonthBars rows={all.months.map((m) => ({ ...m, billed: Number(m.billed), received: Number(m.received), invoices: Number(m.invoices) }))} />
+            </Panel>
+          </div>
+        ) : !rep && loading ? (
           <div className="space-y-3"><CrateSkeleton className="h-20 w-full" /><CrateSkeleton className="h-64 w-full" delay={0.06} /></div>
         ) : rep ? (
           <div className={`space-y-8 transition-opacity ${loading ? "opacity-60" : ""}`}>

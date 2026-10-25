@@ -169,6 +169,17 @@ export interface SalesReport {
 export const salesReport = (from: string, to: string, company: string | null) =>
   rpc<SalesReport>("sales_report", { p_from: from, p_to: to, p_company: company });
 
+/* Every company the person has Sales and invoices ticked in (sales_report_all). */
+export type CompanyTotals = SalesReport["totals"] & { id: string; name: string };
+export interface SalesReportAll {
+  from: string; to: string; today: string;
+  companies: CompanyTotals[];
+  totals: SalesReport["totals"];
+  months: SalesReport["months"];
+}
+export const salesReportAll = (from: string, to: string) =>
+  rpc<SalesReportAll>("sales_report_all", { p_from: from, p_to: to });
+
 /* ── CSV for the accountant ────────────────────────────────────────────
    Opens cleanly in Excel (BOM, CRLF, quotes doubled) and cannot run as a
    formula when opened (a cell starting with = + - @ gets a leading quote). */
