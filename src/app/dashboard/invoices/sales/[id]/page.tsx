@@ -13,13 +13,13 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowUpRight, Download, Loader2, Printer } from "lucide-react";
+import { ArrowUpRight, Download, Loader2, Mail, Printer } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
 import SalesGuard from "@/components/SalesGuard";
 import PageShell from "@/components/page-shell";
 import { Panel, CrateSkeleton } from "@/components/console/surfaces";
-import { Action, Field, Input, Modal, Select } from "@/components/console/controls";
+import { Action, Field, Input, Modal, Select, Textarea } from "@/components/console/controls";
 import InvoiceSheet from "@/components/sales/InvoiceSheet";
 import {
   fmtDate, fmtMoney, invoiceState, markInvoicePaid, markInvoiceUnpaid, PAY_METHOD_LABEL, todayIso, voidInvoice, why,
@@ -46,13 +46,19 @@ function InvoiceView() {
   const [voidOpen, setVoidOpen] = useState(false);
   const [pay, setPay] = useState<{ on: string; method: PayMethod | ""; ref: string }>({ on: todayIso(), method: "", ref: "" });
   const [voidReason, setVoidReason] = useState("");
+  const [mailOpen, setMailOpen] = useState(false);
+  const [note, setNote] = useState("");
+  const [copyMe, setCopyMe] = useState(true);
+  const [sent, setSent] = useState<{ to_email: string; created_at: string }[]>([]);
 
   const load = useCallback(async () => {
     if (!id) return;
-    const [i, l] = await Promise.all([
+    const [i, l, m] = await Promise.all([
       supabase.from("sales_invoices").select("*").eq("id", id).maybeSingle(),
       supabase.from("sales_invoice_lines").select("*").eq("invoice_id", id).order("sort"),
+      supabase.from("sales_invoice_emails").select("to_email, created_at").eq("invoice_id", id).order("created_at", { ascending: false }),
     ]);
+    setSent((m.data || []) as { to_email: string; created_at: string }[]);
     const row = i.data as SalesInvoice | null;
     setInv(row);
     setLines(((l.data || []) as SalesInvoiceLine[]).map((x) => ({
@@ -88,6 +94,35 @@ function InvoiceView() {
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch (e) {
       toast(`PDF not made: ${why(e)}`, "error");
+    } finally { setBusy(null); }
+  };
+
+  /* Emailed by the server (send-invoice-email): the PDF made here goes along
+     as the attachment, and the server sends it only to the billing email the
+     invoice carries. */
+  const sendEmail = async () => {
+    if (!inv) return;
+    setBusy("mail");
+    try {
+      const blob = await makePdf();
+      if (!blob) return;
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      let bin = "";
+      for (let k = 0; k < bytes.length; k += 0x8000) bin += String.fromCharCode(...bytes.subarray(k, k + 0x8000));
+      const { data, error } = await supabase.functions.invoke("send-invoice-email", {
+        body: { invoiceId: inv.id, note: note.trim(), copyMe, pdfBase64: btoa(bin) },
+      });
+      if (error) {
+        let msg = error.message || "The email did not send";
+        try { const b = await (error as { context?: Response }).context?.json(); if (b?.error) msg = b.error; } catch { /* keep generic */ }
+        throw new Error(msg);
+      }
+      toast(`Emailed to ${data?.to || inv.bill_to_email}`, "success");
+      setMailOpen(false);
+      setNote("");
+      await load();
+    } catch (e) {
+      toast(`Not sent: ${why(e)}`, "error");
     } finally { setBusy(null); }
   };
 
@@ -176,6 +211,11 @@ function InvoiceView() {
           <Action onClick={openToPrint} disabled={!!busy} aria-label="Open the PDF to print">
             {busy === "print" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Printer className="h-3.5 w-3.5" />} Print
           </Action>
+          {inv.status !== "void" && (
+            <Action onClick={() => setMailOpen(true)} disabled={!!busy} aria-label="Email the invoice to the customer">
+              <Mail className="h-3.5 w-3.5" /> Email
+            </Action>
+          )}
           <Action solid={!issued} onClick={download} disabled={!!busy}>
             {busy === "pdf" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />} Download PDF
           </Action>
@@ -214,6 +254,20 @@ function InvoiceView() {
             </p>
           )}
 
+          {sent.length > 0 && (
+            <Panel className="p-5 text-[13px]">
+              <p className="mb-2 text-[12px] text-muted-foreground">Emailed</p>
+              <ul className="space-y-1.5">
+                {sent.slice(0, 5).map((m, k) => (
+                  <li key={k} className="flex justify-between gap-3">
+                    <span className="min-w-0 truncate">{m.to_email}</span>
+                    <span className="shrink-0 text-muted-foreground">{new Date(m.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          )}
+
           <Panel className="p-5 text-[13px]">
             <dl className="space-y-2">
               <Row k="Customer" v={inv.bill_to_name} />
@@ -244,6 +298,38 @@ function InvoiceView() {
           )}
         </div>
       </div>
+
+      <Modal open={mailOpen} onClose={() => setMailOpen(false)} title={`Email ${inv.number}`}
+        subtitle={inv.bill_to_email ? `To ${inv.bill_to_email}, with the PDF attached` : "No billing email on this invoice"}>
+        {inv.bill_to_email ? (
+          <div className="space-y-4">
+            <ul className="list-disc space-y-1 pl-5 text-[13px] text-muted-foreground">
+              <li>Sent from {inv.from_name}; replies go to {inv.from_email || "support@invems.com"}.</li>
+              <li>It always goes to the billing email on the invoice. To use another address, change the customer and issue the invoice again, or use Download PDF.</li>
+              {sent.length > 0 ? <li>Already emailed {sent.length} time{sent.length === 1 ? "" : "s"}; the last went to {sent[0].to_email}.</li> : null}
+            </ul>
+            <Field label="A line for the customer (optional)">
+              <Textarea rows={3} maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Thanks for the order. Pickup is ready Friday." />
+            </Field>
+            <label className="flex cursor-pointer select-none items-center gap-2 text-[13px]">
+              <input type="checkbox" checked={copyMe} onChange={(e) => setCopyMe(e.target.checked)} className="h-3.5 w-3.5 cursor-pointer accent-[var(--brand-2)]" />
+              Send me a copy
+            </label>
+          </div>
+        ) : (
+          <p className="text-[13px] leading-relaxed text-muted-foreground">
+            This customer had no billing email when the invoice was issued. Add one on the customer page, void this invoice and issue it again, or send the PDF yourself with Download PDF.
+          </p>
+        )}
+        <div className="mt-5 flex justify-end gap-2">
+          <Action onClick={() => setMailOpen(false)}>Cancel</Action>
+          {inv.bill_to_email ? (
+            <Action solid onClick={sendEmail} disabled={busy === "mail"}>
+              {busy === "mail" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5" />} Send email
+            </Action>
+          ) : null}
+        </div>
+      </Modal>
 
       <Modal open={payOpen} onClose={() => setPayOpen(false)} title={`Mark ${inv.number} paid`} subtitle={`${fmtMoney(inv.total_cents)} from ${inv.bill_to_name}`}>
         <div className="space-y-3">
