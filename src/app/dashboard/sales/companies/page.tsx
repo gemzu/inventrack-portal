@@ -21,10 +21,10 @@ import { Action, Chip, Field, Input, Textarea } from "@/components/console/contr
 import { CompanyModal } from "@/components/sales/SalesModals";
 import { dueFromTerms, todayIso, why, type BillingCompany, type SalesInvoice, type SalesInvoiceLine } from "@/lib/sales";
 
-type Form = { name: string; address: string; email: string; phone: string; invoice_prefix: string; logo_url: string; payment_details: string };
+type Form = { name: string; address: string; email: string; phone: string; invoice_prefix: string; logo_url: string; payment_details: string; pay_link: string };
 const toForm = (c: BillingCompany): Form => ({
   name: c.name || "", address: c.address || "", email: c.email || "", phone: c.phone || "",
-  invoice_prefix: c.invoice_prefix || "INV", logo_url: c.logo_url || "", payment_details: c.payment_details || "",
+  invoice_prefix: c.invoice_prefix || "INV", logo_url: c.logo_url || "", payment_details: c.payment_details || "", pay_link: c.pay_link || "",
 });
 
 export default function CompaniesPage() {
@@ -76,6 +76,7 @@ function Companies() {
   const prefixLocked = !!current && (issued[current.id] || 0) > 0;
   const prefixBad = !/^[A-Z0-9]{1,8}$/.test(prefix);
   const logoBad = !!f?.logo_url.trim() && !/^https:\/\//.test(f.logo_url.trim());
+  const payBad = !!f?.pay_link.trim() && !/^https:\/\/\S+$/.test(f.pay_link.trim());
 
   const choose = (r: BillingCompany) => {
     if (dirty && !confirm("Leave without saving the changes to this company?")) return;
@@ -85,12 +86,12 @@ function Companies() {
   };
 
   const save = async () => {
-    if (!current || !f || !f.name.trim() || prefixBad || logoBad) return;
+    if (!current || !f || !f.name.trim() || prefixBad || logoBad || payBad) return;
     setSaving(true);
     const { error } = await supabase.from("billing_companies").update({
       name: f.name.trim(), address: f.address.trim() || null, email: f.email.trim() || null, phone: f.phone.trim() || null,
       invoice_prefix: prefixLocked ? current.invoice_prefix : prefix, logo_url: f.logo_url.trim() || null,
-      payment_details: f.payment_details.trim() || null, updated_at: new Date().toISOString(),
+      payment_details: f.payment_details.trim() || null, pay_link: f.pay_link.trim() || null, updated_at: new Date().toISOString(),
     }).eq("id", current.id);
     setSaving(false);
     if (error) { toast(`Not saved: ${error.message}`, "error"); return; }
@@ -125,7 +126,8 @@ function Companies() {
         bill_to_name: "Sample Customer LLC", bill_to_contact: "Accounts Payable", bill_to_address: "1 Sample St\nAnytown NJ 00000", bill_to_email: "ap@example.com",
         from_name: f.name.trim() || "Your company", from_address: f.address.trim() || null, from_email: f.email.trim() || null,
         from_phone: f.phone.trim() || null, from_logo_url: logoBad ? null : f.logo_url.trim() || null,
-        payment_details: f.payment_details.trim() || null,
+        payment_details: f.payment_details.trim() || null, pay_link: payBad ? null : f.pay_link.trim() || null,
+        ship_date: today, tracking_no: "SAMPLE", job_number: "SAMPLE",
         subtotal_cents: 57000, freight_cents: 2500, total_cents: 59500,
         paid_on: null, paid_method: null, paid_reference: null, void_reason: null, created_at: today,
       };
@@ -201,11 +203,14 @@ function Companies() {
                     : <span className="text-center text-[11px] text-neutral-500">{logoOk ? "No logo" : "Could not load that image"}</span>}
                 </div>
               </div>
+              <Field label="Payment link (for the Scan to pay code)" hint={payBad ? "The link must start with https:// and have no spaces." : "Optional. Your Clover or other payment link. Unpaid invoices print a QR code that opens it. Leave empty for no code."}>
+                <Input value={f.pay_link} onChange={set("pay_link")} placeholder="https://" maxLength={500} aria-invalid={payBad} className={payBad ? "border-destructive" : ""} />
+              </Field>
               <Field label="How to pay (printed on unpaid invoices)" hint="Typed by you and stored only on this company. Shown to customers on their invoice.">
                 <Textarea rows={4} maxLength={1000} value={f.payment_details} onChange={set("payment_details")} />
               </Field>
               <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
-                <Action solid onClick={save} disabled={!dirty || saving || !f.name.trim() || (!prefixLocked && prefixBad) || logoBad}>
+                <Action solid onClick={save} disabled={!dirty || saving || !f.name.trim() || (!prefixLocked && prefixBad) || logoBad || payBad}>
                   {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null} Save changes
                 </Action>
                 <Action onClick={preview} disabled={previewing}>

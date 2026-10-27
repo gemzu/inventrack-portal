@@ -57,6 +57,7 @@ function SalesOrderEditor() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
+  const [shipSame, setShipSame] = useState(true);
   const [voidOpen, setVoidOpen] = useState(false);
   const [voidReason, setVoidReason] = useState("");
   const [addCustomer, setAddCustomer] = useState(false);
@@ -77,6 +78,7 @@ function SalesOrderEditor() {
     if (o.error || !o.data) { setLoading(false); return; }
     const ord = o.data as SalesOrder;
     setOrder(ord);
+    setShipSame(!ord.ship_to_name && !ord.ship_to_address);
     setInvoices((i.data || []) as typeof invoices);
     setFreightText(centsToInput(Number(ord.freight_cents)));
     setTaxText(ord.tax_rate != null ? String(Number(ord.tax_rate)) : "");
@@ -101,7 +103,7 @@ function SalesOrderEditor() {
   const editable = order?.status === "draft";
   const freight = toCents(freightText) ?? 0;
   const subtotal = lines.reduce((n, l) => n + l.quantity * (l.unit_price_cents ?? 0), 0);
-  const taxRate = taxText.trim() === "" ? null : Number(taxText.replace(/[^d.]/g, ""));
+  const taxRate = taxText.trim() === "" ? null : Number(taxText.replace(/[^\d.]/g, ""));
   const taxBad = taxRate != null && (!Number.isFinite(taxRate) || taxRate <= 0 || taxRate > 25 || Math.round(taxRate * 1000) !== taxRate * 1000);
   const tax = editable ? (taxBad ? 0 : taxOn(subtotal, taxRate)) : Number(order?.tax_cents || 0);
   const total = subtotal + freight + tax;
@@ -146,6 +148,8 @@ function SalesOrderEditor() {
         customer_id: order.customer_id || "", billing_company_id: order.billing_company_id,
         customer_po: order.customer_po || "", notes: order.notes || "", terms: order.terms,
         freight_cents: freight, tax_rate: taxRate == null ? "" : taxRate, tax_label: taxLabel.trim(),
+        ship_to_name: shipSame ? "" : order.ship_to_name || "", ship_to_address: shipSame ? "" : order.ship_to_address || "",
+        ship_date: order.ship_date || "", tracking_no: order.tracking_no || "", job_number: order.job_number || "",
       }, payloadLines());
       if (!quiet) toast("Draft saved", "success");
       await load();
@@ -326,6 +330,40 @@ function SalesOrderEditor() {
                 ? <Input value={order.terms} onChange={(e) => setField({ terms: e.target.value })} placeholder="Net 30" />
                 : <p className="text-sm">{order.terms}</p>}
             </Field>
+            <Field label="Ship to">
+              {editable ? (
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-[13px]">
+                    <input type="checkbox" checked={shipSame} onChange={(e) => { setShipSame(e.target.checked); setDirty(true); }} className="h-4 w-4" />
+                    Same as Bill To
+                  </label>
+                  {!shipSame ? (
+                    <>
+                      <Input value={order.ship_to_name || ""} onChange={(e) => setField({ ship_to_name: e.target.value })} placeholder="Name" maxLength={200} aria-label="Ship to name" />
+                      <textarea value={order.ship_to_address || ""} onChange={(e) => setField({ ship_to_address: e.target.value })} placeholder="Address" maxLength={500} rows={3}
+                        aria-label="Ship to address" className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm" />
+                    </>
+                  ) : null}
+                </div>
+              ) : <p className="whitespace-pre-line text-sm">{order.ship_to_name || order.ship_to_address ? [order.ship_to_name, order.ship_to_address].filter(Boolean).join("\n") : "Same as Bill To"}</p>}
+            </Field>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Field label="Ship date">
+                {editable
+                  ? <Input type="date" value={order.ship_date || ""} onChange={(e) => setField({ ship_date: e.target.value || null })} />
+                  : <p className="text-sm">{order.ship_date ? fmtDate(order.ship_date) : "—"}</p>}
+              </Field>
+              <Field label="Tracking no.">
+                {editable
+                  ? <Input value={order.tracking_no || ""} onChange={(e) => setField({ tracking_no: e.target.value })} maxLength={60} />
+                  : <p className="text-sm">{order.tracking_no || "—"}</p>}
+              </Field>
+              <Field label="Job number">
+                {editable
+                  ? <Input value={order.job_number || ""} onChange={(e) => setField({ job_number: e.target.value })} maxLength={60} />
+                  : <p className="text-sm">{order.job_number || "—"}</p>}
+              </Field>
+            </div>
           </div>
 
           {/* Lines */}
