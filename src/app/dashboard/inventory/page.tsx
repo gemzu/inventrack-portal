@@ -6,7 +6,9 @@ import PageShell from "@/components/page-shell";
 import { supabase } from "@/lib/supabase";
 import { fetchAll } from "@/lib/fetchAll";
 import { useAuth } from "@/context/AuthContext";
-import { Download, Package, Boxes, ChevronRight, Upload, Loader2, X, FileSpreadsheet, Save, Trash2 } from "lucide-react";
+import { Download, Package, Boxes, ChevronRight, Upload, Loader2, X, FileSpreadsheet, Save, Trash2, ScanText, Lock } from "lucide-react";
+import LabelReader from "@/components/inventory/LabelReader";
+import { REVIEW_LABEL, ReviewKind, readItemPhoto, reviewKinds } from "@/lib/labelRead";
 import EmptyState from "@/components/EmptyState";
 import PhotoViewer from "@/components/PhotoViewer";
 import { useToast } from "@/components/Toast";
@@ -43,6 +45,13 @@ interface Item {
   photoTypes?: Record<string, string>;
   /* Everything printed on the label, read from a photo of it. */
   labelText?: string | null;
+  /* Where the barcode came from: scanned, typed or photo. No source (every
+     line from before label reading) counts as scanned: locked. */
+  barcodeSource?: string | null;
+  /* Set by the label reader: what it flagged, when it read, the last apply. */
+  ocrFlags?: string[];
+  ocrReadAt?: string | null;
+  ocrLastApply?: { at?: string; after?: Record<string, unknown> } | null;
   createdAt: unknown;
   updatedAt: unknown;
 }
@@ -75,10 +84,21 @@ function mapItem(row: Record<string, unknown>): Item {
       : row.image_url ? [row.image_url as string] : [],
     photoTypes: (row.photo_types && typeof row.photo_types === "object" ? row.photo_types : {}) as Record<string, string>,
     labelText: (row.label_text ?? null) as string | null,
+    barcodeSource: (row.barcode_source ?? null) as string | null,
+    ocrFlags: Array.isArray(row.ocr_flags) ? (row.ocr_flags as string[]) : [],
+    ocrReadAt: (row.ocr_read_at ?? null) as string | null,
+    ocrLastApply: (row.ocr_last_apply ?? null) as Item["ocrLastApply"],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
+
+/* Everything the list needs. Not ocr_suggestion: the label reader keeps the
+   whole label and word positions there, loaded when an item is opened. */
+const ITEM_COLUMNS: string =
+  "id,org_id,model_id,barcode,display_name,brand,part_number,manufacturer,description,quantity,status,facility_id,box_id," +
+  "cost_price,selling_price,reorder_point,expiry_date,lot_number,serial_number,image_url,image_urls,photo_types,label_text," +
+  "barcode_source,ocr_flags,ocr_read_at,ocr_last_apply,created_at,updated_at";
 
 export default function InventoryPage() {
   const { orgId, facilities, user, userPermissions, orgData, canSales } = useAuth();
@@ -92,6 +112,8 @@ export default function InventoryPage() {
   const [histResults, setHistResults] = useState<Array<Record<string, unknown>>>([]);
   const [statusFilter, setStatusFilter] = useState("all");
   const [facilityFilter, setFacilityFilter] = useState("all");
+  const [reviewFilter, setReviewFilter] = useState<"all" | ReviewKind>("all");
+  const [bulkRead, setBulkRead] = useState<{ done: number; total: number; stopped?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [editItem, setEditItem] = useState<Item | null>(null);
   const [viewer, setViewer] = useState<{ photos: string[]; start: number } | null>(null);
@@ -259,8 +281,8 @@ export default function InventoryPage() {
       result.errors ? "error" : "success"
     );
     // Reload inventory
-    const data = await fetchAll(() => supabase.from("inventory").select("*").eq("org_id", orgId).order("id"));
-    const mapped = data.map(mapItem);
+    const data = await fetchAll(() => supabase.from("inventory").select(ITEM_COLUMNS).eq("org_id", orgId).order("id"));
+    const mapped = (data as unknown as Array<Record<string, unknown>>).map(mapItem);
     setItems(mapped);
     setFiltered(mapped);
   };
@@ -269,10 +291,10 @@ export default function InventoryPage() {
     if (!orgId) { setLoading(false); return; }
     const load = async () => {
       const [data, { data: bData }] = await Promise.all([
-        fetchAll(() => supabase.from("inventory").select("*").eq("org_id", orgId).order("id")),
+        fetchAll(() => supabase.from("inventory").select(ITEM_COLUMNS).eq("org_id", orgId).order("id")),
         supabase.from("boxes").select("*").eq("org_id", orgId),
       ]);
-      const mapped = data.map(mapItem);
+      const mapped = (data as unknown as Array<Record<string, unknown>>).map(mapItem);
       setItems(mapped);
       setFiltered(mapped);
       setBoxes((bData as Array<Record<string, unknown>>) || []);
@@ -299,8 +321,39 @@ export default function InventoryPage() {
     }
     if (statusFilter !== "all") result = result.filter((i) => i.status === statusFilter);
     if (facilityFilter !== "all") result = result.filter((i) => i.facilityId === facilityFilter);
+    if (reviewFilter !== "all") result = result.filter((i) => reviewKinds(i).includes(reviewFilter));
     setFiltered(result);
-  }, [search, statusFilter, facilityFilter, items]);
+  }, [search, statusFilter, facilityFilter, reviewFilter, items]);
+
+  /* How many lines need a look, by reason (the chips under the filters). */
+  const reviewCounts = useMemo(() => {
+    const c: Record<ReviewKind, number> = { no_barcode: 0, unread: 0, mismatch: 0, ambiguous: 0, unreadable: 0 };
+    for (const i of items) for (const k of reviewKinds(i)) c[k]++;
+    return c;
+  }, [items]);
+
+  /* Read every photo that has not been read, two at a time. Stops when the
+     account's reading limit for the hour or day is reached. */
+  const readAllUnread = async () => {
+    const todo = items.filter((i) => (i.imageUrls?.length || 0) > 0 && !i.ocrReadAt);
+    if (!todo.length) { toast("Every photo has been read.", "success"); return; }
+    if (!confirm(`Read the photos of ${todo.length} item(s)? Nothing on the items changes; the results wait for you to apply.`)) return;
+    let done = 0; let stopped: string | undefined; let next = 0;
+    setBulkRead({ done: 0, total: todo.length });
+    const worker = async () => {
+      while (next < todo.length && !stopped) {
+        const it = todo[next++];
+        const r = await readItemPhoto(it.id);
+        done++;
+        if (!r.ok) { if (r.limited) stopped = r.message; }
+        else if (r.skipped === undefined) setItems((prev) => prev.map((x) => (x.id === it.id ? { ...x, ocrReadAt: r.suggestion.read_at, ocrFlags: r.flags } : x)));
+        setBulkRead({ done, total: todo.length, stopped });
+      }
+    };
+    await Promise.all([worker(), worker()]);
+    toast(stopped ? `Stopped after ${done}: ${stopped}` : `Read ${done} item(s)`, stopped ? "error" : "success");
+    setTimeout(() => setBulkRead(null), 4000);
+  };
 
   // "From history": products previously entered under this search term whose
   // UPC is no longer in current inventory. Debounced query on product_catalog.
@@ -540,6 +593,10 @@ export default function InventoryPage() {
             <Action onClick={exportCsv}>
               <Download className="h-3.5 w-3.5" /> Export
             </Action>
+            <Action onClick={readAllUnread} disabled={!!bulkRead && !bulkRead.stopped && bulkRead.done < bulkRead.total}>
+              <ScanText className="h-3.5 w-3.5" />
+              {bulkRead ? `Reading ${bulkRead.done}/${bulkRead.total}` : "Read photos"}
+            </Action>
             <Action solid onClick={() => setShowImport(true)}>
               <Upload className="h-3.5 w-3.5" /> Import CSV
             </Action>
@@ -605,6 +662,17 @@ export default function InventoryPage() {
                 </>
               )}
             </div>
+            {(reviewCounts.no_barcode + reviewCounts.unread + reviewCounts.mismatch + reviewCounts.ambiguous + reviewCounts.unreadable) > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="mr-1 text-[12px] text-muted-foreground">Needs a look</span>
+                <Chip on={reviewFilter === "all"} onClick={() => setReviewFilter("all")}>All</Chip>
+                {(Object.keys(REVIEW_LABEL) as ReviewKind[]).filter((k) => reviewCounts[k] > 0).map((k) => (
+                  <Chip key={k} on={reviewFilter === k} onClick={() => setReviewFilter(reviewFilter === k ? "all" : k)}>
+                    {REVIEW_LABEL[k]} · {reviewCounts[k]}
+                  </Chip>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* ── Bulk bar ────────────────────────────────────────── */}
@@ -915,7 +983,15 @@ export default function InventoryPage() {
           open={!!editItem}
           onClose={closePanel}
           title={editItem ? itemIdentity(editItem).title : ""}
-          subtitle={editItem?.barcode || ""}
+          subtitle={editItem?.barcode ? (
+            <span className="inline-flex items-center gap-1.5">
+              {editItem.barcode}
+              <Lock className="h-3 w-3 opacity-60" aria-hidden />
+              <span className="text-[11px] opacity-70">
+                {editItem.barcodeSource === "photo" ? "from a photo" : editItem.barcodeSource === "typed" ? "typed" : "scanned"}
+              </span>
+            </span>
+          ) : ""}
           footer={
             editItem ? (
               <>
@@ -985,6 +1061,39 @@ export default function InventoryPage() {
                   </label>
                 </div>
               </Field>
+
+              <LabelReader
+                key={editItem.id}
+                item={editItem}
+                toast={toast}
+                onRead={(readAt, flags) => applyItemChange({ ocrReadAt: readAt, ocrFlags: flags })}
+                onApplied={(a) => {
+                  const patch: Partial<Item> = { ocrFlags: [], ocrLastApply: { at: new Date().toISOString(), after: a } };
+                  if ("display_name" in a) patch.displayName = (a.display_name ?? undefined) as string | undefined;
+                  if ("brand" in a) patch.brand = (a.brand ?? undefined) as string | undefined;
+                  if ("part_number" in a) patch.partNumber = (a.part_number ?? undefined) as string | undefined;
+                  if ("label_text" in a) patch.labelText = a.label_text;
+                  if ("barcode" in a) { patch.barcode = (a.barcode ?? "") as string; patch.barcodeSource = "photo"; }
+                  applyItemChange(patch);
+                  const next = { ...editItem, ...patch } as Item;
+                  const bc = (next.barcode || next.modelId || "").trim();
+                  if (orgId && bc) {
+                    supabase.rpc("catalog_remember", {
+                      p_org_id: orgId, p_barcode: bc, p_model_id: next.modelId || null, p_part_number: next.partNumber || null,
+                      p_brand: next.brand || null, p_display_name: next.displayName || null,
+                    }).then(() => {}, () => {});
+                  }
+                }}
+                onUndone={(r) => {
+                  const patch: Partial<Item> = { ocrLastApply: null };
+                  if ("display_name" in r) patch.displayName = (r.display_name ?? undefined) as string | undefined;
+                  if ("brand" in r) patch.brand = (r.brand ?? undefined) as string | undefined;
+                  if ("part_number" in r) patch.partNumber = (r.part_number ?? undefined) as string | undefined;
+                  if ("label_text" in r) patch.labelText = (r.label_text ?? null) as string | null;
+                  if ("barcode" in r) { patch.barcode = (r.barcode ?? "") as string; patch.barcodeSource = null; }
+                  applyItemChange(patch);
+                }}
+              />
 
               {/* Everything printed on the box label, read from a photo of it
                   in the app ("Read label" on the item). Found by search. */}
