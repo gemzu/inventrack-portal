@@ -9,7 +9,7 @@ export type SalesStatus = "draft" | "sent" | "invoiced" | "paid" | "void";
 
 export interface BillingCompany {
   id: string; name: string; address?: string | null; email?: string | null; phone?: string | null;
-  invoice_prefix: string; logo_url?: string | null; payment_details?: string | null; archived: boolean;
+  invoice_prefix: string; logo_url?: string | null; payment_details?: string | null; pay_link?: string | null; archived: boolean;
 }
 export interface Customer {
   id: string; name: string; contact_name?: string | null; email?: string | null; phone?: string | null;
@@ -44,6 +44,7 @@ export interface SalesOrder {
   subtotal_cents: number; total_cents: number; void_reason: string | null; created_at: string; sent_at: string | null;
   storefront_order_id?: string | null;
   tax_rate?: string | number | null; tax_label?: string | null; tax_cents?: number;
+  ship_to_name?: string | null; ship_to_address?: string | null; ship_date?: string | null; tracking_no?: string | null; job_number?: string | null;
 }
 export interface SalesLine {
   id?: string; source_item_id: string | null; description: string; part_number: string | null; brand: string | null;
@@ -109,6 +110,10 @@ export interface SalesInvoice {
   from_logo_url: string | null; payment_details: string | null;
   subtotal_cents: number; freight_cents: number; total_cents: number;
   tax_rate?: string | number | null; tax_label?: string | null; tax_cents?: number;
+  /* Shipping details and the pay link. Optional: an invoice without them prints
+     with Ship To the same as Bill To and no QR code. */
+  ship_to_name?: string | null; ship_to_address?: string | null; ship_date?: string | null;
+  tracking_no?: string | null; job_number?: string | null; pay_link?: string | null;
   paid_on: string | null; paid_method: PayMethod | null; paid_reference: string | null;
   void_reason: string | null; created_at: string;
 }
