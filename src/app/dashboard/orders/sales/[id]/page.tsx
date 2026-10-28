@@ -101,7 +101,7 @@ function SalesOrderEditor() {
   const editable = order?.status === "draft";
   const freight = toCents(freightText) ?? 0;
   const subtotal = lines.reduce((n, l) => n + l.quantity * (l.unit_price_cents ?? 0), 0);
-  const taxRate = taxText.trim() === "" ? null : Number(taxText.replace(/[^d.]/g, ""));
+  const taxRate = taxText.trim() === "" ? null : Number(taxText.replace(/[^\d.]/g, ""));
   const taxBad = taxRate != null && (!Number.isFinite(taxRate) || taxRate <= 0 || taxRate > 25 || Math.round(taxRate * 1000) !== taxRate * 1000);
   const tax = editable ? (taxBad ? 0 : taxOn(subtotal, taxRate)) : Number(order?.tax_cents || 0);
   const total = subtotal + freight + tax;
