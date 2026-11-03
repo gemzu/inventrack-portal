@@ -9,7 +9,7 @@
  * every save (sales_order_save), so what is stored never depends on this page.
  */
 
-import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { AlertTriangle, Copy, Loader2, Plus, X } from "lucide-react";
@@ -65,6 +65,17 @@ function SalesOrderEditor() {
   const [invOpen, setInvOpen] = useState(false);
   const [issuedOn, setIssuedOn] = useState(todayIso());
   const router = useRouter();
+
+  /* Fast entry: one row at the bottom, Enter adds the item and goes back to
+     the first box, and the order saves itself a moment after each item. */
+  const [quick, setQuick] = useState({ desc: "", part: "", qty: "1", price: "" });
+  const [lastAdded, setLastAdded] = useState<string | null>(null);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const descRef = useRef<HTMLInputElement>(null);
+  const changeSeq = useRef(0);
+  const autoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveRef = useRef<(quiet?: boolean) => Promise<boolean>>(async () => false);
+  const busyRef = useRef<string | null>(null);
 
   const load = useCallback(async () => {
     if (!orgId || !id) return;
@@ -124,6 +135,7 @@ function SalesOrderEditor() {
     return out;
   }, [lines, stock, editable]);
   const unpriced = lines.filter((l) => l.unit_price_cents == null).length;
+  const unitsTotal = lines.reduce((n, l) => n + l.quantity, 0);
   const blocked = Object.keys(problems).length > 0 || !order?.customer_id || lines.length === 0;
 
   /* Pricing a long order is: type, Enter, type, Enter. Tab used to land on
@@ -178,6 +190,7 @@ function SalesOrderEditor() {
   const save = async (quiet = false) => {
     if (!order) return false;
     setBusy("save");
+    const seq = changeSeq.current;
     try {
       await saveSalesOrder(order.id, {
         customer_id: order.customer_id || "", billing_company_id: order.billing_company_id,
@@ -187,6 +200,10 @@ function SalesOrderEditor() {
         ship_date: order.ship_date || "", tracking_no: order.tracking_no || "", job_number: order.job_number || "",
       }, payloadLines());
       if (!quiet) toast("Draft saved", "success");
+      setSavedAt(new Date());
+      /* More was typed while this was saving (fast entry): keep what is on
+         screen. The next save carries it; reloading now would drop it. */
+      if (changeSeq.current !== seq) return true;
       /* The reload replaces every line, which threw the page back to the top:
          saving at line 300 meant scrolling all the way down again. */
       const y = window.scrollY;
@@ -197,6 +214,38 @@ function SalesOrderEditor() {
       toast(`Not saved: ${why(e)}`, "error");
       return false;
     } finally { setBusy(null); }
+  };
+
+  useEffect(() => { saveRef.current = save; busyRef.current = busy; });
+  useEffect(() => { changeSeq.current += 1; }, [lines, order, freightText, taxText, taxLabel, shipSame]);
+  useEffect(() => () => { if (autoTimer.current) clearTimeout(autoTimer.current); }, []);
+
+  const scheduleAutosave = () => {
+    if (autoTimer.current) clearTimeout(autoTimer.current);
+    const run = async () => {
+      if (busyRef.current) { autoTimer.current = setTimeout(run, 400); return; }
+      await saveRef.current(true);
+    };
+    autoTimer.current = setTimeout(run, 700);
+  };
+
+  const quickAdd = () => {
+    const desc = quick.desc.trim();
+    if (!desc) { descRef.current?.focus(); return; }
+    const qty = Math.max(1, parseInt(quick.qty, 10) || 1);
+    const cents = toCents(quick.price);
+    setLines((prev) => [...prev, {
+      key: nextKey(), source_item_id: null, description: desc.slice(0, 300), part_number: quick.part.trim() || null,
+      brand: null, quantity: qty, unit_price_cents: cents, priceText: centsToInput(cents),
+    }]);
+    setDirty(true);
+    setLastAdded(`${desc} · ${qty} × ${cents == null ? "no price yet" : fmtMoney(cents)}`);
+    setQuick({ desc: "", part: "", qty: "1", price: "" });
+    scheduleAutosave();
+    descRef.current?.focus();
+  };
+  const quickKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") { e.preventDefault(); quickAdd(); }
   };
 
   const send = async () => {
@@ -330,7 +379,7 @@ function SalesOrderEditor() {
       }
     >
       <div className="grid items-start gap-5 xl:grid-cols-[1fr_22rem]">
-        <Panel className="min-w-0">
+        <Panel className="min-w-0 overflow-clip">
           {/* Who and by whom */}
           <div className="grid gap-4 border-b border-border p-5 md:grid-cols-2">
             <Field label="Bill to (customer)">
@@ -413,7 +462,7 @@ function SalesOrderEditor() {
             <ColHead className="w-28 shrink-0 text-right">Line</ColHead>
             <span className="w-6 shrink-0" />
           </div>
-          {lines.map((l) => {
+          {lines.map((l, idx) => {
             const p = problems[l.key];
             const s = l.source_item_id ? stock[l.source_item_id] : undefined;
             return (
@@ -423,7 +472,7 @@ function SalesOrderEditor() {
                     ? <Input value={l.description} onChange={(e) => setLine(l.key, { description: e.target.value })} placeholder="Description" />
                     : <p className="truncate text-sm font-medium">{l.description}</p>}
                   <p className="mono truncate text-[12px] text-muted-foreground">
-                    {[l.part_number, l.brand, l.source_item_id && editable && s ? `${s.quantity} in stock` : null, !l.source_item_id ? "custom line" : null].filter(Boolean).join(" · ")}
+                    {[`#${idx + 1}`, l.part_number, l.brand, l.source_item_id && editable && s ? `${s.quantity} in stock` : null, !l.source_item_id ? "custom line" : null].filter(Boolean).join(" · ")}
                   </p>
                 </div>
                 <div className="w-24 shrink-0">
@@ -457,13 +506,32 @@ function SalesOrderEditor() {
             );
           })}
           {editable && (
-            <div className="flex flex-wrap gap-2 p-4">
-              <Action onClick={() => { setLines((prev) => [...prev, { key: nextKey(), source_item_id: null, description: "", part_number: null, brand: null, quantity: 1, unit_price_cents: null, priceText: "" }]); setDirty(true); }}>
-                <Plus className="h-3.5 w-3.5" /> Add a custom line
-              </Action>
-              <Link href="/dashboard/inventory" className="inline-flex items-center rounded-md px-3 text-[13px] text-muted-foreground hover:text-foreground">
-                Add stock: select it on Inventory, then Add to a draft order
-              </Link>
+            <div className="sticky bottom-0 z-10 border-t border-border bg-card/95 p-4 backdrop-blur">
+              <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-[12px] text-muted-foreground">
+                <span className="font-semibold text-foreground">Add another item</span>
+                <span aria-live="polite">
+                  <span className="mono font-semibold text-foreground">{lines.length}</span> {lines.length === 1 ? "item" : "items"} ·{" "}
+                  <span className="mono font-semibold text-foreground">{unitsTotal}</span> units ·{" "}
+                  <span className="mono font-semibold text-foreground">{fmtMoney(subtotal)}</span> ·{" "}
+                  {busy === "save" ? "saving…" : dirty ? "not saved yet" : savedAt ? `all saved at ${savedAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : "all saved"}
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
+                <Input ref={descRef} value={quick.desc} onChange={(e) => setQuick((q) => ({ ...q, desc: e.target.value }))} onKeyDown={quickKey}
+                  placeholder="Description" aria-label="New item description" maxLength={300} className="min-w-0 flex-1 basis-full lg:basis-auto" />
+                <Input value={quick.part} onChange={(e) => setQuick((q) => ({ ...q, part: e.target.value }))} onKeyDown={quickKey}
+                  placeholder="Part #" aria-label="New item part number" maxLength={60} className="mono w-full sm:w-36" />
+                <Input value={quick.qty} onChange={(e) => setQuick((q) => ({ ...q, qty: e.target.value.replace(/[^\d]/g, "") }))} onKeyDown={quickKey}
+                  onFocus={(e) => e.currentTarget.select()} inputMode="numeric" placeholder="Qty" aria-label="New item quantity" className="mono w-20 text-right" />
+                <Input value={quick.price} onChange={(e) => setQuick((q) => ({ ...q, price: e.target.value }))} onKeyDown={quickKey}
+                  inputMode="decimal" placeholder="$ price" aria-label="New item price" className="mono w-28 text-right" />
+                <Action solid onClick={quickAdd} aria-label="Add this item"><Plus className="h-3.5 w-3.5" /> Add</Action>
+              </div>
+              <p className="mt-2 text-[12px] text-muted-foreground">
+                {lastAdded ? <>Last added: <span className="text-foreground">{lastAdded}</span>. </> : null}
+                Press Enter to add. The order saves by itself.{" "}
+                <Link href="/dashboard/inventory" className="underline-offset-2 hover:underline">Adding stock from Inventory instead?</Link>
+              </p>
             </div>
           )}
         </Panel>
