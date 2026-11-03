@@ -182,7 +182,7 @@ export default function PurchaseOrdersPage() {
                             Send
                           </button>
                         )}
-                        {(po.status === "draft" || po.status === "ordered") && (
+                        {(po.status === "draft" || po.status === "ordered" || po.status === "partial") && (
                           <button
                             onClick={() => setReceiving(po)}
                             className="text-[12px] text-[var(--brand-2)] transition-colors duration-300 hover:text-foreground"

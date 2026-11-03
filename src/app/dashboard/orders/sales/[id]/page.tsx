@@ -9,7 +9,7 @@
  * every save (sales_order_save), so what is stored never depends on this page.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { AlertTriangle, Copy, Loader2, Plus, X } from "lucide-react";
@@ -27,7 +27,7 @@ import {
   type BillingCompany, type Customer, type SalesInvoice, type SalesLine, type SalesOrder,
 } from "@/lib/sales";
 
-type EditLine = SalesLine & { key: string; priceText: string };
+type EditLine = SalesLine & { key: string; priceText: string; qtyText?: string };
 type Stock = Record<string, { quantity: number; status: string }>;
 
 let keySeq = 0;
@@ -84,7 +84,9 @@ function SalesOrderEditor() {
     setTaxText(ord.tax_rate != null ? String(Number(ord.tax_rate)) : "");
     setTaxLabel(ord.tax_label || "");
     const ls = (l.data || []) as SalesLine[];
-    setLines(ls.map((x) => ({ ...x, unit_price_cents: x.unit_price_cents == null ? null : Number(x.unit_price_cents), key: nextKey(), priceText: centsToInput(x.unit_price_cents == null ? null : Number(x.unit_price_cents)) })));
+    /* Keys kept by position, so a reload after Save updates the rows in place
+       instead of rebuilding all of them (which moved the page). */
+    setLines((prev) => ls.map((x, n) => ({ ...x, unit_price_cents: x.unit_price_cents == null ? null : Number(x.unit_price_cents), key: prev[n]?.key ?? nextKey(), priceText: centsToInput(x.unit_price_cents == null ? null : Number(x.unit_price_cents)) })));
     setCustomers((c.data || []) as Customer[]);
     setCompanies((b.data || []) as BillingCompany[]);
     const ids = ls.map((x) => x.source_item_id).filter(Boolean) as string[];
@@ -124,10 +126,43 @@ function SalesOrderEditor() {
   const unpriced = lines.filter((l) => l.unit_price_cents == null).length;
   const blocked = Object.keys(problems).length > 0 || !order?.customer_id || lines.length === 0;
 
-  const setLine = (key: string, patch: Partial<EditLine>) => {
-    setLines((prev) => prev.map((l) => (l.key === key ? { ...l, ...patch } : l)));
-    setDirty(true);
+  /* Pricing a long order is: type, Enter, type, Enter. Tab used to land on
+     the line's remove button and then the next quantity, so the next price
+     typed went into the quantity (9 units became 1). The remove button is out
+     of the Tab order now, and Enter goes to the next line's price. */
+  const nextPriceOnEnter = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    const all = [...document.querySelectorAll<HTMLInputElement>('input[aria-label="Sale price"]')];
+    const next = all[all.indexOf(e.currentTarget) + 1];
+    if (next) { next.focus(); next.select(); } else e.currentTarget.blur();
   };
+  /* markDirty false: only tidying how a value shows on leaving the box. */
+  const setLine = (key: string, patch: Partial<EditLine>, markDirty = true) => {
+    setLines((prev) => prev.map((l) => (l.key === key ? { ...l, ...patch } : l)));
+    if (markDirty) setDirty(true);
+  };
+
+  /* Unsaved prices were dropped without a word on refresh, closing the tab or
+     clicking a link in the menu. Now each of those asks first. */
+  useEffect(() => {
+    if (!dirty) return;
+    const LEAVE = "This order has changes that are not saved. Leave without saving?";
+    const onUnload = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    const onClick = (e: MouseEvent) => {
+      const a = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      if (!a || a.target === "_blank" || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      const to = new URL(a.href, location.href);
+      if (to.origin !== location.origin || to.pathname === location.pathname) return;
+      if (!window.confirm(LEAVE)) { e.preventDefault(); e.stopPropagation(); }
+    };
+    window.addEventListener("beforeunload", onUnload);
+    document.addEventListener("click", onClick, true);
+    return () => {
+      window.removeEventListener("beforeunload", onUnload);
+      document.removeEventListener("click", onClick, true);
+    };
+  }, [dirty]);
   const setField = (patch: Partial<SalesOrder>) => {
     setOrder((o) => (o ? { ...o, ...patch } : o));
     setDirty(true);
@@ -152,7 +187,11 @@ function SalesOrderEditor() {
         ship_date: order.ship_date || "", tracking_no: order.tracking_no || "", job_number: order.job_number || "",
       }, payloadLines());
       if (!quiet) toast("Draft saved", "success");
+      /* The reload replaces every line, which threw the page back to the top:
+         saving at line 300 meant scrolling all the way down again. */
+      const y = window.scrollY;
       await load();
+      requestAnimationFrame(() => { if (Math.abs(window.scrollY - y) > 2) window.scrollTo({ top: y, behavior: "instant" }); });
       return true;
     } catch (e) {
       toast(`Not saved: ${why(e)}`, "error");
@@ -389,8 +428,9 @@ function SalesOrderEditor() {
                 </div>
                 <div className="w-24 shrink-0">
                   {editable
-                    ? <Input type="number" min={1} value={l.quantity} aria-label="Quantity"
-                        onChange={(e) => setLine(l.key, { quantity: Math.max(1, parseInt(e.target.value, 10) || 1) })}
+                    ? <Input type="number" min={1} value={l.qtyText ?? l.quantity} aria-label="Quantity"
+                        onChange={(e) => setLine(l.key, { qtyText: e.target.value, quantity: Math.max(1, parseInt(e.target.value, 10) || 1) })}
+                        onBlur={() => setLine(l.key, { qtyText: undefined }, false)}
                         className={`mono text-right ${p && p.includes("stock") ? "border-destructive" : ""}`} />
                     : <p className="mono text-right text-sm">{l.quantity}</p>}
                 </div>
@@ -398,7 +438,8 @@ function SalesOrderEditor() {
                   {editable
                     ? <Input value={l.priceText} inputMode="decimal" aria-label="Sale price" placeholder="$ —"
                         onChange={(e) => setLine(l.key, { priceText: e.target.value, unit_price_cents: toCents(e.target.value) })}
-                        onBlur={() => setLine(l.key, { priceText: centsToInput(l.unit_price_cents) })}
+                        onBlur={() => setLine(l.key, { priceText: centsToInput(l.unit_price_cents) }, false)}
+                        onKeyDown={nextPriceOnEnter}
                         className={`mono text-right ${l.unit_price_cents == null ? "border-amber-500 bg-amber-500/5" : ""}`} />
                     : <p className="mono text-right text-sm">{fmtMoney(l.unit_price_cents)}</p>}
                 </div>
@@ -409,7 +450,7 @@ function SalesOrderEditor() {
                 <div className="w-6 shrink-0">
                   {editable ? (
                     <button onClick={() => { setLines((prev) => prev.filter((x) => x.key !== l.key)); setDirty(true); }}
-                      aria-label={`Remove ${l.description}`} className="text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></button>
+                      aria-label={`Remove ${l.description}`} tabIndex={-1} className="text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></button>
                   ) : null}
                 </div>
               </div>
@@ -427,8 +468,15 @@ function SalesOrderEditor() {
           )}
         </Panel>
 
-        {/* Totals and what is in the way */}
-        <div className="space-y-4">
+        {/* Totals and what is in the way. Stays in view down a long order, with
+            Save in it: the only Save was at the top, thousands of pixels up
+            from the 300th line. */}
+        <div className="space-y-4 lg:sticky lg:top-20 lg:self-start">
+          {editable && dirty ? (
+            <Action solid onClick={() => save()} disabled={!!busy || taxBad} className="w-full justify-center">
+              {busy === "save" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}Save draft
+            </Action>
+          ) : null}
           <Panel className="p-5">
             <div className="flex justify-between py-1.5 text-sm"><span>Subtotal</span><span className="mono">{fmtMoney(subtotal)}</span></div>
             <div className="flex items-center justify-between gap-3 py-1.5 text-sm">

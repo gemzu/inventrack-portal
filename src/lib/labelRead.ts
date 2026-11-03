@@ -183,7 +183,9 @@ export function reviewKinds(item: {
 }
 
 export const REVIEW_LABEL: Record<ReviewKind, string> = {
-  no_barcode: "No barcode",
+  /* Has its scanned code, just not a store UPC: "No barcode" read as wrong
+     on an account where most stock carries shipping or internal codes. */
+  no_barcode: "No UPC",
   unread: "Photo not read",
   mismatch: "Label disagrees",
   ambiguous: "Pick the barcode",

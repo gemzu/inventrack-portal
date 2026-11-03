@@ -54,22 +54,26 @@ export default function ReceivePo({
 }) {
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
-  /* Ordered quantity is the default, not the answer. */
+  /* What is still to come is the default, not the answer. A short delivery
+     left the order "partial" with no way to receive the rest; it can be
+     received again now, counting only what arrives this time. */
+  const before = useMemo(() => po.items.map((l) => Math.max(0, Number(l.received) || 0)), [po.items]);
   const [counts, setCounts] = useState<number[]>(() =>
-    po.items.map((l) => Math.max(0, l.received ?? l.qty ?? 0))
+    po.items.map((l, i) => Math.max(0, (l.qty ?? 0) - before[i]))
   );
 
   const summary = useMemo(() => {
     let short = 0, over = 0, exact = 0, units = 0;
     po.items.forEach((l, i) => {
       const got = counts[i] ?? 0;
+      const total = before[i] + got;
       units += got;
-      if (got < l.qty) short++;
-      else if (got > l.qty) over++;
+      if (total < l.qty) short++;
+      else if (total > l.qty) over++;
       else exact++;
     });
     return { short, over, exact, units, lines: po.items.length };
-  }, [po.items, counts]);
+  }, [po.items, counts, before]);
 
   const setCount = (i: number, raw: string) => {
     const n = Math.max(0, Number(raw.replace(/[^0-9]/g, "")) || 0);
@@ -110,7 +114,7 @@ export default function ReceivePo({
 
       /* Keep what actually arrived on the record, and only close the PO when
          every line was met. A short delivery stays open. */
-      const items = po.items.map((l, i) => ({ ...l, received: savedCounts[i] ?? 0 }));
+      const items = po.items.map((l, i) => ({ ...l, received: before[i] + (savedCounts[i] ?? 0) }));
       const complete = items.every((l) => (l.received ?? 0) >= l.qty);
 
       const { error: poErr } = await supabase
@@ -181,7 +185,7 @@ export default function ReceivePo({
 
           {po.items.map((l, i) => {
             const got = counts[i] ?? 0;
-            const diff = got - l.qty;
+            const diff = before[i] + got - l.qty;
             return (
               <div
                 key={`${l.barcode}-${i}`}
@@ -189,7 +193,9 @@ export default function ReceivePo({
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{l.name || l.modelId || l.barcode}</p>
-                  <p className="mono truncate text-xs text-muted-foreground">{l.barcode}</p>
+                  <p className="mono truncate text-xs text-muted-foreground">
+                    {[l.barcode || l.modelId, before[i] ? `${before[i]} already in` : null].filter(Boolean).join(" · ")}
+                  </p>
                 </div>
                 <span className="mono text-right text-sm text-muted-foreground">{l.qty}</span>
                 <input

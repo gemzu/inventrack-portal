@@ -11,7 +11,7 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { daysBetween, fmtDate, fmtMoney, PAY_METHOD_LABEL, taxLine, type SalesInvoice, type SalesInvoiceLine } from "@/lib/sales";
+import { daysBetween, fmtDate, fmtMoney, partLine, PAY_METHOD_LABEL, taxLine, type SalesInvoice, type SalesInvoiceLine } from "@/lib/sales";
 
 const label = "mb-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[#14121f]";
 const hl = "inline-block bg-[#fff3b0] px-1.5 py-px text-[14px] font-bold text-[#14121f]";
@@ -107,7 +107,7 @@ export default function InvoiceSheet({ inv, lines, orderNumber }: { inv: SalesIn
             <tr key={l.id} className="flex flex-wrap border-b border-[#c9c6d6] py-3 sm:table-row sm:py-0">
               <td className="w-full px-2 sm:w-auto sm:py-3">
                 <p className="text-[15px] font-bold">{l.description}</p>
-                {l.part_number ? <p className="mono text-[12px] text-[#4b4760]">{l.part_number}</p> : null}
+                {partLine(l) ? <p className="mono text-[12px] text-[#4b4760]">{partLine(l)}</p> : null}
                 {l.brand ? <p className="text-[12px] text-[#4b4760]">{l.brand}</p> : null}
               </td>
               <td className="mono ml-auto px-2 text-right tabular-nums sm:ml-0 sm:py-3">

@@ -86,13 +86,15 @@ function BulkPriceModal({ items, onClose, onSaved }: { items: PriceItem[]; onClo
         {mode === "set" ? (
           <Field label="New sale price (each)">
             <Input autoFocus inputMode="decimal" value={priceText} placeholder="$ 0.00" className="mono max-w-40"
-              onChange={(e) => setPriceText(e.target.value)} onBlur={() => setCents != null && setPriceText((setCents / 100).toFixed(2))} />
+              onChange={(e) => setPriceText(e.target.value)} onBlur={() => setCents != null && setPriceText((setCents / 100).toFixed(2))}
+              onKeyDown={(e) => { if (e.key === "Enter" && ready && !saving) save(); }} />
           </Field>
         ) : (
           <div className="flex flex-wrap items-end gap-4">
             <Field label="Change by (%)" hint="10 raises by 10%, -5 lowers by 5%.">
               <Input autoFocus inputMode="decimal" value={pctText} placeholder="10" className="mono max-w-28"
-                onChange={(e) => setPctText(e.target.value)} aria-invalid={pctText !== "" && !pctOk} />
+                onChange={(e) => setPctText(e.target.value)} aria-invalid={pctText !== "" && !pctOk}
+                onKeyDown={(e) => { if (e.key === "Enter" && ready && !saving) save(); }} />
             </Field>
             <div>
               <p className="mb-2 text-[12px] font-medium text-muted-foreground">Round to</p>

@@ -51,6 +51,12 @@ export interface SalesLine {
   quantity: number; unit_price_cents: number | null; line_cents?: number; reserved_item_id?: string | null;
 }
 
+/* The part number under a line's description, unless the description already
+   says it: most stock is named by its code, and the invoice printed it twice. */
+export const partLine = (l: { description: string; part_number: string | null }) => {
+  const part = (l.part_number || "").trim();
+  return part && !l.description.toLowerCase().includes(part.toLowerCase()) ? part : null;
+};
 export const fmtMoney = (cents: number | null | undefined) =>
   ((Number(cents) || 0) / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
 

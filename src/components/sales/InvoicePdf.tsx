@@ -14,7 +14,7 @@
 
 import QRCode from "qrcode";
 import { Document, Font, Image, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer";
-import { daysBetween, fmtDate, fmtMoney, PAY_METHOD_LABEL, taxLine, type SalesInvoice, type SalesInvoiceLine } from "@/lib/sales";
+import { daysBetween, fmtDate, fmtMoney, partLine, PAY_METHOD_LABEL, taxLine, type SalesInvoice, type SalesInvoiceLine } from "@/lib/sales";
 
 const INK = "#14121f";
 const MUTE = "#4b4760";
@@ -127,7 +127,7 @@ function InvoiceDoc({ inv, lines, orderNumber, logo, qr }: { inv: SalesInvoice; 
     <View key={l.id} style={s.tr} wrap={false}>
       <View style={s.cDesc}>
         <Text style={s.item}>{l.description}</Text>
-        {l.part_number ? <Text style={s.part}>{l.part_number}</Text> : null}
+        {partLine(l) ? <Text style={s.part}>{partLine(l)}</Text> : null}
         {l.brand ? <Text style={s.small}>{l.brand}</Text> : null}
       </View>
       <Text style={[s.mono, s.cQty]}>{l.quantity.toLocaleString("en-US")}</Text>
