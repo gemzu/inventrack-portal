@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Receipt } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { fetchAll } from "@/lib/fetchAll";
 import { useAuth } from "@/context/AuthContext";
 import SalesGuard from "@/components/SalesGuard";
 import PageShell from "@/components/page-shell";
@@ -40,11 +41,12 @@ function SalesInvoices() {
 
   useEffect(() => {
     if (!orgId) return;
-    supabase.from("sales_invoices").select("*").eq("org_id", orgId)
-      .order("issued_on", { ascending: false }).order("number", { ascending: false }).limit(2000)
-      .then(({ data, error: e }) => {
-        if (e) setError(e.message);
-        setRows((data || []) as SalesInvoice[]);
+    /* Every invoice: one request returns at most 1,000 rows, whatever limit is asked for. */
+    fetchAll(() => supabase.from("sales_invoices").select("*").eq("org_id", orgId)
+      .order("issued_on", { ascending: false }).order("number", { ascending: false }).order("id"))
+      .then((data) => { setRows((data || []) as SalesInvoice[]); setLoading(false); }, (e: { message?: string }) => {
+        setError(e?.message || "Could not load invoices");
+        setRows([]);
         setLoading(false);
       });
   }, [orgId]);

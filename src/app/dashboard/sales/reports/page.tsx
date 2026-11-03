@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowDown, ArrowUp, Download, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { fetchAll } from "@/lib/fetchAll";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/Toast";
 import SalesGuard from "@/components/SalesGuard";
@@ -130,12 +131,17 @@ function Reports() {
   /* Same range and company as the report. Void invoices are included and
      marked, so the accountant sees every number that was issued. */
   async function invoicesInRange() {
-    let q = supabase.from("sales_invoices").select("*").eq("org_id", orgId!).gte("issued_on", from).lte("issued_on", to)
-      .order("issued_on").order("number").limit(20000);
-    if (company) q = q.eq("billing_company_id", company);
-    const { data, error: e } = await q;
-    if (e) throw new Error(e.message);
-    return (data || []) as SalesInvoice[];
+    /* Page by page: one request returns at most 1,000 rows, so a year with
+       more invoices than that came out short. */
+    try {
+      const data = await fetchAll(() => {
+        let q = supabase.from("sales_invoices").select("*").eq("org_id", orgId!).gte("issued_on", from).lte("issued_on", to)
+          .order("issued_on").order("number").order("id");
+        if (company) q = q.eq("billing_company_id", company);
+        return q;
+      });
+      return (data || []) as SalesInvoice[];
+    } catch (e) { throw new Error((e as { message?: string })?.message || "Could not load invoices"); }
   }
 
   const exportInvoices = async () => {

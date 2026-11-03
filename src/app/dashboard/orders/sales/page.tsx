@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FileText } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { fetchAll } from "@/lib/fetchAll";
 import { useAuth } from "@/context/AuthContext";
 import SalesGuard from "@/components/SalesGuard";
 import PageShell from "@/components/page-shell";
@@ -46,7 +47,7 @@ function SalesOrders() {
         supabase.from("sales_orders").select("*").eq("org_id", orgId).order("created_at", { ascending: false }).limit(1000),
         supabase.from("customers").select("id, name").eq("org_id", orgId),
         supabase.from("billing_companies").select("id, name").eq("org_id", orgId),
-        supabase.from("sales_order_lines").select("order_id").eq("org_id", orgId).limit(10000),
+        fetchAll(() => supabase.from("sales_order_lines").select("order_id").eq("org_id", orgId).order("id")).then((data) => ({ data, error: null }), (error) => ({ data: null, error })),
       ]);
       if (o.error) { setError(o.error.message); setLoading(false); return; }
       const cust = new Map((c.data || []).map((x) => [x.id, x.name as string]));

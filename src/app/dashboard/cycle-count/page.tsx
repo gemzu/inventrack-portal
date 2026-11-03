@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminGuard from "@/components/AdminGuard";
 import PageShell from "@/components/page-shell";
 import { itemIdentity } from "@/lib/itemIdentity";
+import { fetchAll } from "@/lib/fetchAll";
 import { Panel, Figure, ColHead, ListSkeleton } from "@/components/console/surfaces";
 import { Action, Chip, Input } from "@/components/console/controls";
 import EmptyState from "@/components/EmptyState";
@@ -51,13 +52,19 @@ export default function CycleCountPage() {
   const load = useCallback(async () => {
     if (!orgId) return;
     setLoading(true);
-    const [{ data }, bx] = await Promise.all([
-      supabase
-        .from("inventory")
-        .select("id,barcode,model_id,display_name,quantity,box_id")
-        .eq("org_id", orgId)
-        .order("created_at", { ascending: false })
-        .limit(500),
+    /* Every line, not the newest 500 (a 600-line account silently lost the
+       rest from the count), and not what is sold: it has left, there is
+       nothing on the floor to count. */
+    const [data, bx] = await Promise.all([
+      fetchAll(() =>
+        supabase
+          .from("inventory")
+          .select("id,barcode,model_id,display_name,quantity,box_id")
+          .eq("org_id", orgId)
+          .neq("status", "sold")
+          .order("created_at", { ascending: false })
+          .order("id")
+      ),
       getBoxes(orgId).catch(() => [] as Box[]),
     ]);
     setItems(
@@ -250,6 +257,14 @@ export default function CycleCountPage() {
                       value={c ?? ""}
                       onChange={(e) => setCount(it.id, e.target.value)}
                       placeholder="—"
+                      /* Counting down a list: Enter is the next line. */
+                      onKeyDown={(e) => {
+                        if (e.key !== "Enter") return;
+                        e.preventDefault();
+                        const all = [...document.querySelectorAll<HTMLInputElement>('input[aria-label^="Counted quantity for"]')];
+                        const next = all[all.indexOf(e.currentTarget) + 1];
+                        if (next) { next.focus(); next.scrollIntoView({ block: "center" }); } else e.currentTarget.blur();
+                      }}
                       aria-label={`Counted quantity for ${id.title}`}
                       className="mono h-8 py-1 text-right"
                     />

@@ -2,7 +2,7 @@
 import { itemIdentity } from "@/lib/itemIdentity";
 import AdminGuard from "@/components/AdminGuard";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
@@ -22,7 +22,7 @@ import { ArrowLeft, Trash2, Edit2, Plus, Package, PackageMinus } from "lucide-re
 import PageShell from "@/components/page-shell";
 import Status from "@/components/Status";
 import { Panel, Figure, ColHead, ListSkeleton } from "@/components/console/surfaces";
-import { Action, Drawer, Field, Input, Modal } from "@/components/console/controls";
+import { Action, Drawer, Field, Input, Modal, SearchInput } from "@/components/console/controls";
 import EmptyState from "@/components/EmptyState";
 import PhotoViewer from "@/components/PhotoViewer";
 import { useToast } from "@/components/Toast";
@@ -58,6 +58,8 @@ export default function BoxDetailPage() {
   const [addCandidates, setAddCandidates] = useState<Item[]>([]);
   const [addSelected, setAddSelected] = useState<Set<string>>(new Set());
   const [addLoading, setAddLoading] = useState(false);
+  const [addQuery, setAddQuery] = useState("");
+  const addTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const id = params?.id as string;
@@ -167,19 +169,31 @@ export default function BoxDetailPage() {
     }
   };
 
-  const openAddSheet = async () => {
+  /* Loose stock, searchable: with hundreds of lines the first 200 were all
+     there was to pick from. Sold lines are not offered - they have left. */
+  const loadLoose = async (query: string) => {
     if (!orgId) return;
-    setAddSelected(new Set());
-    setAddSheetOpen(true);
     setAddLoading(true);
     try {
-      const { items: looseItems } = await getInventoryPaginated(orgId, { loose: true }, 0, 200);
-      setAddCandidates(looseItems as unknown as Item[]);
+      const { items: looseItems } = await getInventoryPaginated(orgId, { loose: true, search: query.trim() || undefined }, 0, 200);
+      setAddCandidates((looseItems as unknown as Item[]).filter((i) => i.status !== "sold"));
     } catch (e) {
       toast((e as Error).message || "Failed to load items", "error");
     } finally {
       setAddLoading(false);
     }
+  };
+  const openAddSheet = async () => {
+    if (!orgId) return;
+    setAddSelected(new Set());
+    setAddQuery("");
+    setAddSheetOpen(true);
+    await loadLoose("");
+  };
+  const searchLoose = (v: string) => {
+    setAddQuery(v);
+    if (addTimer.current) clearTimeout(addTimer.current);
+    addTimer.current = setTimeout(() => loadLoose(v), 300);
   };
 
   const toggleAddSelect = (itemId: string) => {
@@ -552,13 +566,21 @@ export default function BoxDetailPage() {
             </>
           }
         >
+          <SearchInput
+            value={addQuery}
+            onChange={(e) => searchLoose(e.target.value)}
+            onClear={() => searchLoose("")}
+            placeholder="Search by name, code or brand"
+            aria-label="Search loose stock"
+            className="mb-3"
+          />
           {addLoading ? (
             <ListSkeleton rows={6} />
           ) : addCandidates.length === 0 ? (
             <EmptyState
               icon={Package}
-              title="Nothing loose"
-              description="Every line is already in a box."
+              title={addQuery.trim() ? "No match" : "Nothing loose"}
+              description={addQuery.trim() ? "Nothing loose matches that." : "Every line is already in a box."}
             />
           ) : (
             <Panel>

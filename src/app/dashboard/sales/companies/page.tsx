@@ -11,6 +11,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Eye, Landmark, Loader2, Plus } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { fetchAll } from "@/lib/fetchAll";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/Toast";
 import SalesGuard from "@/components/SalesGuard";
@@ -53,7 +54,7 @@ function Companies() {
     if (!orgId) return;
     const [b, i] = await Promise.all([
       supabase.from("billing_companies").select("*").eq("org_id", orgId).order("name"),
-      supabase.from("sales_invoices").select("billing_company_id").eq("org_id", orgId).limit(10000),
+      fetchAll(() => supabase.from("sales_invoices").select("billing_company_id").eq("org_id", orgId).order("id")).then((data) => ({ data, error: null }), () => ({ data: [] as { billing_company_id: string }[], error: null })),
     ]);
     const list = (b.data || []) as BillingCompany[];
     const count: Record<string, number> = {};

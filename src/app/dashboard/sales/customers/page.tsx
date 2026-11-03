@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Contact, Plus } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { fetchAll } from "@/lib/fetchAll";
 import { useAuth } from "@/context/AuthContext";
 import SalesGuard from "@/components/SalesGuard";
 import PageShell from "@/components/page-shell";
@@ -45,7 +46,7 @@ function Customers() {
     if (!orgId) return;
     Promise.all([
       supabase.from("customers").select("*").eq("org_id", orgId).order("name"),
-      supabase.from("sales_invoices").select("customer_id, status, total_cents, due_on, issued_on").eq("org_id", orgId).limit(10000),
+      fetchAll(() => supabase.from("sales_invoices").select("customer_id, status, total_cents, due_on, issued_on").eq("org_id", orgId).order("id")).then((data) => ({ data, error: null as { message: string } | null }), (e: { message?: string }) => ({ data: null, error: { message: e?.message || "Could not load invoices" } })),
     ]).then(([c, i]) => {
       if (c.error) setError(c.error.message);
       setCustomers((c.data || []) as Customer[]);
