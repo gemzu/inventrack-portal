@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { lockScroll } from "@/lib/scrollLock";
 
 type Entry = { label: string; href: string; meta: string };
 
@@ -59,12 +60,11 @@ export default function SiteNav() {
         toggleRef.current?.focus();
       }
     };
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const release = lockScroll();
     window.addEventListener("keydown", onKey);
     panelRef.current?.querySelector<HTMLAnchorElement>("a")?.focus();
     return () => {
-      document.body.style.overflow = prev;
+      release();
       window.removeEventListener("keydown", onKey);
     };
   }, [open]);

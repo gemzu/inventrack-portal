@@ -421,7 +421,7 @@ function SalesOrderEditor() {
                 <Plus className="h-3.5 w-3.5" /> Add a custom line
               </Action>
               <Link href="/dashboard/inventory" className="inline-flex items-center rounded-md px-3 text-[13px] text-muted-foreground hover:text-foreground">
-                Add stock: select it on Inventory and start a new order
+                Add stock: select it on Inventory, then Add to a draft order
               </Link>
             </div>
           )}

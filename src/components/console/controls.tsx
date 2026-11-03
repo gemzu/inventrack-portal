@@ -17,6 +17,26 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { ChevronDown, Search as SearchIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Layer from "@/components/Layer";
+import { lockScroll } from "@/lib/scrollLock";
+
+/* Page scroll locked and Escape closing, for as long as a panel is open.
+   Keyed on open alone: onClose is usually a fresh arrow each render, and
+   re-running the lock on every render is what let two panels unwind it in the
+   wrong order. */
+function useLockWhileOpen(open: boolean, onClose: () => void) {
+  const close = useRef(onClose);
+  useEffect(() => { close.current = onClose; });
+  useEffect(() => {
+    if (!open) return;
+    const release = lockScroll();
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close.current(); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      release();
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+}
 
 const FIELD =
   "w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-foreground outline-none " +
@@ -221,20 +241,7 @@ export function Drawer({
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [open, onClose]);
+  useLockWhileOpen(open, onClose);
 
   if (!open) return null;
 
@@ -301,19 +308,7 @@ export function Modal({
   children: ReactNode;
   wide?: boolean;
 }) {
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [open, onClose]);
+  useLockWhileOpen(open, onClose);
 
   if (!open) return null;
 

@@ -90,6 +90,33 @@ export const createSalesOrder = (company: string, customer: string | null, items
   rpc<string>("sales_order_create", { p_company: company, p_customer: customer, p_items: items });
 export const saveSalesOrder = (id: string, fields: Record<string, unknown>, lines: SalesLine[] | null) =>
   rpc<void>("sales_order_save", { p_order: id, p_fields: fields, p_lines: lines });
+/* Inventory lines onto a draft that already exists. The order's lines are
+   read, the new ones added after them the way sales_order_create words them,
+   and the whole list saved through sales_order_save, so the server still
+   checks everything. Lines already on the order are left as they are.
+   Returns how many were added. */
+export interface StockForOrder {
+  id: string; quantity: number; displayName?: string; modelId?: string; barcode?: string;
+  partNumber?: string; brand?: string; sellingPrice?: number;
+}
+export async function addToSalesOrder(orderId: string, items: StockForOrder[]): Promise<number> {
+  const { data, error } = await supabase.from("sales_order_lines")
+    .select("source_item_id, description, part_number, brand, quantity, unit_price_cents")
+    .eq("order_id", orderId).order("sort");
+  if (error) throw new Error(error.message);
+  const lines = (data || []) as SalesLine[];
+  const onOrder = new Set(lines.map((l) => l.source_item_id).filter(Boolean));
+  const added: SalesLine[] = items.filter((i) => !onOrder.has(i.id)).map((i) => ({
+    source_item_id: i.id,
+    description: (i.displayName?.trim() || i.modelId?.trim() || i.barcode || "Item").slice(0, 300),
+    part_number: i.partNumber?.trim() || i.modelId || null,
+    brand: i.brand?.trim() || null,
+    quantity: Math.max(1, i.quantity || 1),
+    unit_price_cents: Number(i.sellingPrice) > 0 ? Math.round(Number(i.sellingPrice) * 100) : null,
+  }));
+  if (added.length) await saveSalesOrder(orderId, {}, [...lines, ...added]);
+  return added.length;
+}
 export const sendSalesOrder = (id: string) => rpc<void>("sales_order_send", { p_order: id });
 export const unsendSalesOrder = (id: string) => rpc<void>("sales_order_unsend", { p_order: id });
 export const voidSalesOrder = (id: string, reason: string) => rpc<void>("sales_order_void", { p_order: id, p_reason: reason });

@@ -488,6 +488,35 @@ export default function InventoryPage() {
     } catch { toast("Failed to save", "error"); }
   };
 
+  /* Blank clears the price; anything else must be a plain amount. */
+  const savePrice = async (
+    field: "cost_price" | "selling_price",
+    key: "costPrice" | "sellingPrice",
+    input: HTMLInputElement
+  ) => {
+    if (!editItem) return;
+    const raw = input.value.replace(/[$,\s]/g, "");
+    const now = editItem[key] ?? null;
+    const shown = now != null ? Number(now).toFixed(2) : "";
+    if (raw !== "" && !/^\d+(\.\d{0,2})?$/.test(raw)) {
+      toast("Type a price like 12.50", "error");
+      input.value = shown;
+      return;
+    }
+    const val = raw === "" ? null : Math.round(Number(raw) * 100) / 100;
+    input.value = val != null ? val.toFixed(2) : "";
+    if ((now == null ? null : Number(now)) === val) return;
+    try {
+      const { error } = await supabase.from("inventory").update({ [field]: val }).eq("id", editItem.id);
+      if (error) throw error;
+      applyItemChange({ [key]: val ?? undefined } as Partial<Item>);
+      toast(field === "cost_price" ? "Cost saved" : "Sale price saved", "success");
+    } catch {
+      input.value = shown;
+      toast("Price not saved", "error");
+    }
+  };
+
   const moveToFacility = async (facilityId: string | null) => {
     if (!editItem) return;
     try {
@@ -1171,20 +1200,35 @@ export default function InventoryPage() {
                 </Field>
               </div>
 
-              {(editItem.costPrice != null || editItem.sellingPrice != null) && (
-                <div className="flex gap-10 border-t border-border pt-5">
-                  <Figure
-                    label="Cost"
-                    value={editItem.costPrice != null ? `$${editItem.costPrice}` : "—"}
-                    className="[&_.figure-value]:text-2xl"
+              {/* Typed here, saved when you leave the box. They were figures only,
+                  shown just when a price existed, so an item could not be priced
+                  from its own panel. */}
+              <div className="grid grid-cols-2 gap-4 border-t border-border pt-5">
+                <Field label="Cost (each)">
+                  <Input
+                    key={`cost-${editItem.id}`}
+                    inputMode="decimal"
+                    className="mono"
+                    placeholder="$ 0.00"
+                    defaultValue={editItem.costPrice != null ? Number(editItem.costPrice).toFixed(2) : ""}
+                    onBlur={(e) => savePrice("cost_price", "costPrice", e.currentTarget)}
+                    onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+                    aria-label="Cost price"
                   />
-                  <Figure
-                    label="Sells for"
-                    value={editItem.sellingPrice != null ? `$${editItem.sellingPrice}` : "—"}
-                    className="[&_.figure-value]:text-2xl"
+                </Field>
+                <Field label="Sells for (each)">
+                  <Input
+                    key={`sell-${editItem.id}`}
+                    inputMode="decimal"
+                    className="mono"
+                    placeholder="$ 0.00"
+                    defaultValue={editItem.sellingPrice != null ? Number(editItem.sellingPrice).toFixed(2) : ""}
+                    onBlur={(e) => savePrice("selling_price", "sellingPrice", e.currentTarget)}
+                    onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+                    aria-label="Sale price"
                   />
-                </div>
-              )}
+                </Field>
+              </div>
 
               {editItem.description && (
                 <Field label="Description">

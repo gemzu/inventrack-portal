@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import Layer from "@/components/Layer";
+import { lockScroll } from "@/lib/scrollLock";
 
 /* Full-size photos. Every photo on the site was a thumbnail with nothing
    behind it - "when I select the picture does it not maximize" (customer,
@@ -24,13 +25,11 @@ export default function PhotoViewer({ photos, start = 0, onClose }: Props) {
       else if (many && e.key === "ArrowRight") next();
     };
     window.addEventListener("keydown", onKey);
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = overflow;
-    };
+    return () => window.removeEventListener("keydown", onKey);
   }, [many, prev, next, onClose]);
+
+  /* Its own effect: the one above re-runs whenever onClose is a new arrow. */
+  useEffect(() => lockScroll(), []);
 
   if (!photos.length) return null;
 

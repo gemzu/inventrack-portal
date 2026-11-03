@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { itemIdentity } from "@/lib/itemIdentity";
 import { flatten, visibleSections, type Dest } from "./nav";
+import { lockScroll } from "@/lib/scrollLock";
 
 type Hit = { href: string; label: string; meta: string; kind: "stock" | "order" };
 
@@ -74,11 +75,10 @@ export default function ConsoleIndex({
     setHits([]);
     setCursor(0);
     const t = window.setTimeout(() => inputRef.current?.focus(), 260);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const release = lockScroll();
     return () => {
       window.clearTimeout(t);
-      document.body.style.overflow = prev;
+      release();
     };
   }, [open]);
 

@@ -255,7 +255,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="relative flex-1 overflow-auto">
+        {/* Clipped sideways, never a scroll box: the window scrolls. As
+            overflow-auto, a reveal still sliding in pushed it a few pixels
+            past its own height, and the wheel then scrolled that sliver
+            instead of the page - "can't scroll, have to use Tab". */}
+        <main className="relative flex-1 overflow-x-clip">
           <div className="mx-auto max-w-6xl px-5 py-8 lg:px-8 lg:py-10">
             <ErrorBoundary>{children}</ErrorBoundary>
           </div>
