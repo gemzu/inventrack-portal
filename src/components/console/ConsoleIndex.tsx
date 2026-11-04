@@ -32,6 +32,8 @@ export default function ConsoleIndex({
   role,
   permissions,
   canSales = false,
+  isOwner = false,
+  canEntry = false,
   orgId,
 }: {
   open: boolean;
@@ -39,10 +41,12 @@ export default function ConsoleIndex({
   role: string | null;
   permissions: string | null;
   canSales?: boolean;
+  isOwner?: boolean;
+  canEntry?: boolean;
   orgId: string | null;
 }) {
   const router = useRouter();
-  const dests = useMemo(() => flatten(visibleSections(role, permissions, canSales)), [role, permissions, canSales]);
+  const dests = useMemo(() => flatten(visibleSections(role, permissions, canSales, { isOwner, canEntry })), [role, permissions, canSales, isOwner, canEntry]);
 
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<Hit[]>([]);

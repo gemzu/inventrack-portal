@@ -64,6 +64,12 @@ interface AuthContextType {
   switchOrganization: (orgId: string, landOn?: string) => Promise<void>;
   /** Has Sales and invoices ticked (owner's choice, checked by the database). */
   canSales: boolean;
+  /** The owner of this company: the only one who changes who can do what (Access). */
+  isOwner: boolean;
+  /** Invoice entry is on: may add items to the invoices the owner gave, and nothing else. */
+  canEntry: boolean;
+  /** Invoice entry and no admin rights: the menu and pages narrow to just that. */
+  entryOnly: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -83,6 +89,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [mfaPending, setMfaPending] = useState(false);
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [canSales, setCanSales] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+  const [canEntry, setCanEntry] = useState(false);
 
   /* The website had no way to change company: it opened whichever one the
      account was last switched to on a phone (reported 2026-10-19). */
@@ -283,6 +291,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { stale = true; };
   }, [user?.id, orgId]);
 
+  /* Who this is in this company, from the database (caller_access): owner,
+     and Invoice entry. Same staleness rule as above. */
+  useEffect(() => {
+    if (!user?.id || !orgId) return;
+    let stale = false;
+    supabase.rpc("caller_access").then(({ data, error }) => {
+      if (stale) return;
+      const a = !error && data && typeof data === "object" ? (data as { owner?: boolean; entry?: boolean }) : {};
+      setIsOwner(a.owner === true);
+      setCanEntry(a.entry === true);
+    });
+    return () => { stale = true; };
+  }, [user?.id, orgId]);
+
+  const entryOnly = canEntry && userRole !== "admin";
+
   const switchOrganization = async (nextOrgId: string, landOn = "/dashboard") => {
     if (!user || !nextOrgId || nextOrgId === orgId) return;
     const { data, error } = await supabase.functions.invoke("switch-active-organization", {
@@ -308,7 +332,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user, userRole, userName, userCompany, userActive, userPermissions,
         orgId, orgData, facilities, userFacilityId, loading, mfaPending, verifyMfa,
         login, signup, logout, resetPassword, refreshProfile,
-        memberships, switchOrganization, canSales,
+        memberships, switchOrganization, canSales, isOwner, canEntry, entryOnly,
       }}
     >
       {children}

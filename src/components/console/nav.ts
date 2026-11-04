@@ -15,7 +15,7 @@ import {
   Activity, Ban, BookOpen, Boxes, Building2, ClipboardCheck, ClipboardList,
   FileBarChart, FileText, LayoutDashboard, MessageCircle, Package, Bell,
   Settings, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, TrendingUp, Users,
-  Receipt, Contact, Landmark,
+  Receipt, Contact, Landmark, KeyRound, PenLine,
 } from "lucide-react";
 
 export type Dest = {
@@ -29,11 +29,23 @@ export type Dest = {
   platform?: boolean;
   /** Admins the owner gave Sales and invoices (the database checks the same). */
   sales?: boolean;
+  /** Only the owner of the company. */
+  owner?: boolean;
+  /** People the owner gave Invoice entry. */
+  entry?: boolean;
+  /** Also fine for someone who has Invoice entry and nothing else. */
+  entryOk?: boolean;
 };
 
 export type Section = { label: string; items: Dest[] };
 
 export const SECTIONS: Section[] = [
+  {
+    label: "Entry",
+    items: [
+      { href: "/dashboard/entry", label: "Invoice entry", meta: "Add items to your invoices", icon: PenLine, entry: true, entryOk: true },
+    ],
+  },
   {
     label: "Floor",
     items: [
@@ -66,10 +78,11 @@ export const SECTIONS: Section[] = [
   {
     label: "People",
     items: [
-      { href: "/dashboard/users", label: "Users", meta: "Who has access", icon: Users, admin: true },
-      { href: "/dashboard/invites", label: "Invites", meta: "Pending join codes", icon: FileText },
-      { href: "/dashboard/chat", label: "Messages", meta: "Talk to your team", icon: MessageCircle },
-      { href: "/dashboard/support", label: "Support", meta: "Tickets and replies", icon: MessageCircle },
+      { href: "/dashboard/users", label: "Users", meta: "Accounts and roles", icon: Users, admin: true },
+      { href: "/dashboard/access", label: "Access", meta: "Who can do what", icon: KeyRound, owner: true },
+      { href: "/dashboard/invites", label: "Invites", meta: "Pending join codes", icon: FileText, admin: true },
+      { href: "/dashboard/chat", label: "Messages", meta: "Talk to your team", icon: MessageCircle, entryOk: true },
+      { href: "/dashboard/support", label: "Support", meta: "Tickets and replies", icon: MessageCircle, entryOk: true },
     ],
   },
   {
@@ -79,7 +92,7 @@ export const SECTIONS: Section[] = [
       { href: "/dashboard/storefronts", label: "Storefronts", meta: "Public buying pages", icon: ShoppingBag, admin: true },
       { href: "/dashboard/whitelist", label: "Whitelist", meta: "Allowed buyers", icon: ShieldCheck },
       { href: "/dashboard/blacklist", label: "Blacklist", meta: "Blocked buyers", icon: Ban, admin: true },
-      { href: "/dashboard/notifications", label: "Notifications", meta: "What reaches you", icon: Bell },
+      { href: "/dashboard/notifications", label: "Notifications", meta: "What reaches you", icon: Bell, entryOk: true },
       { href: "/dashboard/settings", label: "Settings", meta: "Org, security, theme", icon: Settings, admin: true },
     ],
   },
@@ -95,12 +108,23 @@ export const SECTIONS: Section[] = [
 ];
 
 /** The rail and the index both need the list already filtered for this user. */
-export function visibleSections(role: string | null, permissions: string | null, canSales = false): Section[] {
+export function visibleSections(
+  role: string | null,
+  permissions: string | null,
+  canSales = false,
+  extra: { isOwner?: boolean; canEntry?: boolean } = {}
+): Section[] {
   const isAdmin = role === "admin";
   const isPlatform = permissions === "superadmin";
+  /* Invoice entry and no admin rights: the menu is that page and the team's
+     messages, nothing else (the database refuses the rest in any case). */
+  const entryOnly = Boolean(extra.canEntry) && !isAdmin;
   return SECTIONS.map((s) => ({
     label: s.label,
     items: s.items.filter((i) => {
+      if (entryOnly) return Boolean(i.entryOk);
+      if (i.entry) return Boolean(extra.canEntry);
+      if (i.owner) return isAdmin && Boolean(extra.isOwner);
       if (i.platform) return isPlatform;
       if (i.sales) return isAdmin && canSales;
       if (i.admin) return isAdmin;
@@ -108,6 +132,9 @@ export function visibleSections(role: string | null, permissions: string | null,
     }),
   })).filter((s) => s.items.length > 0);
 }
+
+/** Where someone who has only Invoice entry may go; anywhere else sends them back to it. */
+export const ENTRY_ONLY_PATHS = ["/dashboard/entry", "/dashboard/chat", "/dashboard/support", "/dashboard/notifications"];
 
 /** Flat, in rail order, so ordinals match between the rail and the index. */
 export function flatten(sections: Section[]): Dest[] {

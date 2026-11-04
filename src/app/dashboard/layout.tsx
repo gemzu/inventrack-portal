@@ -28,12 +28,12 @@ import { getNotifications, getUnreadNotificationCount } from "@/lib/dataService"
 import ConsoleRail from "@/components/console/ConsoleRail";
 import AppGate from "@/components/console/AppGate";
 import ConsoleIndex from "@/components/console/ConsoleIndex";
-import { activeHref, flatten, visibleSections } from "@/components/console/nav";
+import { activeHref, ENTRY_ONLY_PATHS, flatten, visibleSections } from "@/components/console/nav";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const {
     user, userName, userRole, userActive, userPermissions, orgId, orgData, loading, logout, mfaPending,
-    memberships, switchOrganization, canSales,
+    memberships, switchOrganization, canSales, isOwner, canEntry, entryOnly,
   } = useAuth();
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
@@ -46,8 +46,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [notifPreview, setNotifPreview] = useState<Array<Record<string, unknown>>>([]);
 
   const sections = useMemo(
-    () => visibleSections(userRole, userPermissions, canSales),
-    [userRole, userPermissions, canSales]
+    () => visibleSections(userRole, userPermissions, canSales, { isOwner, canEntry }),
+    [userRole, userPermissions, canSales, isOwner, canEntry]
   );
   const dests = useMemo(() => flatten(sections), [sections]);
   const here = useMemo(() => {
@@ -68,6 +68,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.push("/setup/organization");
     }
   }, [user, loading, userRole, orgId, router, mfaPending]);
+
+  /* Someone with only Invoice entry has one place to be. */
+  useEffect(() => {
+    if (loading || !entryOnly) return;
+    if (!ENTRY_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))) router.replace("/dashboard/entry");
+  }, [loading, entryOnly, pathname, router]);
 
   useEffect(() => {
     if (!user) return;
@@ -272,6 +278,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         role={userRole}
         permissions={userPermissions}
         canSales={canSales}
+        isOwner={isOwner}
+        canEntry={canEntry}
         orgId={orgId}
       />
       </div>
