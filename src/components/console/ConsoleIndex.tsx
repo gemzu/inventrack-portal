@@ -23,6 +23,7 @@ import { supabase } from "@/lib/supabase";
 import { itemIdentity } from "@/lib/itemIdentity";
 import { flatten, visibleSections, type Dest } from "./nav";
 import { lockScroll } from "@/lib/scrollLock";
+import type { Perms } from "@/lib/access";
 
 type Hit = { href: string; label: string; meta: string; kind: "stock" | "order" };
 
@@ -34,6 +35,8 @@ export default function ConsoleIndex({
   canSales = false,
   isOwner = false,
   canEntry = false,
+  perms = null,
+  permsSet = null,
   orgId,
 }: {
   open: boolean;
@@ -43,10 +46,12 @@ export default function ConsoleIndex({
   canSales?: boolean;
   isOwner?: boolean;
   canEntry?: boolean;
+  perms?: Perms | null;
+  permsSet?: Partial<Perms> | null;
   orgId: string | null;
 }) {
   const router = useRouter();
-  const dests = useMemo(() => flatten(visibleSections(role, permissions, canSales, { isOwner, canEntry })), [role, permissions, canSales, isOwner, canEntry]);
+  const dests = useMemo(() => flatten(visibleSections(role, permissions, canSales, { isOwner, canEntry, perms, permsSet })), [role, permissions, canSales, isOwner, canEntry, perms, permsSet]);
 
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<Hit[]>([]);

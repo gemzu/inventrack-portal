@@ -11,6 +11,7 @@
  * drop that habit the moment you sign in.
  */
 
+import { areaAllowed, type Area, type Perms } from "@/lib/access";
 import {
   Activity, Ban, BookOpen, Boxes, Building2, ClipboardCheck, ClipboardList,
   FileBarChart, FileText, LayoutDashboard, MessageCircle, Package, Bell,
@@ -35,6 +36,8 @@ export type Dest = {
   entry?: boolean;
   /** Also fine for someone who has Invoice entry and nothing else. */
   entryOk?: boolean;
+  /** Shown to whoever has this area switched on (the owner chooses per person), whatever their role. */
+  area?: Area;
 };
 
 export type Section = { label: string; items: Dest[] };
@@ -50,17 +53,17 @@ export const SECTIONS: Section[] = [
     label: "Floor",
     items: [
       { href: "/dashboard", label: "Overview", meta: "Everything at a glance", icon: LayoutDashboard },
-      { href: "/dashboard/inventory", label: "Inventory", meta: "Every unit on the floor", icon: Package },
+      { href: "/dashboard/inventory", label: "Inventory", meta: "Every unit on the floor", icon: Package, area: "stock" },
       { href: "/dashboard/boxes", label: "Boxes", meta: "What is packed where", icon: Boxes },
       { href: "/dashboard/catalog", label: "Catalog", meta: "Products you carry", icon: BookOpen },
-      { href: "/dashboard/cycle-count", label: "Cycle count", meta: "Count, then reconcile", icon: ClipboardCheck },
+      { href: "/dashboard/cycle-count", label: "Cycle count", meta: "Count, then reconcile", icon: ClipboardCheck, area: "stock" },
     ],
   },
   {
     label: "Movement",
     items: [
-      { href: "/dashboard/orders", label: "Orders", meta: "Going out", icon: ShoppingCart, admin: true },
-      { href: "/dashboard/purchase-orders", label: "Purchase orders", meta: "Coming in", icon: ClipboardList, admin: true },
+      { href: "/dashboard/orders", label: "Orders", meta: "Going out", icon: ShoppingCart, admin: true, area: "orders" },
+      { href: "/dashboard/purchase-orders", label: "Purchase orders", meta: "Coming in", icon: ClipboardList, admin: true, area: "purchase_orders" },
       { href: "/dashboard/approvals", label: "Approvals", meta: "Waiting on you", icon: ClipboardCheck, admin: true },
       { href: "/dashboard/invoices", label: "Invoices", meta: "Billed and owed", icon: FileText, admin: true },
     ],
@@ -88,12 +91,12 @@ export const SECTIONS: Section[] = [
   {
     label: "Setup",
     items: [
-      { href: "/dashboard/facilities", label: "Facilities", meta: "Sites and warehouses", icon: Building2, admin: true },
-      { href: "/dashboard/storefronts", label: "Storefronts", meta: "Public buying pages", icon: ShoppingBag, admin: true },
+      { href: "/dashboard/facilities", label: "Facilities", meta: "Sites and warehouses", icon: Building2, admin: true, area: "settings" },
+      { href: "/dashboard/storefronts", label: "Storefronts", meta: "Public buying pages", icon: ShoppingBag, admin: true, area: "settings" },
       { href: "/dashboard/whitelist", label: "Whitelist", meta: "Allowed buyers", icon: ShieldCheck },
-      { href: "/dashboard/blacklist", label: "Blacklist", meta: "Blocked buyers", icon: Ban, admin: true },
+      { href: "/dashboard/blacklist", label: "Blacklist", meta: "Blocked buyers", icon: Ban, admin: true, area: "settings" },
       { href: "/dashboard/notifications", label: "Notifications", meta: "What reaches you", icon: Bell, entryOk: true },
-      { href: "/dashboard/settings", label: "Settings", meta: "Org, security, theme", icon: Settings, admin: true },
+      { href: "/dashboard/settings", label: "Settings", meta: "Org, security, theme", icon: Settings, admin: true, area: "settings" },
     ],
   },
   {
@@ -112,7 +115,7 @@ export function visibleSections(
   role: string | null,
   permissions: string | null,
   canSales = false,
-  extra: { isOwner?: boolean; canEntry?: boolean } = {}
+  extra: { isOwner?: boolean; canEntry?: boolean; perms?: Perms | null; permsSet?: Partial<Perms> | null } = {}
 ): Section[] {
   const isAdmin = role === "admin";
   const isPlatform = permissions === "superadmin";
@@ -124,6 +127,9 @@ export function visibleSections(
     items: s.items.filter((i) => {
       if (entryOnly) return Boolean(i.entryOk);
       if (i.entry) return Boolean(extra.canEntry);
+      /* An area follows the owner's choice for this person; until the database
+         has answered, the role decides as it always did. */
+      if (i.area && extra.perms) return areaAllowed(role, extra.perms, extra.permsSet ?? null, i.area);
       if (i.owner) return isAdmin && Boolean(extra.isOwner);
       if (i.platform) return isPlatform;
       if (i.sales) return isAdmin && canSales;

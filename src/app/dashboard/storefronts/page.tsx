@@ -179,7 +179,7 @@ export default function StorefrontsPage() {
   if (loading) return <ListSkeleton />;
 
   return (
-    <AdminGuard>
+    <AdminGuard area="settings">
       <PageShell
         title="Storefronts"
         subtitle="A storefront is a filtered view of your stock with its own join code. Buyers only ever see what the filters let through."

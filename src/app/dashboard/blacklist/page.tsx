@@ -67,7 +67,7 @@ export default function BlacklistPage() {
   };
 
   return (
-    <AdminGuard>
+    <AdminGuard area="settings">
       <PageShell
         title="Blacklist"
         subtitle="Codes the floor should refuse."

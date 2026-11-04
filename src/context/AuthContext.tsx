@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { codeOwed, verifyAuthenticatorCode } from "@/lib/mfa";
 import { ORG_COLUMNS } from "@/lib/orgColumns";
 import type { User } from "@supabase/supabase-js";
+import type { Perms } from "@/lib/access";
 import { forgetEphemeral, shouldEndOnOpen } from "@/lib/rememberMe";
 
 interface Facility {
@@ -68,6 +69,10 @@ interface AuthContextType {
   canSales: boolean;
   /** What this person may do (owner, Sales, Invoice entry) has been answered. Until then those flags are false only because nothing has come back yet. */
   accessReady: boolean;
+  /** What this person may do in each area (stock, purchase orders, orders, settings); null until the database has answered. */
+  perms: Perms | null;
+  /** The areas the owner chose explicitly for this person (on or off). */
+  permsSet: Partial<Perms> | null;
   /** The owner of this company: the only one who changes who can do what (Access). */
   isOwner: boolean;
   /** Invoice entry is on: may add items to the invoices the owner gave, and nothing else. */
@@ -100,6 +105,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [canSales, setCanSales] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [accessReady, setAccessReady] = useState(false);
+  const [perms, setPerms] = useState<Perms | null>(null);
+  const [permsSet, setPermsSet] = useState<Partial<Perms> | null>(null);
   const [canEntry, setCanEntry] = useState(false);
 
   /* The website had no way to change company: it opened whichever one the
@@ -242,6 +249,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsOwner(false);
         setCanEntry(false);
         setAccessReady(false);
+        setPerms(null);
+        setPermsSet(null);
         setLoading(false);
       }
     });
@@ -314,7 +323,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let stale = false;
     supabase.rpc("caller_access").then(({ data, error }) => {
       if (stale) return;
-      const a = !error && data && typeof data === "object" ? (data as { owner?: boolean; entry?: boolean; sales?: boolean }) : {};
+      const a = !error && data && typeof data === "object" ? (data as { owner?: boolean; entry?: boolean; sales?: boolean; perms?: Perms; perms_set?: Partial<Perms> }) : {};
+      setPerms(a.perms ?? null);
+      setPermsSet(a.perms_set ?? null);
       setIsOwner(a.owner === true);
       setCanEntry(a.entry === true);
       /* One call answers owner, Sales and Invoice entry (it used to be two). */
@@ -351,7 +362,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user, userRole, userName, userCompany, userActive, userPermissions,
         orgId, orgData, facilities, userFacilityId, loading, mfaPending, verifyMfa,
         login, signup, logout, resetPassword, refreshProfile,
-        memberships, switchOrganization, authReady, accessReady, canSales, isOwner, canEntry, entryOnly,
+        memberships, switchOrganization, authReady, accessReady, perms, permsSet, canSales, isOwner, canEntry, entryOnly,
       }}
     >
       {children}

@@ -166,7 +166,7 @@ export default function CycleCountPage() {
 
 
   return (
-    <AdminGuard>
+    <AdminGuard area="stock">
       <PageShell
         title="Cycle count"
         subtitle="Count what is physically there, then set the system to match. Lines you leave blank are not touched — not counting something is different from counting it as zero."

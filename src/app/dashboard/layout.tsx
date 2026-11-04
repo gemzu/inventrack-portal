@@ -33,7 +33,7 @@ import { activeHref, ENTRY_ONLY_PATHS, flatten, visibleSections } from "@/compon
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const {
     user, userName, userRole, userActive, userPermissions, orgId, orgData, loading, logout, mfaPending,
-    memberships, switchOrganization, canSales, isOwner, canEntry, entryOnly,
+    memberships, switchOrganization, canSales, isOwner, canEntry, entryOnly, perms, permsSet,
   } = useAuth();
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
@@ -46,8 +46,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [notifPreview, setNotifPreview] = useState<Array<Record<string, unknown>>>([]);
 
   const sections = useMemo(
-    () => visibleSections(userRole, userPermissions, canSales, { isOwner, canEntry }),
-    [userRole, userPermissions, canSales, isOwner, canEntry]
+    () => visibleSections(userRole, userPermissions, canSales, { isOwner, canEntry, perms, permsSet }),
+    [userRole, userPermissions, canSales, isOwner, canEntry, perms, permsSet]
   );
   const dests = useMemo(() => flatten(sections), [sections]);
   const here = useMemo(() => {
@@ -280,6 +280,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         canSales={canSales}
         isOwner={isOwner}
         canEntry={canEntry}
+        perms={perms}
+        permsSet={permsSet}
         orgId={orgId}
       />
       </div>

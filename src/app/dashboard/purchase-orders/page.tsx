@@ -117,7 +117,7 @@ export default function PurchaseOrdersPage() {
   };
 
   return (
-    <AdminGuard>
+    <AdminGuard area="purchase_orders">
       <PageShell
         title="Purchase orders"
         subtitle="Everything coming in, and how far along it is."

@@ -135,7 +135,7 @@ export default function FacilitiesPage() {
 
   if (loading) {
     return (
-      <AdminGuard>
+      <AdminGuard area="settings">
         <PageShell title="Sites" subtitle="Reading your locations.">
           <ListSkeleton rows={4} />
         </PageShell>
@@ -144,7 +144,7 @@ export default function FacilitiesPage() {
   }
 
   return (
-    <AdminGuard>
+    <AdminGuard area="settings">
       <PageShell
         title="Sites"
         subtitle="Warehouses and storage locations, and who is assigned to each."

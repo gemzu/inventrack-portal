@@ -13,10 +13,15 @@ async function rpc<T>(fn: string, args: Record<string, unknown> = {}): Promise<T
 
 /* ── The owner's side ─────────────────────────────────────────── */
 
+/* The four areas the owner switches per person (enforced by the database), on top of Sales, Delete and Invoice entry. */
+export type Area = "stock" | "purchase_orders" | "orders" | "settings";
+export type Perms = Record<Area, boolean>;
+export const AREAS: Area[] = ["stock", "purchase_orders", "orders", "settings"];
+
 export interface Member {
   user_id: string; email: string | null; name: string | null; role: "admin" | "worker";
   active: boolean; is_owner: boolean; can_sales: boolean; can_delete: boolean; can_entry: boolean;
-  grants: number; last_active_at: string | null;
+  grants: number; last_active_at: string | null; perms: Perms;
 }
 export interface Grant {
   grant_id: string; user_id: string; order_id: string; number: string; status: string;
@@ -36,6 +41,18 @@ export const accessGrantable = (org: string) => rpc<GrantableOrder[]>("access_gr
 export const accessHistory = (org: string, limit = 50) => rpc<HistoryRow[]>("access_history", { p_org_id: org, p_limit: limit });
 export const setEntry = (org: string, user: string, on: boolean) =>
   rpc<boolean>("access_set_entry", { p_org_id: org, p_user_id: user, p_on: on });
+/* May this person use this area on the website? The database answers "can they" (perms); the website
+   additionally shows a non-admin an area only when the owner switched it on for them (perms_set), so
+   workers do not suddenly get pages they never had just because the database lets them read the data. */
+export function areaAllowed(role: string | null, perms: Perms | null, permsSet: Partial<Perms> | null, area: Area): boolean {
+  if (!perms) return false;
+  return perms[area] === true && (role === "admin" || permsSet?.[area] === true);
+}
+
+export const resetArea = (org: string, user: string) =>
+  rpc<number>("access_reset_perms", { p_org_id: org, p_user_id: user });
+export const setArea = (org: string, user: string, area: Area, on: boolean) =>
+  rpc<boolean>("access_set_perm", { p_org_id: org, p_user_id: user, p_perm: area, p_allowed: on });
 export const setSales = (org: string, user: string, on: boolean) =>
   rpc<boolean>("org_set_sales_access", { p_org_id: org, p_user_id: user, p_on: on });
 export const setDelete = (org: string, user: string, on: boolean) =>
@@ -68,35 +85,35 @@ export const entryLinesSave = (order: string, lines: { description: string; part
 /* What a person can and cannot do, in plain words, from their switches.
    The Access page shows this beside every toggle, so the owner reads the
    consequence rather than a permission name. */
-export function describeAccess(m: Pick<Member, "role" | "is_owner" | "can_sales" | "can_delete" | "can_entry" | "grants">) {
+const AREA_TEXT: Record<Area, [string, string]> = {
+  stock: ["See, add, edit and delete stock lines, and use the stock tools (prices, label reading, splitting)", "See or change stock lines"],
+  purchase_orders: ["See, create and receive purchase orders", "Purchase orders"],
+  orders: ["See and handle orders going out", "Orders going out"],
+  settings: ["Change organization settings, facilities, storefronts and the blacklist", "Organization settings, facilities, storefronts"],
+};
+
+export function describeAccess(m: Pick<Member, "role" | "is_owner" | "can_sales" | "can_delete" | "can_entry" | "grants" | "perms">) {
   const can: string[] = [];
   const cannot: string[] = [];
   if (m.is_owner) {
     can.push("Everything, including who can do what");
     return { can, cannot };
   }
-  if (m.role === "admin") {
-    can.push("See and change stock, boxes, orders, purchase orders, reports and settings");
-    can.push("Manage users and invites");
-    if (m.can_sales) can.push("Sales orders, invoices, customers, billing companies and money reports");
-    else cannot.push("Sales orders, invoices and money reports");
-    if (m.can_delete) can.push("Delete records");
-    else cannot.push("Delete records");
-    cannot.push("Change who can do what (owner only)");
-  } else {
-    can.push("Scan and add stock in the phone app");
-    cannot.push("See stock levels or prices on the website");
-    cannot.push("Settings, users, reports");
-    cannot.push("Customers and billing companies");
-    if (m.can_entry) {
-      can.push(m.grants > 0
-        ? `Add and change items on ${m.grants} invoice${m.grants === 1 ? "" : "s"} you chose, and nothing else`
-        : "Invoice entry is on, but no invoice is shared with them yet");
-      cannot.push("Any invoice you have not shared with them");
-    } else {
-      cannot.push("Sales orders and invoices");
-    }
-    if (m.can_delete) can.push("Delete records");
+  if (m.role === "worker") can.push("Scan and add stock in the phone app");
+  for (const a of AREAS) {
+    if (m.perms?.[a]) can.push(AREA_TEXT[a][0]);
+    else cannot.push(AREA_TEXT[a][1]);
   }
+  if (m.role === "admin") can.push("Manage users and invites (as an admin)");
+  if (m.can_sales) can.push("Sales orders, invoices, customers, billing companies and money reports");
+  else cannot.push("Sales orders, invoices and money reports");
+  if (m.can_delete) can.push("Delete records");
+  if (m.can_entry) {
+    can.push(m.grants > 0
+      ? `Add and change items on ${m.grants} invoice${m.grants === 1 ? "" : "s"} you chose, and nothing else`
+      : "Invoice entry is on, but no invoice is shared with them yet");
+    cannot.push("Any invoice you have not shared with them");
+  }
+  cannot.push("Change who can do what (owner only)");
   return { can, cannot };
 }

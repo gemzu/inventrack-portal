@@ -157,7 +157,7 @@ export default function SettingsPage() {
   );
 
   return (
-    <AdminGuard>
+    <AdminGuard area="settings">
       <PageShell
         title="Settings"
         subtitle="Everything here saves itself as you leave the field."

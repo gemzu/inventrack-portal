@@ -73,7 +73,7 @@ const ORDER_STATUSES = [...ORDER_STATUS_FLOW];
    invoices ticked, are one click away. */
 export default function OrdersPage() {
   return (
-    <AdminGuard>
+    <AdminGuard area="orders">
       <StorefrontOrders />
     </AdminGuard>
   );

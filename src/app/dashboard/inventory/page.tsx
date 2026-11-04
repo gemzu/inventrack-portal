@@ -593,7 +593,7 @@ export default function InventoryPage() {
   /* Waiting looks like empty racks, not a spinner in the middle of nothing. */
   if (loading) {
     return (
-      <AdminGuard>
+      <AdminGuard area="stock">
         <PageShell title="Inventory" subtitle="Reading the floor.">
           <div className="space-y-3">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -613,7 +613,7 @@ export default function InventoryPage() {
   const allSelected = selected.size === shown && shown > 0;
 
   return (
-    <AdminGuard>
+    <AdminGuard area="stock">
       <PageShell
         title="Inventory"
         subtitle="Every unit on the floor. Open a line to change it; edits save as you leave each field."

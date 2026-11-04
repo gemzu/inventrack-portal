@@ -27,22 +27,31 @@ import { Panel, Figure, ColHead, ListSkeleton } from "@/components/console/surfa
 import { Action, Drawer, Field, Input, Modal, Select, Toggle } from "@/components/console/controls";
 import {
   accessGrantable, accessGrants, accessHistory, accessOverview, describeAccess, grantOrder, revokeOrder,
-  setDelete, setEntry, setSales,
-  type Grant, type GrantableOrder, type HistoryRow, type Member,
+  resetArea, setArea, setDelete, setEntry, setSales,
+  type Area, type Grant, type GrantableOrder, type HistoryRow, type Member,
 } from "@/lib/access";
 import { fmtDate } from "@/lib/sales";
 import { DELETE_ACCESS_ORGS } from "@/lib/roles";
 
 type Key = "can_sales" | "can_delete" | "can_entry";
+type SwitchKey = Key | Area;
 
-const SWITCHES: { key: Key; label: string; short: string; hint: string }[] = [
-  { key: "can_sales", label: "Sales and invoices", short: "Sales", hint: "Sales orders, invoices, customers, billing companies and money reports. Admins only." },
-  { key: "can_delete", label: "Delete", short: "Delete", hint: "May delete stock and records. Admins and workers." },
-  { key: "can_entry", label: "Invoice entry", short: "Entry", hint: "May add and change items on the invoices you share with them, and nothing else. Workers only." },
+/* Areas first (they cover what a person can see and change across the website and the app), then the three
+   that stand alone. Admins start with the areas they always had; workers with orders only. */
+const SWITCHES: { key: SwitchKey; label: string; short: string; hint: string; group: "areas" | "other" }[] = [
+  { key: "stock", label: "Stock", short: "Stock", group: "areas", hint: "See, add, edit and delete stock lines, and use the stock tools (prices, label reading, splitting). Boxes, the catalog and scanning in the app are not affected." },
+  { key: "purchase_orders", label: "Purchase orders", short: "POs", group: "areas", hint: "See, create and receive purchase orders." },
+  { key: "orders", label: "Orders", short: "Orders", group: "areas", hint: "See and handle orders going out. Buyers always see their own orders." },
+  { key: "settings", label: "Settings and setup", short: "Setup", group: "areas", hint: "Organization settings, facilities, storefronts and their buyers, and the blacklist." },
+  { key: "can_sales", label: "Sales and invoices", short: "Sales", group: "other", hint: "Sales orders, invoices, customers, billing companies and money reports. Admins only." },
+  { key: "can_entry", label: "Invoice entry", short: "Entry", group: "other", hint: "May add and change items on the invoices you share with them, and nothing else. Workers only." },
+  { key: "can_delete", label: "Delete", short: "Delete", group: "other", hint: "May delete stock and records. Admins and workers." },
 ];
+const isArea = (k: SwitchKey): k is Area => k === "stock" || k === "purchase_orders" || k === "orders" || k === "settings";
+const valueOf = (m: Member, k: SwitchKey) => (isArea(k) ? m.perms?.[k] === true : m[k]);
 
 /* Why a switch does not apply to this person, or "" when it does. */
-function notFor(m: Member, key: Key) {
+function notFor(m: Member, key: SwitchKey) {
   if (m.is_owner) return "The owner can always do this.";
   if (!m.active) return "This account is switched off.";
   if (key === "can_sales" && m.role !== "admin") return "Only admins can have Sales and invoices.";
@@ -109,21 +118,36 @@ function AccessEditor({ orgId }: { orgId: string }) {
   };
 
   /* Optimistic: the switch moves at once and goes back if the database says no. */
-  const flip = async (m: Member, key: Key, on: boolean) => {
-    setMembers((prev) => (prev || []).map((x) => (x.user_id === m.user_id ? { ...x, [key]: on, ...(key === "can_entry" && !on ? { grants: 0 } : {}) } : x)));
+  const apply = (m: Member, key: SwitchKey, on: boolean): Member =>
+    isArea(key) ? { ...m, perms: { ...m.perms, [key]: on } } : { ...m, [key]: on, ...(key === "can_entry" && !on ? { grants: 0 } : {}) };
+  const flip = async (m: Member, key: SwitchKey, on: boolean) => {
+    setMembers((prev) => (prev || []).map((x) => (x.user_id === m.user_id ? apply(x, key, on) : x)));
     try {
-      if (key === "can_sales") await setSales(orgId, m.user_id, on);
+      if (isArea(key)) await setArea(orgId, m.user_id, key, on);
+      else if (key === "can_sales") await setSales(orgId, m.user_id, on);
       else if (key === "can_delete") await setDelete(orgId, m.user_id, on);
       else await setEntry(orgId, m.user_id, on);
       toast(`${m.name || m.email}: ${SWITCHES.find((s) => s.key === key)!.label} ${on ? "on" : "off"}`, "success");
       load();
     } catch (e) {
-      setMembers((prev) => (prev || []).map((x) => (x.user_id === m.user_id ? { ...x, [key]: !on } : x)));
+      setMembers((prev) => (prev || []).map((x) => (x.user_id === m.user_id ? apply(x, key, !on) : x)));
       toast((e as Error).message, "error");
     }
   };
 
-  const withAccess = (members || []).filter((m) => !m.is_owner && (m.can_sales || m.can_delete || m.can_entry)).length;
+  const defaults: Record<string, Record<Area, boolean>> = {
+    admin: { stock: true, purchase_orders: true, orders: true, settings: true },
+    worker: { stock: false, purchase_orders: false, orders: true, settings: false },
+  };
+  const changed = (m: Member) => (["stock", "purchase_orders", "orders", "settings"] as Area[]).some((a) => m.perms?.[a] !== defaults[m.role]?.[a]);
+  const resetPerson = async (m: Member) => {
+    try {
+      const n = await resetArea(orgId, m.user_id);
+      toast(n ? `${m.name || m.email} follows their role again` : `${m.name || m.email} already follows their role`, "success");
+      load();
+    } catch (e) { toast((e as Error).message, "error"); }
+  };
+  const withAccess = (members || []).filter((m) => !m.is_owner && (m.can_sales || m.can_delete || m.can_entry || changed(m))).length;
   const open = openId ? byId.get(openId) || null : null;
 
   return (
@@ -144,7 +168,7 @@ function AccessEditor({ orgId }: { orgId: string }) {
 
           <div className="reveal flex flex-wrap items-baseline gap-x-10 gap-y-4">
             <Figure label="People" value={members.length} />
-            <Figure label="With extra access" value={withAccess} tone={withAccess ? "brand" : undefined} />
+            <Figure label="Set differently from their role" value={withAccess} tone={withAccess ? "brand" : undefined} />
             <Figure label="Invoices shared" value={grants.length} />
           </div>
 
@@ -154,8 +178,8 @@ function AccessEditor({ orgId }: { orgId: string }) {
             <Panel className="reveal">
               <div className="hidden items-center gap-4 border-b border-border px-5 py-2.5 md:flex">
                 <ColHead className="min-w-0 flex-1">Person</ColHead>
-                {switches.map((s) => <span key={s.key} className="w-24 shrink-0 text-center" title={s.hint}><ColHead>{s.short}</ColHead></span>)}
-                <ColHead className="w-24 shrink-0 text-right">Invoices</ColHead>
+                {switches.map((s) => <span key={s.key} className="w-[4.25rem] shrink-0 text-center" title={`${s.label}: ${s.hint}`}><ColHead>{s.short}</ColHead></span>)}
+                <ColHead className="w-16 shrink-0 text-right">Invoices</ColHead>
               </div>
               {members.map((m) => (
                 <div key={m.user_id} className="row-line flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3.5">
@@ -172,13 +196,13 @@ function AccessEditor({ orgId }: { orgId: string }) {
                   {switches.map((s) => {
                     const why = notFor(m, s.key);
                     return (
-                      <div key={s.key} className="flex w-24 shrink-0 items-center justify-center" title={why || s.hint}>
+                      <div key={s.key} className="flex w-[4.25rem] shrink-0 items-center justify-center" title={why || `${s.label}: ${s.hint}`}>
                         {why ? <span className="text-muted-foreground/50" aria-label={`${s.label}: ${why}`}>—</span>
-                          : <Toggle value={m[s.key]} onChange={(v) => flip(m, s.key, v)} label={`${s.label} for ${m.name || m.email}`} />}
+                          : <Toggle value={valueOf(m, s.key)} onChange={(v) => flip(m, s.key, v)} label={`${s.label} for ${m.name || m.email}`} />}
                       </div>
                     );
                   })}
-                  <div className="w-24 shrink-0 text-right">
+                  <div className="w-16 shrink-0 text-right">
                     <button type="button" onClick={() => setOpenId(m.user_id)} className="mono text-sm tabular-nums text-muted-foreground hover:text-foreground">
                       {m.can_entry ? m.grants : "—"}
                     </button>
@@ -210,7 +234,7 @@ function AccessEditor({ orgId }: { orgId: string }) {
       <PersonDrawer
         orgId={orgId} switches={switches} member={open} grants={grants.filter((g) => open && g.user_id === open.user_id)}
         history={history.filter((h) => open && h.target_user_id === open.user_id)}
-        onClose={() => setOpenId(null)} onFlip={flip} onChanged={load}
+        onClose={() => setOpenId(null)} onFlip={flip} onChanged={load} onReset={resetPerson}
       />
       <HelperModal open={helperOpen} orgId={orgId} members={members || []} onClose={() => setHelperOpen(false)} onDone={() => { setHelperOpen(false); load(); }} />
     </PageShell>
@@ -220,10 +244,10 @@ function AccessEditor({ orgId }: { orgId: string }) {
 /* ── One person ───────────────────────────────────────────────── */
 
 function PersonDrawer({
-  orgId, switches, member, grants, history, onClose, onFlip, onChanged,
+  orgId, switches, member, grants, history, onClose, onFlip, onChanged, onReset,
 }: {
   orgId: string; switches: typeof SWITCHES; member: Member | null; grants: Grant[]; history: HistoryRow[];
-  onClose: () => void; onFlip: (m: Member, key: Key, on: boolean) => void; onChanged: () => void;
+  onClose: () => void; onFlip: (m: Member, key: SwitchKey, on: boolean) => void; onChanged: () => void; onReset: (m: Member) => void;
 }) {
   const { toast } = useToast();
   const [orders, setOrders] = useState<GrantableOrder[]>([]);
@@ -277,10 +301,11 @@ function PersonDrawer({
           </ul>
         </section>
 
-        <section>
-          <h3 className="mb-3 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Switches</h3>
+        {(["areas", "other"] as const).map((group) => (
+        <section key={group}>
+          <h3 className="mb-3 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">{group === "areas" ? "Areas" : "Sales, invoice entry and delete"}</h3>
           <div className="space-y-4">
-            {switches.map((s) => {
+            {switches.filter((s) => s.group === group).map((s) => {
               const why = notFor(member, s.key);
               return (
                 <div key={s.key} className="flex items-start justify-between gap-4">
@@ -288,12 +313,22 @@ function PersonDrawer({
                     <p className="text-sm font-medium">{s.label}</p>
                     <p className="text-[12px] leading-relaxed text-muted-foreground">{why || s.hint}</p>
                   </div>
-                  {why ? null : <Toggle value={member[s.key]} onChange={(v) => onFlip(member, s.key, v)} label={`${s.label} for ${member.name || member.email}`} />}
+                  {why ? null : <Toggle value={valueOf(member, s.key)} onChange={(v) => onFlip(member, s.key, v)} label={`${s.label} for ${member.name || member.email}`} />}
                 </div>
               );
             })}
           </div>
-          <p className="mt-4 text-[12px] text-muted-foreground">
+          {group === "areas" ? (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+              <p className="min-w-0 flex-1 text-[12px] text-muted-foreground">Enforced by the database, so it holds on the website and in the phone app.</p>
+              {!member.is_owner ? <button type="button" onClick={() => onReset(member)} className="text-[12px] font-semibold underline underline-offset-2 hover:text-foreground">Reset to role defaults</button> : null}
+            </div>
+          ) : null}
+        </section>
+        ))}
+
+        <section>
+          <p className="text-[12px] text-muted-foreground">
             Role, and switching the whole account off, are on the <Link href="/dashboard/users" className="underline underline-offset-2 hover:text-foreground">Users</Link> page.
           </p>
         </section>
