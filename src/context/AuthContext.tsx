@@ -32,6 +32,18 @@ interface OrgData {
 }
 
 /** A company this account belongs to, for the switcher. */
+/* The organization this person had open last time, per person, kept in this browser. It is only a head start:
+   the organization and sites are requested at the same moment as the profile instead of after it, and used
+   only if the profile then says the same organization. Wrong or missing, nothing changes: they are asked for
+   the long way, as before. (The database decides what they may read in every case.) */
+const orgHintKey = (uid: string) => `invems-org-hint:${uid}`;
+function readOrgHint(uid: string): string | null {
+  try { return localStorage.getItem(orgHintKey(uid)); } catch { return null; }
+}
+function writeOrgHint(uid: string, org: string) {
+  try { localStorage.setItem(orgHintKey(uid), org); } catch { /* private mode: no head start next time */ }
+}
+
 export interface Membership {
   orgId: string;
   name: string;
@@ -143,6 +155,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadUserProfile = async (supabaseUser: User) => {
     try {
+      const orgQuery = (id: string) => Promise.all([
+        supabase.from("organizations").select(ORG_COLUMNS).eq("id", id).single<Record<string, unknown>>(),
+        supabase.from("facilities").select("*").eq("org_id", id),
+      ]);
+      const hintOrg = readOrgHint(supabaseUser.id);
+      const head = hintOrg ? orgQuery(hintOrg) : null;
+      head?.catch(() => { /* only used if it turns out to be the right organization */ });
       const { data, error } = await supabase
         .from("users")
         .select("*")
@@ -168,11 +187,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.org_id) {
         try {
-          /* Together: the second used to wait for the first for no reason. */
-          const [{ data: orgDoc }, { data: facData }] = await Promise.all([
-            supabase.from("organizations").select(ORG_COLUMNS).eq("id", data.org_id).single<Record<string, unknown>>(),
-            supabase.from("facilities").select("*").eq("org_id", data.org_id),
-          ]);
+          /* Together, and already under way when the head start was right. */
+          const [{ data: orgDoc }, { data: facData }] = await (head && hintOrg === data.org_id ? head : orgQuery(data.org_id));
+          writeOrgHint(supabaseUser.id, data.org_id);
 
           if (orgDoc) {
             setOrgData({

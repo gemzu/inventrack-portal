@@ -75,10 +75,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!ENTRY_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))) router.replace("/dashboard/entry");
   }, [loading, entryOnly, pathname, router]);
 
+  /* By id, not by the user object: that object is replaced several times while signing in (session read, then
+     the auth listener, then a token refresh), and this ran, and asked the database, every time. */
+  const userId = user?.id;
   useEffect(() => {
-    if (!user) return;
-    getUnreadNotificationCount(user.id).then(setUnreadCount).catch(() => setUnreadCount(0));
-  }, [user]);
+    if (!userId) return;
+    getUnreadNotificationCount(userId).then(setUnreadCount).catch(() => setUnreadCount(0));
+  }, [userId]);
 
   /* The index answers the shortcut people already try for search. */
   useEffect(() => {
