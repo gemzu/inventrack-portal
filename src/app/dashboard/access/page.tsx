@@ -180,7 +180,7 @@ function AccessEditor({ orgId }: { orgId: string }) {
               <div className="hidden items-center gap-4 border-b border-border px-5 py-2.5 md:flex">
                 <ColHead className="min-w-0 flex-1">Person</ColHead>
                 {switches.map((s) => <span key={s.key} className="w-[4.25rem] shrink-0 text-center" title={`${s.label}: ${s.hint}`}><ColHead>{s.short}</ColHead></span>)}
-                <ColHead className="w-16 shrink-0 text-right">Invoices</ColHead>
+                <span className="w-16 shrink-0 text-right" title="Invoices shared with a data-entry helper (people with Invoice entry)"><ColHead>Shared</ColHead></span>
               </div>
               {members.map((m) => (
                 <div key={m.user_id} className="row-line flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3.5">
