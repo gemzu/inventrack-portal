@@ -26,6 +26,8 @@ import {
   STATUS_LABEL, STATUS_TONE, taxLine, taxOn, toCents, todayIso, unsendSalesOrder, voidSalesOrder, why,
   type BillingCompany, type Customer, type SalesInvoice, type SalesLine, type SalesOrder,
 } from "@/lib/sales";
+import ImportLinesButton from "@/components/sales/ImportLines";
+import type { ImportLine } from "@/lib/importLines";
 
 type EditLine = SalesLine & { key: string; priceText: string; qtyText?: string };
 type Stock = Record<string, { quantity: number; status: string }>;
@@ -244,6 +246,16 @@ function SalesOrderEditor() {
     scheduleAutosave();
     descRef.current?.focus();
   };
+  /* Lines from a spreadsheet: put on the order like typed ones, then the autosave runs. */
+  const importLines = (list: ImportLine[]) => {
+    setLines((prev) => [...prev, ...list.map((l) => ({
+      key: nextKey(), source_item_id: null, description: l.description, part_number: l.part || null,
+      brand: null, quantity: l.qty, unit_price_cents: l.cents, priceText: centsToInput(l.cents),
+    }))]);
+    setDirty(true);
+    setLastAdded(`${list.length} item${list.length === 1 ? "" : "s"} from a spreadsheet`);
+    scheduleAutosave();
+  };
   const quickKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") { e.preventDefault(); quickAdd(); }
   };
@@ -366,6 +378,7 @@ function SalesOrderEditor() {
               Open invoice {liveInvoice.number}
             </Link>
           )}
+          {editable && <ImportLinesButton onImport={importLines} disabled={!!busy} />}
           {editable && (
             <>
               <Action onClick={() => save()} disabled={!!busy || !dirty || taxBad}>{busy === "save" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}Save draft</Action>

@@ -21,6 +21,8 @@ import { Panel, ColHead, CrateSkeleton } from "@/components/console/surfaces";
 import { Action, Input } from "@/components/console/controls";
 import { entryLinesSave, entryOrderGet, type EntryLine, type EntryOrder } from "@/lib/access";
 import { centsToInput, fmtMoney, toCents, why } from "@/lib/sales";
+import ImportLinesButton from "@/components/sales/ImportLines";
+import type { ImportLine } from "@/lib/importLines";
 
 type Row = { key: string; description: string; part: string; qty: number; qtyText?: string; cents: number | null; priceText: string };
 
@@ -142,6 +144,12 @@ function EntrySheet() {
   const quickKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") { e.preventDefault(); quickAdd(); }
   };
+  /* Lines from a spreadsheet go on the page like typed ones; the autosave below saves them. */
+  const importLines = (list: ImportLine[]) => {
+    setRows((prev) => [...prev, ...list.map((l) => ({ key: nextKey(), description: l.description, part: l.part, qty: l.qty, cents: l.cents, priceText: centsToInput(l.cents) }))]);
+    setLastAdded(`${list.length} item${list.length === 1 ? "" : "s"} from a spreadsheet`);
+    touch();
+  };
   const priceEnter = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== "Enter") return;
     e.preventDefault();
@@ -175,6 +183,7 @@ function EntrySheet() {
     <PageShell
       title={order.number}
       subtitle={[order.company, order.customer].filter(Boolean).join(" → ") || "Invoice"}
+      actions={editable ? <ImportLinesButton onImport={importLines} /> : undefined}
     >
       {!editable ? (
         <p className="mb-4 rounded-md bg-amber-500/10 p-3 text-[13px] text-amber-800 dark:text-amber-200">
