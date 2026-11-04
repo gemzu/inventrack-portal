@@ -44,6 +44,33 @@ function writeOrgHint(uid: string, org: string) {
   try { localStorage.setItem(orgHintKey(uid), org); } catch { /* private mode: no head start next time */ }
 }
 
+/* What the dashboard needs to draw itself, saved in this browser per person. The next visit opens at once from it
+   and asks the database again in the background; whatever the database says then replaces it. Only the picture
+   is early: what a person may read or change is decided by the database on every request, never by this copy. */
+const profileKey = (uid: string) => `invems-profile:${uid}`;
+interface ProfileCopy {
+  role: string | null; name: string | null; company: string | null; active: boolean;
+  permissions: string | null; orgId: string | null; facilityId: string | null;
+  orgData: unknown; facilities: unknown;
+}
+function readProfileCopy(uid: string): ProfileCopy | null {
+  try {
+    const raw = localStorage.getItem(profileKey(uid));
+    return raw ? (JSON.parse(raw) as ProfileCopy) : null;
+  } catch { return null; }
+}
+function writeProfileCopy(uid: string, copy: ProfileCopy) {
+  try { localStorage.setItem(profileKey(uid), JSON.stringify(copy)); } catch { /* private mode: no early open next time */ }
+}
+function forgetProfileCopies() {
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith("invems-profile:")) localStorage.removeItem(k);
+    }
+  } catch { /* nothing to forget */ }
+}
+
 export interface Membership {
   orgId: string;
   name: string;
@@ -185,6 +212,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUserFacilityId(data.facility_id || null);
       fetchMemberships(supabaseUser.id);
 
+      let savedOrg: unknown = null;
+      let savedFacilities: unknown = [];
       if (data.org_id) {
         try {
           /* Together, and already under way when the head start was right. */
@@ -192,7 +221,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           writeOrgHint(supabaseUser.id, data.org_id);
 
           if (orgDoc) {
-            setOrgData({
+            const nextOrg = {
               name: orgDoc.name as string,
               ownerId: orgDoc.owner_id as string,
               sheetId: (orgDoc.sheet_id as string) ?? undefined,
@@ -206,17 +235,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               notifyLowStock: (orgDoc.notify_low_stock as boolean) ?? undefined,
               notifyNewOrders: (orgDoc.notify_new_orders as boolean) ?? undefined,
               notifySubmissions: (orgDoc.notify_submissions as boolean) ?? undefined,
-            });
+            };
+            setOrgData(nextOrg);
+            savedOrg = nextOrg;
           }
 
-          setFacilities(
-            (facData || []).map((f: Record<string, unknown>) => ({
-              id: f.id as string,
-              name: f.name as string,
-              state: f.state as string,
-              address: f.address as string,
-            }))
-          );
+          const nextFacilities = (facData || []).map((f: Record<string, unknown>) => ({
+            id: f.id as string,
+            name: f.name as string,
+            state: f.state as string,
+            address: f.address as string,
+          }));
+          setFacilities(nextFacilities);
+          savedFacilities = nextFacilities;
+          if (orgDoc) {
+            writeProfileCopy(supabaseUser.id, {
+              role: data.role || null, name: data.name || null, company: data.company || null, active: data.active ?? false,
+              permissions: data.permissions || null, orgId: data.org_id, facilityId: data.facility_id || null,
+              orgData: savedOrg, facilities: savedFacilities,
+            });
+          }
         } catch (orgErr) {
           console.warn("Could not fetch org data:", orgErr);
         }
@@ -239,6 +277,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(currentUser);
       setAuthReady(true);
       if (currentUser) {
+        /* Open from the saved copy at once when there is one; the real answer replaces it moments later. */
+        const copy = readProfileCopy(currentUser.id);
+        if (copy && copy.orgId) {
+          setUserRole(copy.role);
+          setUserName(copy.name);
+          setUserCompany(copy.company);
+          setUserActive(copy.active);
+          setUserPermissions(copy.permissions);
+          setOrgId(copy.orgId);
+          setUserFacilityId(copy.facilityId);
+          setOrgData(copy.orgData as OrgData | null);
+          setFacilities((copy.facilities as Facility[]) || []);
+          setLoading(false);
+        }
         fetchUserProfile(currentUser);
       } else {
         setLoading(false);
@@ -252,6 +304,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (currentUser) {
         fetchUserProfile(currentUser);
       } else {
+        forgetProfileCopies();
         setUserRole(null);
         setUserName(null);
         setUserCompany(null);
@@ -308,6 +361,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      device, so signing out of the website used to sign the phone out too. */
   const logout = async () => {
     forgetEphemeral();
+    forgetProfileCopies();
     await supabase.auth.signOut({ scope: "local" });
   };
 
