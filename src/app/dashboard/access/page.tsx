@@ -31,6 +31,7 @@ import {
   type Grant, type GrantableOrder, type HistoryRow, type Member,
 } from "@/lib/access";
 import { fmtDate } from "@/lib/sales";
+import { DELETE_ACCESS_ORGS } from "@/lib/roles";
 
 type Key = "can_sales" | "can_delete" | "can_entry";
 
@@ -58,8 +59,15 @@ export default function AccessPage() {
 }
 
 function Owner() {
-  const { orgId, isOwner, loading } = useAuth();
-  if (loading) return null;
+  const { orgId, isOwner, loading, accessReady } = useAuth();
+  /* Not "owner only" until the database has actually said so. */
+  if (loading || !accessReady) {
+    return (
+      <PageShell title="Access" subtitle="Who can do what in your company.">
+        <ListSkeleton rows={4} />
+      </PageShell>
+    );
+  }
   if (!isOwner || !orgId) {
     return (
       <PageShell title="Access" subtitle="Owner only.">
@@ -92,6 +100,8 @@ function AccessEditor({ orgId }: { orgId: string }) {
   }, [orgId]);
   useEffect(() => { load(); }, [load]);
 
+  /* Delete rights are owner-controlled only where that is switched on (same as the app). */
+  const switches = useMemo(() => SWITCHES.filter((s) => s.key !== "can_delete" || DELETE_ACCESS_ORGS.includes(orgId)), [orgId]);
   const byId = useMemo(() => new Map((members || []).map((m) => [m.user_id, m])), [members]);
   const nameOf = (id: string | null) => {
     const m = id ? byId.get(id) : undefined;
@@ -144,7 +154,7 @@ function AccessEditor({ orgId }: { orgId: string }) {
             <Panel className="reveal">
               <div className="hidden items-center gap-4 border-b border-border px-5 py-2.5 md:flex">
                 <ColHead className="min-w-0 flex-1">Person</ColHead>
-                {SWITCHES.map((s) => <span key={s.key} className="w-24 shrink-0 text-center" title={s.hint}><ColHead>{s.short}</ColHead></span>)}
+                {switches.map((s) => <span key={s.key} className="w-24 shrink-0 text-center" title={s.hint}><ColHead>{s.short}</ColHead></span>)}
                 <ColHead className="w-24 shrink-0 text-right">Invoices</ColHead>
               </div>
               {members.map((m) => (
@@ -159,7 +169,7 @@ function AccessEditor({ orgId }: { orgId: string }) {
                       {m.role === "admin" ? "Admin" : "Worker"} · {m.email}
                     </p>
                   </button>
-                  {SWITCHES.map((s) => {
+                  {switches.map((s) => {
                     const why = notFor(m, s.key);
                     return (
                       <div key={s.key} className="flex w-24 shrink-0 items-center justify-center" title={why || s.hint}>
@@ -198,7 +208,7 @@ function AccessEditor({ orgId }: { orgId: string }) {
       )}
 
       <PersonDrawer
-        orgId={orgId} member={open} grants={grants.filter((g) => open && g.user_id === open.user_id)}
+        orgId={orgId} switches={switches} member={open} grants={grants.filter((g) => open && g.user_id === open.user_id)}
         history={history.filter((h) => open && h.target_user_id === open.user_id)}
         onClose={() => setOpenId(null)} onFlip={flip} onChanged={load}
       />
@@ -210,9 +220,9 @@ function AccessEditor({ orgId }: { orgId: string }) {
 /* ── One person ───────────────────────────────────────────────── */
 
 function PersonDrawer({
-  orgId, member, grants, history, onClose, onFlip, onChanged,
+  orgId, switches, member, grants, history, onClose, onFlip, onChanged,
 }: {
-  orgId: string; member: Member | null; grants: Grant[]; history: HistoryRow[];
+  orgId: string; switches: typeof SWITCHES; member: Member | null; grants: Grant[]; history: HistoryRow[];
   onClose: () => void; onFlip: (m: Member, key: Key, on: boolean) => void; onChanged: () => void;
 }) {
   const { toast } = useToast();
@@ -270,7 +280,7 @@ function PersonDrawer({
         <section>
           <h3 className="mb-3 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Switches</h3>
           <div className="space-y-4">
-            {SWITCHES.map((s) => {
+            {switches.map((s) => {
               const why = notFor(member, s.key);
               return (
                 <div key={s.key} className="flex items-start justify-between gap-4">

@@ -8,8 +8,8 @@ import PageShell from "@/components/page-shell";
    database checks the same on every call (caller_can_entry); this only saves
    everyone else from an empty page that does not say why. */
 export default function EntryGuard({ children }: { children: ReactNode }) {
-  const { canEntry, loading } = useAuth();
-  if (loading) return null;
+  const { canEntry, loading, accessReady } = useAuth();
+  if (loading || !accessReady) return null;
   if (!canEntry) {
     return (
       <PageShell title="Invoice entry" subtitle="Not switched on for you.">

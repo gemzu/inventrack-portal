@@ -16,6 +16,9 @@ export const PERMISSIONS = {
 export type Role = (typeof ROLES)[keyof typeof ROLES];
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
+/* Owner-controlled delete rights: switched on only for these organizations (as in the app). */
+export const DELETE_ACCESS_ORGS = ["054fd1ca-927b-413f-93a4-c1e4d1f3853a"];
+
 export function isOwner(perm?: string | null) {
   return perm === PERMISSIONS.OWNER;
 }

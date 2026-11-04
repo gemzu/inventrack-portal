@@ -71,7 +71,7 @@ export default function InvitesPage() {
 
   const handleShare = async () => {
     if (!currentCode) return;
-    const text = `Join our Invems organization with code: ${currentCode}`;
+    const text = `Join our team on Invems with code ${currentCode}. On the web: go to www.invems.com/signup, click "I have a code" and enter it. In the app: choose "I have a code" when you sign up.`;
     if (typeof navigator !== "undefined" && "share" in navigator) {
       try {
         await (navigator as Navigator & { share: (d: { text: string }) => Promise<void> }).share({ text });
@@ -170,7 +170,13 @@ export default function InvitesPage() {
           <div className="reveal d1 space-y-3 border-t border-border pt-6 text-sm leading-relaxed text-muted-foreground">
             <p>
               <span className="text-foreground">How it works.</span> Staff enter their code when
-              signing up in the app. Their role comes from the code, not from anything they pick.
+              they sign up, in the app or at www.invems.com/signup (the tab &ldquo;I have a code&rdquo;).
+              Their role comes from the code, not from anything they pick.
+            </p>
+            <p>
+              <span className="text-foreground">Data-entry helpers.</span> Someone who only needs to add items to
+              one invoice joins with the Worker code. Then switch on Invoice entry for them on{" "}
+              <Link href="/dashboard/access" className="underline underline-offset-2 hover:text-foreground">Access</Link>.
             </p>
             <p>
               <span className="text-foreground">Regenerating.</span> The old code stops working

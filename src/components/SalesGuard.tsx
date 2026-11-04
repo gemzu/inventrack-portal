@@ -17,8 +17,8 @@ export default function SalesGuard({ children }: { children: ReactNode }) {
 }
 
 function Inner({ children }: { children: ReactNode }) {
-  const { canSales, loading } = useAuth();
-  if (loading) return null;
+  const { canSales, loading, accessReady } = useAuth();
+  if (loading || !accessReady) return null;
   if (!canSales) {
     return (
       <PageShell title="Sales orders" subtitle="Not switched on for you.">

@@ -1,19 +1,27 @@
 "use client";
-import AdminGuard from "@/components/AdminGuard";
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/context/AuthContext";
-import { Users as UsersIcon, Search, UserCheck, UserX, Trash2, Award } from "lucide-react";
+/**
+ * Users - the people in this company: their role, site, and whether the
+ * account is switched on. What each person may do (Sales and invoices, Delete,
+ * Invoice entry) lives on Access; this page links there.
+ *
+ * Every dropdown shows the label of what is chosen. The previous version used
+ * a select that printed the stored value instead (a site's long id, "worker",
+ * "none"), and replaced the whole page with a skeleton while it loaded. The
+ * page frame now stays, and the two reads it needs run together.
+ */
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { Award, KeyRound, UserPlus, Users as UsersIcon } from "lucide-react";
+import AdminGuard from "@/components/AdminGuard";
 import EmptyState from "@/components/EmptyState";
-import { useToast } from "@/components/Toast";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import PageShell from "@/components/page-shell";
-import Status from "@/components/Status";
-import { Panel, ListSkeleton } from "@/components/console/surfaces";
-import { Modal } from "@/components/console/controls";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/components/Toast";
+import { supabase } from "@/lib/supabase";
+import { Panel, Figure, ColHead, ListSkeleton } from "@/components/console/surfaces";
+import { Action, Chip, Field, Input, Modal, SearchInput, Select } from "@/components/console/controls";
 import { canManage, isOwner, roleBadgeLabel } from "@/lib/roles";
 import { adminCreateUser, adminUpdateUserRole, transferOrgOwnership } from "@/lib/dataService";
 
@@ -21,29 +29,12 @@ interface UserDoc {
   id: string;
   name: string;
   email: string;
-  company?: string;
   role: string;
   active: boolean;
   permissions?: string;
   facilityId?: string;
-  createdAt: unknown;
   /** In this organization, but has another of theirs open right now. */
   elsewhere?: boolean;
-}
-
-/* Who has this organization open, then members who have another of theirs
-   open right now (org_members_elsewhere). Listing by org_id alone dropped
-   someone in two organizations from one list while they worked in the other,
-   so its admins could not see them, change their role or remove them. */
-async function fetchMembers(orgId: string): Promise<UserDoc[]> {
-  const { data } = await supabase.from("users").select("*").eq("org_id", orgId);
-  const here = (data || []).map(mapUser);
-  const { data: away } = await supabase.rpc("org_members_elsewhere", { p_org_id: orgId });
-  const ids = new Set(here.map((u) => u.id));
-  const elsewhere = ((away || []) as Record<string, unknown>[])
-    .map((row) => ({ ...mapUser(row), elsewhere: true }))
-    .filter((u) => !ids.has(u.id));
-  return [...here, ...elsewhere];
 }
 
 function mapUser(row: Record<string, unknown>): UserDoc {
@@ -51,401 +42,360 @@ function mapUser(row: Record<string, unknown>): UserDoc {
     id: row.id as string,
     name: (row.name as string) || "",
     email: (row.email as string) || "",
-    company: row.company as string | undefined,
     role: (row.role as string) || "buyer",
     active: (row.active as boolean) ?? false,
     permissions: row.permissions as string | undefined,
     facilityId: row.facility_id as string | undefined,
-    createdAt: row.created_at,
   };
 }
 
+/* Who has this organization open, then members who have another of theirs
+   open right now (org_members_elsewhere): listing by org_id alone dropped
+   someone in two organizations from the list while they worked in the other.
+   Asked together, not one after the other. */
+async function fetchMembers(orgId: string): Promise<UserDoc[]> {
+  const [here, away] = await Promise.all([
+    supabase.from("users").select("id, name, email, role, active, permissions, facility_id").eq("org_id", orgId),
+    supabase.rpc("org_members_elsewhere", { p_org_id: orgId }),
+  ]);
+  if (here.error) throw new Error(here.error.message);
+  const mine = (here.data || []).map(mapUser);
+  const ids = new Set(mine.map((u) => u.id));
+  const elsewhere = ((away.data || []) as Record<string, unknown>[])
+    .map((row) => ({ ...mapUser(row), elsewhere: true }))
+    .filter((u) => !ids.has(u.id));
+  return [...mine, ...elsewhere];
+}
+
+const ROLE_FILTERS = [
+  { value: "all", label: "Everyone" },
+  { value: "admin", label: "Admins" },
+  { value: "worker", label: "Workers" },
+  { value: "buyer", label: "Buyers" },
+];
+
 export default function UsersPage() {
-  const { user: currentUser, orgId, orgData, userRole, userPermissions, facilities, refreshProfile } = useAuth();
+  return (
+    <AdminGuard>
+      <UsersEditor />
+    </AdminGuard>
+  );
+}
+
+function UsersEditor() {
+  const { user: me, orgId, orgData, userRole, userPermissions, facilities, refreshProfile, isOwner: ownerFlag } = useAuth();
+  const { toast } = useToast();
   /* The org's owner_id is who owns it; a membership label can lag behind. */
-  const callerOwns = !!currentUser?.id && (orgData?.ownerId === currentUser.id || isOwner(userPermissions));
-  const [users, setUsers] = useState<UserDoc[]>([]);
-  const [filtered, setFiltered] = useState<UserDoc[]>([]);
+  const callerOwns = !!me?.id && (orgData?.ownerId === me.id || isOwner(userPermissions) || ownerFlag);
+  const actor = useMemo(() => ({ id: me?.id || null, role: userRole, permissions: userPermissions }), [me?.id, userRole, userPermissions]);
+
+  const [users, setUsers] = useState<UserDoc[] | null>(null);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
-  const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [newUser, setNewUser] = useState({
-    name: "",
-    email: "",
-    password: "",
-    role: "worker",
-    permissions: "admin",
-    facilityId: "none",
-  });
-  const { toast } = useToast();
 
-  // Owner-controlled delete access - free only for our organization (matches app).
-  const DELETE_ACCESS_ORGS = ["054fd1ca-927b-413f-93a4-c1e4d1f3853a"];
-  const canEditDeleteAccess = isOwner(userPermissions) && orgId != null && DELETE_ACCESS_ORGS.includes(orgId);
-  const [deleteAccessMap, setDeleteAccessMap] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    if (!orgId) { setLoading(false); return; }
-    const load = async () => {
-      const mapped = await fetchMembers(orgId);
-      setUsers(mapped);
-      setFiltered(mapped);
-      setLoading(false);
-      if (canEditDeleteAccess) {
-        /* Through org_delete_access: a plain select returned only the
-           owner's own membership, so every other switch read as off. */
-        const { data: mem } = await supabase.rpc("org_delete_access", { p_org_id: orgId });
-        const map: Record<string, boolean> = {};
-        (mem || []).forEach((r: Record<string, unknown>) => { map[r.user_id as string] = r.can_delete === true; });
-        setDeleteAccessMap(map);
-      }
-    };
-    load();
-  }, [orgId, canEditDeleteAccess]);
-
-  /* Sales and invoices: the owner ticks which admins may use sales orders.
-     Through org_sales_access / org_set_sales_access, since a membership row
-     is only readable and writable by its own person. */
-  const [salesMap, setSalesMap] = useState<Record<string, boolean>>({});
-  useEffect(() => {
-    if (!orgId || !callerOwns) return;
-    supabase.rpc("org_sales_access", { p_org_id: orgId }).then(({ data }) => {
-      const map: Record<string, boolean> = {};
-      (data || []).forEach((r: Record<string, unknown>) => { map[r.user_id as string] = r.can_sales === true; });
-      setSalesMap(map);
-    });
-  }, [orgId, callerOwns]);
-
-  const toggleSales = async (u: UserDoc) => {
-    const next = !salesMap[u.id];
-    setSalesMap((m) => ({ ...m, [u.id]: next }));
-    const { error } = await supabase.rpc("org_set_sales_access", { p_org_id: orgId, p_user_id: u.id, p_on: next });
-    if (error) {
-      setSalesMap((m) => ({ ...m, [u.id]: !next }));
-      toast(`Sales and invoices not changed: ${error.message}`, "error");
-    } else {
-      toast(`${u.name || u.email}: Sales and invoices ${next ? "on" : "off"}`, "success");
-    }
-  };
-
-  const toggleDeleteAccess = async (u: UserDoc) => {
-    const next = !deleteAccessMap[u.id];
-    setDeleteAccessMap((m) => ({ ...m, [u.id]: next }));
-    /* Through org_set_delete_access: a plain update matched no row for
-       anyone but the owner, so it changed nothing and said nothing. */
-    const { error } = await supabase.rpc("org_set_delete_access", { p_org_id: orgId, p_user_id: u.id, p_on: next });
-    if (error) {
-      setDeleteAccessMap((m) => ({ ...m, [u.id]: !next }));
-      toast(`Delete access not changed: ${error.message}`, "error");
-    } else {
-      toast(next ? "Delete access granted" : "Delete access revoked", "success");
-    }
-  };
-
-  useEffect(() => {
-    let result = users;
-    if (search) {
-      const s = search.toLowerCase();
-      result = result.filter((u) => u.name?.toLowerCase().includes(s) || u.email?.toLowerCase().includes(s));
-    }
-    if (roleFilter !== "all") result = result.filter((u) => u.role === roleFilter);
-    setFiltered(result);
-  }, [search, roleFilter, users]);
-
-  const toggleActive = async (user: UserDoc) => {
-    if (!canManage({ id: currentUser?.id || null, role: userRole, permissions: userPermissions }, user)) {
-      toast("You don't have permission to change this user", "error");
-      return;
-    }
-    if (user.elsewhere) {
-      toast("Switching off covers their whole account, so it works while they have this organization open.", "error");
-      return;
-    }
+  const load = useCallback(async () => {
+    if (!orgId) return;
     try {
-      const newActive = !user.active;
-      /* An update the rules filter out is no error and no rows - it said
-         "activated" while nothing had changed. */
-      const { data, error } = await supabase.from("users").update({ active: newActive }).eq("id", user.id).select("id");
-      if (error) throw error;
-      if (!data?.length) throw new Error("not updated");
-      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, active: newActive } : u)));
-      toast(`User ${newActive ? "activated" : "deactivated"}`, "success");
-    } catch {
-      toast("Failed to update user status", "error");
-    }
-  };
-
-  const changeRole = async (user: UserDoc, newRole: string) => {
-    if (!canManage({ id: currentUser?.id || null, role: userRole, permissions: userPermissions }, user)) {
-      toast("You don't have permission to change this role", "error");
-      return;
-    }
-    if (isOwner(user.permissions)) {
-      toast("Owner role can't be changed", "error");
-      return;
-    }
-    try {
-      await adminUpdateUserRole(user.id, newRole as "admin" | "worker" | "buyer");
-      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, role: newRole } : u)));
-      toast(`Role updated to ${newRole}`, "success");
+      setUsers(await fetchMembers(orgId));
+      setError("");
     } catch (e) {
-      toast((e as Error).message || "Failed to change role", "error");
+      setError((e as Error).message || "Could not load the people in this company");
+      setUsers((prev) => prev ?? []);
+    }
+  }, [orgId]);
+  useEffect(() => { load(); }, [load]);
+
+  const siteName = useCallback((id?: string) => facilities.find((f) => f.id === id)?.name, [facilities]);
+
+  const rows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return (users || []).filter((u) =>
+      (roleFilter === "all" || u.role === roleFilter) &&
+      (!q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q))
+    );
+  }, [users, search, roleFilter]);
+
+  const patch = (id: string, p: Partial<UserDoc>) => setUsers((prev) => (prev || []).map((u) => (u.id === id ? { ...u, ...p } : u)));
+
+  const toggleActive = async (u: UserDoc) => {
+    if (u.elsewhere) { toast("Switching off covers their whole account, so it works while they have this organization open.", "error"); return; }
+    if (u.active && !confirm(`Switch off ${u.name || u.email}? They are signed out of everything and cannot sign in until you switch them back on.`)) return;
+    try {
+      /* An update the rules filter out is no error and no rows - it used to say
+         "activated" while nothing had changed. */
+      const { data, error: e } = await supabase.from("users").update({ active: !u.active }).eq("id", u.id).select("id");
+      if (e) throw e;
+      if (!data?.length) throw new Error("not updated");
+      patch(u.id, { active: !u.active });
+      toast(`${u.name || u.email} switched ${u.active ? "off" : "on"}`, "success");
+    } catch {
+      toast("Could not change that account", "error");
+    }
+  };
+
+  const changeRole = async (u: UserDoc, role: string) => {
+    if (role === u.role) return;
+    const before = u.role;
+    patch(u.id, { role });
+    try {
+      await adminUpdateUserRole(u.id, role as "admin" | "worker" | "buyer");
+      toast(`${u.name || u.email} is now ${role === "admin" ? "an admin" : role === "worker" ? "a worker" : "a buyer"}`, "success");
+    } catch (e) {
+      patch(u.id, { role: before });
+      toast((e as Error).message || "Could not change the role", "error");
+    }
+  };
+
+  const assignSite = async (u: UserDoc, siteId: string) => {
+    if (u.elsewhere) { toast("Their site can be changed while they have this organization open.", "error"); return; }
+    const before = u.facilityId;
+    const next = siteId || undefined;
+    patch(u.id, { facilityId: next });
+    try {
+      const { data, error: e } = await supabase.from("users").update({ facility_id: next ?? null }).eq("id", u.id).select("id");
+      if (e) throw e;
+      if (!data?.length) throw new Error("not updated");
+      toast(next ? `${u.name || u.email} assigned to ${siteName(next) || "that site"}` : `${u.name || u.email} has no site now`, "success");
+    } catch {
+      patch(u.id, { facilityId: before });
+      toast("Could not change the site", "error");
     }
   };
 
   /* Hand the organization to another admin (transfer_org_ownership). The
      database checks the same rules; the old owner stays on as a super admin. */
-  const makeOwner = async (user: UserDoc) => {
+  const makeOwner = async (u: UserDoc) => {
     if (!orgId) return;
-    const who = user.name || user.email;
-    const company = orgData?.name || "this organization";
-    if (!confirm(`Make ${who} the owner of ${company}?
-
-They can then delete the company, decide who may delete records, replace the admin code and change super admins. You stay on as a super admin. Only the new owner can hand it back.`)) return;
+    const who = u.name || u.email;
+    if (!confirm(`Make ${who} the owner of ${orgData?.name || "this organization"}?\n\nThey can then delete the company, decide who may delete records, replace the admin code and change super admins. You stay on as a super admin. Only the new owner can hand it back.`)) return;
     try {
-      await transferOrgOwnership(orgId, user.id);
+      await transferOrgOwnership(orgId, u.id);
       toast(`${who} is now the owner`, "success");
       await refreshProfile();
-      setUsers(await fetchMembers(orgId));
+      load();
     } catch (e) {
       toast((e as Error).message || "Could not hand over", "error");
     }
   };
 
-  const assignFacility = async (user: UserDoc, facilityId: string) => {
-    if (!canManage({ id: currentUser?.id || null, role: userRole, permissions: userPermissions }, user)) {
-      toast("You don't have permission to assign facility", "error");
+  const total = users?.length ?? 0;
+  const admins = (users || []).filter((u) => u.role === "admin").length;
+  const workers = (users || []).filter((u) => u.role === "worker").length;
+  const off = (users || []).filter((u) => !u.active).length;
+
+  return (
+    <PageShell
+      title="Users"
+      subtitle="The people in your company: role, site, and whether their account is on."
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          {callerOwns ? (
+            <Link href="/dashboard/access" className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2.5 text-sm font-semibold transition-colors hover:border-[var(--brand-2)] hover:text-[var(--brand-2)]">
+              <KeyRound className="h-3.5 w-3.5" /> Permissions
+            </Link>
+          ) : null}
+          <Action solid onClick={() => setShowAdd(true)} disabled={userRole !== "admin"}>
+            <UserPlus className="h-3.5 w-3.5" /> Add person
+          </Action>
+        </div>
+      }
+    >
+      {users === null ? (
+        <ListSkeleton rows={4} />
+      ) : (
+        <div className="space-y-6">
+          {error ? <p role="alert" className="text-sm text-destructive">{error} <button type="button" onClick={load} className="underline underline-offset-2">Try again</button></p> : null}
+
+          <div className="reveal flex flex-wrap items-baseline gap-x-10 gap-y-4">
+            <Figure label="People" value={total} />
+            <Figure label="Admins" value={admins} />
+            <Figure label="Workers" value={workers} />
+            {off ? <Figure label="Switched off" value={off} tone="warning" /> : null}
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <SearchInput
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onClear={() => setSearch("")}
+              placeholder="Search by name or email"
+              aria-label="Search people"
+              className="min-w-0 flex-1"
+            />
+            <div className="flex flex-wrap gap-2">
+              {ROLE_FILTERS.map((f) => (
+                <Chip key={f.value} on={roleFilter === f.value} onClick={() => setRoleFilter(f.value)}>{f.label}</Chip>
+              ))}
+            </div>
+          </div>
+
+          <Panel className="reveal">
+            {rows.length === 0 ? (
+              <EmptyState
+                icon={UsersIcon}
+                title={users.length === 0 ? "Nobody yet" : "No match"}
+                description={users.length === 0 ? "People who join with an invite code appear here." : "Nobody matches that search."}
+              />
+            ) : (
+              <>
+                <div className="hidden items-center gap-4 border-b border-border px-5 py-2.5 lg:grid lg:grid-cols-[minmax(0,1fr)_9rem_12rem_11rem]">
+                  <ColHead>Person</ColHead>
+                  <ColHead>Role</ColHead>
+                  <ColHead>Site</ColHead>
+                  <ColHead className="text-right">Account</ColHead>
+                </div>
+                {rows.map((u) => {
+                  const mine = u.id === me?.id;
+                  const manageable = canManage(actor, u) && !u.elsewhere;
+                  const owner = isOwner(u.permissions);
+                  return (
+                    <div key={u.id} className="row-line grid items-center gap-x-4 gap-y-3 px-5 py-3.5 lg:grid-cols-[minmax(0,1fr)_9rem_12rem_11rem]">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">
+                          {u.name || "Unnamed"}
+                          {mine ? <span className="ml-2 text-[11px] font-semibold text-muted-foreground">You</span> : null}
+                          {owner ? <span className="ml-2 text-[11px] font-semibold text-[var(--brand-2)]">Owner</span> : null}
+                        </p>
+                        <p className="mono truncate text-[12px] text-muted-foreground">{roleBadgeLabel(u.role, u.permissions)} · {u.email}</p>
+                        {u.elsewhere ? <p className="truncate text-[12px] text-muted-foreground">Working in another organization right now</p> : null}
+                      </div>
+
+                      <Select
+                        value={u.role}
+                        onChange={(e) => changeRole(u, e.target.value)}
+                        disabled={!manageable || owner}
+                        aria-label={`Role for ${u.name || u.email}`}
+                        className="h-10 py-0 text-[13px]"
+                      >
+                        <option value="admin">Admin</option>
+                        <option value="worker">Worker</option>
+                        <option value="buyer">Buyer</option>
+                      </Select>
+
+                      <Select
+                        value={u.facilityId || ""}
+                        onChange={(e) => assignSite(u, e.target.value)}
+                        disabled={!manageable || u.role === "buyer"}
+                        aria-label={`Site for ${u.name || u.email}`}
+                        className="h-10 py-0 text-[13px]"
+                      >
+                        <option value="">{u.role === "buyer" ? "—" : "No site"}</option>
+                        {u.facilityId && !siteName(u.facilityId) ? <option value={u.facilityId}>Another site</option> : null}
+                        {facilities.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+                      </Select>
+
+                      <div className="flex items-center gap-2 lg:justify-end">
+                        <span className="inline-flex items-center gap-1.5 text-[12px]">
+                          <span className={`h-1.5 w-1.5 rounded-full ${u.active ? "bg-success" : "bg-muted-foreground"}`} />
+                          {u.active ? "On" : "Off"}
+                        </span>
+                        {callerOwns && !mine && u.role === "admin" && u.active && !u.elsewhere && !owner ? (
+                          <button type="button" onClick={() => makeOwner(u)} title="Make owner" aria-label={`Make ${u.name || u.email} the owner`}
+                            className="rounded-md border border-border p-2 text-muted-foreground transition-colors hover:border-[var(--brand-2)] hover:text-[var(--brand-2)]">
+                            <Award className="h-3.5 w-3.5" />
+                          </button>
+                        ) : null}
+                        {manageable && !owner ? (
+                          <button type="button" onClick={() => toggleActive(u)}
+                            className={`rounded-md border px-2.5 py-1.5 text-[12px] font-semibold transition-colors ${u.active
+                              ? "border-border text-muted-foreground hover:border-destructive hover:text-destructive"
+                              : "border-[var(--brand-2)] text-[var(--brand-2)] hover:bg-[color-mix(in_oklab,var(--brand-2)_12%,transparent)]"}`}>
+                            {u.active ? "Switch off" : "Switch on"}
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            )}
+          </Panel>
+
+          <p className="text-[12px] text-muted-foreground">
+            Sales and invoices, delete rights and Invoice entry are set per person on{" "}
+            {callerOwns ? <Link href="/dashboard/access" className="underline underline-offset-2 hover:text-foreground">Access</Link> : "Access (owner only)"}.
+            New people join with a code from <Link href="/dashboard/invites" className="underline underline-offset-2 hover:text-foreground">Invites</Link>.
+          </p>
+        </div>
+      )}
+
+      <AddPerson open={showAdd} onClose={() => setShowAdd(false)} onCreated={() => { setShowAdd(false); load(); }} />
+    </PageShell>
+  );
+}
+
+/* ── Add a person (a ready-made account, signed in straight away) ──────── */
+
+function AddPerson({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
+  const { facilities } = useAuth();
+  const { toast } = useToast();
+  const [form, setForm] = useState({ name: "", email: "", password: "", role: "worker", permissions: "admin", facilityId: "" });
+  const [busy, setBusy] = useState(false);
+  const set = (p: Partial<typeof form>) => setForm((f) => ({ ...f, ...p }));
+
+  const create = async () => {
+    if (!form.name.trim() || !form.email.trim() || form.password.length < 10) {
+      toast("A name, an email and a password of at least 10 characters are needed", "error");
       return;
     }
-    if (user.elsewhere) {
-      toast("Their facility can be changed while they have this organization open.", "error");
-      return;
-    }
+    setBusy(true);
     try {
-      const val = facilityId === "" ? null : facilityId;
-      const { data, error } = await supabase.from("users").update({ facility_id: val }).eq("id", user.id).select("id");
-      if (error) throw error;
-      if (!data?.length) throw new Error("not updated");
-      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, facilityId: val || undefined } : u)));
-      toast("Facility assignment updated", "success");
-    } catch {
-      toast("Failed to assign facility", "error");
+      await adminCreateUser({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        password: form.password,
+        role: form.role as "admin" | "worker" | "buyer",
+        permissions: form.role === "admin" ? (form.permissions as "admin" | "superadmin") : undefined,
+        facilityId: form.role === "worker" && form.facilityId ? form.facilityId : null,
+      });
+      toast("Person added. They can sign in with that email and password.", "success");
+      setForm({ name: "", email: "", password: "", role: "worker", permissions: "admin", facilityId: "" });
+      onCreated();
+    } catch (e) {
+      toast((e as Error).message || "Could not add that person", "error");
+    } finally {
+      setBusy(false);
     }
   };
 
-  if (loading) {
-    return (
-      <ListSkeleton />
-    );
-  }
-
-  return (<AdminGuard>
-    <PageShell
-      title="Users"
-      subtitle={`${filtered.length} members`}
-      actions={
-        <Button
-          onClick={() => setShowAdd(true)}
-          disabled={userRole !== "admin"}
-        >
-          Add User
-        </Button>
-      }
-    >
-
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name or email..."
-            className="pl-10 h-10"
-          />
-        </div>
-        <Select value={roleFilter} onValueChange={(val) => setRoleFilter(val || "all")}>
-          <SelectTrigger className="sm:w-[170px]"><SelectValue placeholder="All Roles" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Roles</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
-            <SelectItem value="worker">Worker</SelectItem>
-            <SelectItem value="buyer">Buyer</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <Panel className="reveal">
-        {filtered.length === 0 ? (
-          <EmptyState icon={UsersIcon} title="No users found" description="Team members who join your organization will appear here." />
-        ) : (
-          filtered.map((user) => {
-            const manageable = canManage({ id: currentUser?.id || null, role: userRole, permissions: userPermissions }, user);
-            return (
-              <div key={user.id} className="row-line flex flex-wrap items-center gap-x-4 gap-y-3 px-5 py-3.5">
-                {/* Identity */}
-                <div className="min-w-[200px] flex-1">
-                  <p className="truncate text-sm font-medium">{user.name || "Unnamed"}</p>
-                  <p className="mono truncate text-[12px] text-muted-foreground">
-                    {roleBadgeLabel(user.role, user.permissions)} · {user.email}
-                  </p>
-                  {user.elsewhere && (
-                    <p className="truncate text-[12px] text-muted-foreground">Working in another organization right now</p>
-                  )}
-                </div>
-
-                {/* Inline controls — wrap onto next line instead of scrolling off */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Select
-                    value={user.role}
-                    onValueChange={(val) => changeRole(user, val || user.role)}
-                    disabled={!manageable || isOwner(user.permissions)}
-                  >
-                    <SelectTrigger className="h-9 w-[110px] text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="worker">Worker</SelectItem>
-                      <SelectItem value="buyer">Buyer</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select
-                    value={user.facilityId || "none"}
-                    onValueChange={(val) => assignFacility(user, (val || "none") === "none" ? "" : (val || ""))}
-                    disabled={!manageable || user.elsewhere}
-                  >
-                    <SelectTrigger className="h-9 w-[140px] text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No facility</SelectItem>
-                      {facilities.map((f) => (
-                        <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Status
-                    status={user.active ? "active" : "blocked"}
-                    label={user.active ? "Active" : "Inactive"}
-                  />
-                  {/* Actions — always visible */}
-                  {callerOwns && user.id !== currentUser?.id && user.role === "admin" && user.active && (
-                    <Button
-                      variant="ghost" size="icon-sm"
-                      onClick={() => makeOwner(user)}
-                      className="h-9 w-9 text-muted-foreground hover:text-foreground"
-                      title="Make owner"
-                      aria-label={`Make ${user.name || user.email} the owner`}
-                    >
-                      <Award className="w-4 h-4" />
-                    </Button>
-                  )}
-                  {callerOwns && user.role === "admin" && user.active && !user.elsewhere && (
-                    <button
-                      onClick={() => toggleSales(user)}
-                      aria-pressed={!!salesMap[user.id]}
-                      title={salesMap[user.id] ? "Sales and invoices: on (click to switch off)" : "Sales and invoices: off (click to switch on)"}
-                      className={`h-9 rounded-md border px-2.5 text-[12px] font-semibold transition-colors ${salesMap[user.id]
-                        ? "border-[var(--brand-2)] bg-[color-mix(in_oklab,var(--brand-2)_12%,transparent)] text-[var(--brand-2)]"
-                        : "border-border text-muted-foreground hover:text-foreground"}`}
-                    >
-                      Sales {salesMap[user.id] ? "on" : "off"}
-                    </button>
-                  )}
-                  {canEditDeleteAccess && user.role !== "buyer" && !isOwner(user.permissions) && (
-                    <Button
-                      variant="ghost" size="icon-sm"
-                      onClick={() => toggleDeleteAccess(user)}
-                      className={`h-9 w-9 ${deleteAccessMap[user.id] ? "text-destructive bg-destructive/10" : "text-muted-foreground"}`}
-                      title={deleteAccessMap[user.id] ? "Delete access: ON (tap to revoke)" : "Delete access: OFF (tap to grant)"}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost" size="icon-sm"
-                    onClick={() => toggleActive(user)}
-                    disabled={!manageable || user.elsewhere}
-                    className={`h-9 w-9 ${user.active ? "hover:bg-destructive/10 text-destructive" : "hover:bg-success/10 text-success"}`}
-                    title={user.active ? "Deactivate" : "Activate"}
-                  >
-                    {user.active ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
-                  </Button>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </Panel>
-    </PageShell>
-    {showAdd && (
-      <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Add a person" subtitle="They can sign in straight away">
-        <div className="space-y-4">
-            <Input placeholder="Full name" value={newUser.name} onChange={(e) => setNewUser((p) => ({ ...p, name: e.target.value }))} />
-            <Input placeholder="Email" type="email" value={newUser.email} onChange={(e) => setNewUser((p) => ({ ...p, email: e.target.value }))} />
-            <Input placeholder="Temporary password (min 6)" type="password" value={newUser.password} onChange={(e) => setNewUser((p) => ({ ...p, password: e.target.value }))} />
-            <Select value={newUser.role} onValueChange={(v) => setNewUser((p) => ({ ...p, role: v || "worker" }))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="worker">Worker</SelectItem>
-                <SelectItem value="buyer">Buyer</SelectItem>
-              </SelectContent>
+  return (
+    <Modal open={open} onClose={onClose} title="Add a person" subtitle="They can sign in straight away. Prefer an invite code? Use Invites.">
+      <div className="space-y-4">
+        <Field label="Full name"><Input value={form.name} onChange={(e) => set({ name: e.target.value })} autoComplete="off" /></Field>
+        <Field label="Email"><Input type="email" value={form.email} onChange={(e) => set({ email: e.target.value })} autoComplete="off" /></Field>
+        <Field label="Temporary password" hint="At least 10 characters. They can change it after signing in.">
+          <Input type="password" value={form.password} onChange={(e) => set({ password: e.target.value })} autoComplete="new-password" />
+        </Field>
+        <Field label="Role">
+          <Select value={form.role} onChange={(e) => set({ role: e.target.value })}>
+            <option value="worker">Worker</option>
+            <option value="admin">Admin</option>
+            <option value="buyer">Buyer</option>
+          </Select>
+        </Field>
+        {form.role === "admin" ? (
+          <Field label="Admin level">
+            <Select value={form.permissions} onChange={(e) => set({ permissions: e.target.value })}>
+              <option value="admin">Admin</option>
+              <option value="superadmin">Super admin</option>
             </Select>
-            {newUser.role === "admin" && (
-              <Select value={newUser.permissions} onValueChange={(v) => setNewUser((p) => ({ ...p, permissions: v || "admin" }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="superadmin">Superadmin</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-            {newUser.role === "worker" && (
-              <Select value={newUser.facilityId} onValueChange={(v) => setNewUser((p) => ({ ...p, facilityId: v || "none" }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No Facility</SelectItem>
-                  {facilities.map((f) => (
-                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
-              <Button
-                disabled={creating}
-                onClick={async () => {
-                  if (!newUser.name || !newUser.email || newUser.password.length < 10) {
-                    toast("Name, email, and password (min 6) are required", "error");
-                    return;
-                  }
-                  try {
-                    setCreating(true);
-                    await adminCreateUser({
-                      name: newUser.name,
-                      email: newUser.email,
-                      password: newUser.password,
-                      role: newUser.role as "admin" | "worker" | "buyer",
-                      permissions: newUser.role === "admin" ? (newUser.permissions as "admin" | "superadmin") : undefined,
-                      facilityId: newUser.role === "worker" && newUser.facilityId !== "none" ? newUser.facilityId : null,
-                    });
-                    const mapped = orgId ? await fetchMembers(orgId) : [];
-                    setUsers(mapped);
-                    toast("User created", "success");
-                    setShowAdd(false);
-                    setNewUser({ name: "", email: "", password: "", role: "worker", permissions: "admin", facilityId: "none" });
-                  } catch (e) {
-                    toast((e as Error).message || "Failed to create user", "error");
-                  } finally {
-                    setCreating(false);
-                  }
-                }}
-              >
-                {creating ? "Creating..." : "Create User"}
-              </Button>
-            </div>
+          </Field>
+        ) : null}
+        {form.role === "worker" ? (
+          <Field label="Site">
+            <Select value={form.facilityId} onChange={(e) => set({ facilityId: e.target.value })}>
+              <option value="">No site</option>
+              {facilities.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+            </Select>
+          </Field>
+        ) : null}
+        <div className="flex justify-end gap-2 pt-1">
+          <Action onClick={onClose}>Cancel</Action>
+          <Action solid onClick={create} disabled={busy}>{busy ? "Adding" : "Add person"}</Action>
         </div>
-      </Modal>
-    )}
-  </AdminGuard>);
+      </div>
+    </Modal>
+  );
 }

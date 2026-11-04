@@ -66,6 +66,8 @@ interface AuthContextType {
   authReady: boolean;
   /** Has Sales and invoices ticked (owner's choice, checked by the database). */
   canSales: boolean;
+  /** What this person may do (owner, Sales, Invoice entry) has been answered. Until then those flags are false only because nothing has come back yet. */
+  accessReady: boolean;
   /** The owner of this company: the only one who changes who can do what (Access). */
   isOwner: boolean;
   /** Invoice entry is on: may add items to the invoices the owner gave, and nothing else. */
@@ -97,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [canSales, setCanSales] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
+  const [accessReady, setAccessReady] = useState(false);
   const [canEntry, setCanEntry] = useState(false);
 
   /* The website had no way to change company: it opened whichever one the
@@ -236,6 +239,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUserFacilityId(null);
         setMemberships([]);
         setCanSales(false);
+        setIsOwner(false);
+        setCanEntry(false);
+        setAccessReady(false);
         setLoading(false);
       }
     });
@@ -295,15 +301,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      switched on. Asked once per person and company; sign-in loads the profile
      twice, and an early "no" arriving last used to hide Sales until the next
      page. A late answer for an earlier person or company is ignored. */
-  useEffect(() => {
-    if (!user?.id) return;
-    let stale = false;
-    supabase.rpc("caller_can_sales").then(({ data, error }) => {
-      if (!stale) setCanSales(!error && data === true);
-    });
-    return () => { stale = true; };
-  }, [user?.id]);
-
   /* The home page's buttons follow this flag (set before first paint by
      BootScript, and made true here once the session has been read). */
   useEffect(() => {
@@ -317,9 +314,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let stale = false;
     supabase.rpc("caller_access").then(({ data, error }) => {
       if (stale) return;
-      const a = !error && data && typeof data === "object" ? (data as { owner?: boolean; entry?: boolean }) : {};
+      const a = !error && data && typeof data === "object" ? (data as { owner?: boolean; entry?: boolean; sales?: boolean }) : {};
       setIsOwner(a.owner === true);
       setCanEntry(a.entry === true);
+      /* One call answers owner, Sales and Invoice entry (it used to be two). */
+      setCanSales(a.sales === true);
+      setAccessReady(true);
     });
     return () => { stale = true; };
   }, [user?.id]);
@@ -351,7 +351,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user, userRole, userName, userCompany, userActive, userPermissions,
         orgId, orgData, facilities, userFacilityId, loading, mfaPending, verifyMfa,
         login, signup, logout, resetPassword, refreshProfile,
-        memberships, switchOrganization, authReady, canSales, isOwner, canEntry, entryOnly,
+        memberships, switchOrganization, authReady, accessReady, canSales, isOwner, canEntry, entryOnly,
       }}
     >
       {children}
