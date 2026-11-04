@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import { codeOwed, verifyAuthenticatorCode } from "@/lib/mfa";
 import { ORG_COLUMNS } from "@/lib/orgColumns";
@@ -62,6 +62,8 @@ interface AuthContextType {
   /** Make another of them the active company - the same switch the phone
       app makes, so both open in the company last chosen. */
   switchOrganization: (orgId: string, landOn?: string) => Promise<void>;
+  /** The saved sign-in has been read: "is anyone signed in" is known (the profile may still be loading). */
+  authReady: boolean;
   /** Has Sales and invoices ticked (owner's choice, checked by the database). */
   canSales: boolean;
   /** The owner of this company: the only one who changes who can do what (Access). */
@@ -86,7 +88,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [userFacilityId, setUserFacilityId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authReady, setAuthReady] = useState(false);
   const [mfaPending, setMfaPending] = useState(false);
+  /* The profile is loaded once per person at a time. Sign-in fires the session
+     check and the auth listener together (and again on token refresh), and each
+     used to run the whole chain of requests: the same query three times at once. */
+  const profileFlight = useRef<{ id: string; run: Promise<void> } | null>(null);
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [canSales, setCanSales] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
@@ -114,7 +121,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const fetchUserProfile = async (supabaseUser: User) => {
+  const fetchUserProfile = (supabaseUser: User): Promise<void> => {
+    const flying = profileFlight.current;
+    if (flying && flying.id === supabaseUser.id) return flying.run;
+    const run = loadUserProfile(supabaseUser).finally(() => {
+      if (profileFlight.current?.run === run) profileFlight.current = null;
+    });
+    profileFlight.current = { id: supabaseUser.id, run };
+    return run;
+  };
+
+  const loadUserProfile = async (supabaseUser: User) => {
     try {
       const { data, error } = await supabase
         .from("users")
@@ -141,11 +158,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.org_id) {
         try {
-          const { data: orgDoc } = await supabase
-            .from("organizations")
-            .select(ORG_COLUMNS)
-            .eq("id", data.org_id)
-            .single<Record<string, unknown>>();
+          /* Together: the second used to wait for the first for no reason. */
+          const [{ data: orgDoc }, { data: facData }] = await Promise.all([
+            supabase.from("organizations").select(ORG_COLUMNS).eq("id", data.org_id).single<Record<string, unknown>>(),
+            supabase.from("facilities").select("*").eq("org_id", data.org_id),
+          ]);
 
           if (orgDoc) {
             setOrgData({
@@ -164,11 +181,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               notifySubmissions: (orgDoc.notify_submissions as boolean) ?? undefined,
             });
           }
-
-          const { data: facData } = await supabase
-            .from("facilities")
-            .select("*")
-            .eq("org_id", data.org_id);
 
           setFacilities(
             (facData || []).map((f: Record<string, unknown>) => ({
@@ -198,6 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const currentUser = session?.user ?? null;
       setMfaPending(codeOwed(session));
       setUser(currentUser);
+      setAuthReady(true);
       if (currentUser) {
         fetchUserProfile(currentUser);
       } else {
@@ -283,18 +296,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      twice, and an early "no" arriving last used to hide Sales until the next
      page. A late answer for an earlier person or company is ignored. */
   useEffect(() => {
-    if (!user?.id || !orgId) return;
+    if (!user?.id) return;
     let stale = false;
     supabase.rpc("caller_can_sales").then(({ data, error }) => {
       if (!stale) setCanSales(!error && data === true);
     });
     return () => { stale = true; };
-  }, [user?.id, orgId]);
+  }, [user?.id]);
+
+  /* The home page's buttons follow this flag (set before first paint by
+     BootScript, and made true here once the session has been read). */
+  useEffect(() => {
+    if (authReady) document.documentElement.setAttribute("data-auth", user ? "in" : "out");
+  }, [authReady, user]);
 
   /* Who this is in this company, from the database (caller_access): owner,
      and Invoice entry. Same staleness rule as above. */
   useEffect(() => {
-    if (!user?.id || !orgId) return;
+    if (!user?.id) return;
     let stale = false;
     supabase.rpc("caller_access").then(({ data, error }) => {
       if (stale) return;
@@ -303,7 +322,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setCanEntry(a.entry === true);
     });
     return () => { stale = true; };
-  }, [user?.id, orgId]);
+  }, [user?.id]);
 
   const entryOnly = canEntry && userRole !== "admin";
 
@@ -332,7 +351,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user, userRole, userName, userCompany, userActive, userPermissions,
         orgId, orgData, facilities, userFacilityId, loading, mfaPending, verifyMfa,
         login, signup, logout, resetPassword, refreshProfile,
-        memberships, switchOrganization, canSales, isOwner, canEntry, entryOnly,
+        memberships, switchOrganization, authReady, canSales, isOwner, canEntry, entryOnly,
       }}
     >
       {children}

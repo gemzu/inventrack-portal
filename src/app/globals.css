@@ -1408,3 +1408,9 @@ html.lenis body { height: auto; }
 .lenis.lenis-stopped { overflow: clip; }
 
 .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+
+/* Home page buttons by sign-in state. <html data-auth="in"> is set before the
+   first paint (BootScript) and confirmed by AuthContext. */
+.auth-in { display: none !important; }
+html[data-auth="in"] .auth-out { display: none !important; }
+html[data-auth="in"] .auth-in { display: inline-flex !important; }
