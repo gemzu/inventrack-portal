@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
 import CrateLatticeHero from "@/components/landing/CrateLatticeHero";
 import AppLinks from "@/components/landing/AppLinks";
 import ProductRail from "@/components/landing/ProductRail";
@@ -13,9 +12,12 @@ import SiteFooter from "@/components/landing/SiteFooter";
 import ScanText from "@/components/motion/ScanText";
 import SmoothScroll from "@/components/motion/SmoothScroll";
 
+const CTA =
+  "press inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--btn-shadow)] transition-[transform,background-color,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:bg-primary-dark";
+const CTA_LG =
+  "press inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--btn-shadow)] transition-[transform,background-color,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:bg-primary-dark";
+
 export default function LandingPage() {
-  const { user, loading } = useAuth();
-  const isLoggedIn = !loading && !!user;
 
   /* A confirmation email sent before 25 Oct points here (the site address).
      Hand it to the sign-in page, which says it worked (or that the link
@@ -53,11 +55,14 @@ export default function LandingPage() {
         </h1>
 
         <div className="fade-up fade-up-3 mt-9 flex flex-wrap items-center gap-4">
-          <Link
-            href={isLoggedIn ? "/dashboard" : "/signup"}
-            className="press inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--btn-shadow)] transition-[transform,background-color,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:bg-primary-dark"
-          >
-            {isLoggedIn ? "Open dashboard" : "Create account"}
+          {/* Both exist; the flag on <html> (data-auth, set before first paint)
+              decides which shows, so nobody signed in sees "Create account". */}
+          <Link href="/signup" className={`auth-out ${CTA}`}>
+            Create account
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link href="/dashboard" className={`auth-in ${CTA}`}>
+            Open dashboard
             <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
@@ -95,11 +100,12 @@ export default function LandingPage() {
               text="Start with one shelf."
               className="block font-display text-[1.7rem] font-bold tracking-[-0.015em] sm:text-[2.2rem]"
             />
-            <Link
-              href={isLoggedIn ? "/dashboard" : "/signup"}
-              className="press mt-8 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--btn-shadow)] transition-[transform,background-color,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:bg-primary-dark"
-            >
-              {isLoggedIn ? "Open dashboard" : "Create account"}
+            <Link href="/signup" className={`auth-out mt-8 ${CTA_LG}`}>
+              Create account
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link href="/dashboard" className={`auth-in mt-8 ${CTA_LG}`}>
+              Open dashboard
               <ArrowRight className="h-4 w-4" />
             </Link>
 

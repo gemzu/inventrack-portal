@@ -46,6 +46,17 @@ const SCRIPT = `
 (function () {
   var el = document.documentElement;
 
+  /* Is there a saved sign-in? Known before the first paint, so the home page's
+     buttons are right straight away instead of saying "Create account" to
+     someone who is signed in until the page has loaded. AuthContext confirms
+     or corrects this once the session has been read. */
+  try {
+    for (var k = 0; k < localStorage.length; k++) {
+      var key = localStorage.key(k);
+      if (key && /^sb-.+-auth-token$/.test(key) && localStorage.getItem(key)) { el.setAttribute('data-auth', 'in'); break; }
+    }
+  } catch (e) {}
+
   try {
     var theme = null;
     try { theme = localStorage.getItem('inventrack-theme'); } catch (e) {}

@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useSignedInHint } from "@/lib/signedInHint";
 import { lockScroll } from "@/lib/scrollLock";
 
 type Entry = { label: string; href: string; meta: string };
@@ -40,8 +41,9 @@ const SIGNED_IN: Entry[] = [
 ];
 
 export default function SiteNav() {
-  const { user, userName, loading } = useAuth();
-  const isLoggedIn = !loading && !!user;
+  const { user, userName, authReady } = useAuth();
+  const hint = useSignedInHint();
+  const isLoggedIn = authReady ? !!user : hint;
   const entries = isLoggedIn ? SIGNED_IN : SIGNED_OUT;
 
   const [open, setOpen] = useState(false);
