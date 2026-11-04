@@ -18,6 +18,7 @@ import PageShell from "@/components/page-shell";
 import EmptyState from "@/components/EmptyState";
 import { Panel, Figure, ColHead, CrateSkeleton } from "@/components/console/surfaces";
 import { Chip, SearchInput } from "@/components/console/controls";
+import BlankSalesOrderButton from "@/components/sales/BlankSalesOrder";
 import { fmtMoney, STATUS_LABEL, STATUS_TONE, type SalesOrder, type SalesStatus } from "@/lib/sales";
 
 type Row = SalesOrder & { customer_name: string; company_name: string; lines: number };
@@ -84,11 +85,14 @@ function SalesOrders() {
   return (
     <PageShell
       title="Sales orders"
-      subtitle="Stock you sell to a customer. Start one by selecting items on Inventory."
+      subtitle="What you sell to a customer. Start one from stock on Inventory, or with items that are not in inventory."
       actions={
-        <Link href="/dashboard/inventory" className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-[var(--btn-shadow)]">
-          Select items on Inventory
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <BlankSalesOrderButton />
+          <Link href="/dashboard/inventory" className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-[var(--btn-shadow)]">
+            Select items on Inventory
+          </Link>
+        </div>
       }
     >
       <div className="space-y-8">
@@ -123,7 +127,7 @@ function SalesOrders() {
           </div>
           {shown.length === 0 ? (
             <EmptyState icon={FileText} title={rows.length ? "Nothing matches" : "No sales orders yet"}
-              description={rows.length ? "Try another search or state." : "Select items on Inventory, then Create sales order."} />
+              description={rows.length ? "Try another search or state." : "Select items on Inventory, or start an order without stock."} />
           ) : shown.map((r) => (
             <button key={r.id} onClick={() => router.push(`/dashboard/orders/sales/${r.id}`)}
               className="row-line flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 text-left md:flex-nowrap">

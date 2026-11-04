@@ -92,6 +92,8 @@ async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
   return data as T;
 }
 
+export const createBlankSalesOrder = (company: string, customer: string | null) =>
+  rpc<string>("sales_order_create_blank", { p_company: company, p_customer: customer });
 export const createSalesOrder = (company: string, customer: string | null, items: { id: string; qty?: number }[]) =>
   rpc<string>("sales_order_create", { p_company: company, p_customer: customer, p_items: items });
 export const saveSalesOrder = (id: string, fields: Record<string, unknown>, lines: SalesLine[] | null) =>
