@@ -37,7 +37,7 @@ type Key = "can_sales" | "can_delete" | "can_entry";
 type SwitchKey = Key | Area;
 
 /* Areas first (they cover what a person can see and change across the website and the app), then the three
-   that stand alone. Admins start with the areas they always had; workers with orders only. */
+   that stand alone. The area switches are for admins (they start with the areas they always had); workers stay workers. */
 const SWITCHES: { key: SwitchKey; label: string; short: string; hint: string; group: "areas" | "other" }[] = [
   { key: "stock", label: "Stock", short: "Stock", group: "areas", hint: "See, add, edit and delete stock lines, and use the stock tools (prices, label reading, splitting). Boxes, the catalog and scanning in the app are not affected." },
   { key: "purchase_orders", label: "Purchase orders", short: "POs", group: "areas", hint: "See, create and receive purchase orders." },
@@ -54,6 +54,7 @@ const valueOf = (m: Member, k: SwitchKey) => (isArea(k) ? m.perms?.[k] === true 
 function notFor(m: Member, key: SwitchKey) {
   if (m.is_owner) return "The owner can always do this.";
   if (!m.active) return "This account is switched off.";
+  if (isArea(key) && m.role !== "admin") return "Workers stay workers. Area switches are for admins.";
   if (key === "can_sales" && m.role !== "admin") return "Only admins can have Sales and invoices.";
   if (key === "can_entry" && m.role !== "worker") return "Invoice entry is for workers. Admins use Sales and invoices.";
   return "";
@@ -139,7 +140,7 @@ function AccessEditor({ orgId }: { orgId: string }) {
     admin: { stock: true, purchase_orders: true, orders: true, settings: true },
     worker: { stock: false, purchase_orders: false, orders: true, settings: false },
   };
-  const changed = (m: Member) => (["stock", "purchase_orders", "orders", "settings"] as Area[]).some((a) => m.perms?.[a] !== defaults[m.role]?.[a]);
+  const changed = (m: Member) => m.role === "admin" && (["stock", "purchase_orders", "orders", "settings"] as Area[]).some((a) => m.perms?.[a] !== defaults[m.role]?.[a]);
   const resetPerson = async (m: Member) => {
     try {
       const n = await resetArea(orgId, m.user_id);
@@ -321,7 +322,7 @@ function PersonDrawer({
           {group === "areas" ? (
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
               <p className="min-w-0 flex-1 text-[12px] text-muted-foreground">Enforced by the database, so it holds on the website and in the phone app.</p>
-              {!member.is_owner ? <button type="button" onClick={() => onReset(member)} className="text-[12px] font-semibold underline underline-offset-2 hover:text-foreground">Reset to role defaults</button> : null}
+              {!member.is_owner && member.role === "admin" ? <button type="button" onClick={() => onReset(member)} className="text-[12px] font-semibold underline underline-offset-2 hover:text-foreground">Reset to role defaults</button> : null}
             </div>
           ) : null}
         </section>
