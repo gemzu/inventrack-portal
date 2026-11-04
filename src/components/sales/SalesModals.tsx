@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/Toast";
 import { Action, Field, Input, Modal, Textarea } from "@/components/console/controls";
 import type { BillingCompany, Customer } from "@/lib/sales";
+import LogoUpload from "@/components/sales/LogoUpload";
 
 const BLANK_CUSTOMER = { name: "", email: "", contact_name: "", billing_address: "", terms: "Net 30", w9_url: "" };
 
@@ -55,7 +56,7 @@ export function CustomerModal({ open, onClose, onAdded }: { open: boolean; onClo
 /* One of the owner's companies that can bill (its name goes on the order and,
    later, the invoice). Logo and payment details are typed by the owner;
    nothing about a bank lives in the code. */
-const BLANK_COMPANY = { name: "", email: "", phone: "", address: "", invoice_prefix: "INV", logo_url: "", payment_details: "" };
+const BLANK_COMPANY = { name: "", email: "", phone: "", address: "", invoice_prefix: "INV", logo_url: "", payment_details: "", default_terms: "" };
 
 export function CompanyModal({ open, onClose, onAdded }: { open: boolean; onClose: () => void; onAdded: (c: BillingCompany) => void }) {
   const { orgId } = useAuth();
@@ -72,7 +73,7 @@ export function CompanyModal({ open, onClose, onAdded }: { open: boolean; onClos
     const { data, error } = await supabase.from("billing_companies").insert({
       org_id: orgId, name: f.name.trim(), email: f.email.trim() || null, phone: f.phone.trim() || null,
       address: f.address.trim() || null, invoice_prefix: prefix, logo_url: f.logo_url.trim() || null,
-      payment_details: f.payment_details.trim() || null,
+      payment_details: f.payment_details.trim() || null, default_terms: f.default_terms.trim() || null,
     }).select().single();
     setSaving(false);
     if (error || !data) { toast(`Company not added: ${error?.message || "unknown"}`, "error"); return; }
@@ -93,8 +94,11 @@ export function CompanyModal({ open, onClose, onAdded }: { open: boolean; onClos
           <Field label="Invoice prefix" hint="For invoice numbers later, e.g. INV-2026-0001">
             <Input value={f.invoice_prefix} maxLength={8} onChange={(e) => setF({ ...f, invoice_prefix: e.target.value })} />
           </Field>
-          <Field label="Logo link (optional)"><Input value={f.logo_url} onChange={(e) => setF({ ...f, logo_url: e.target.value })} placeholder="https://" /></Field>
+          <Field label="Default payment terms (optional)" hint="New orders start with these, e.g. Net 30.">
+            <Input value={f.default_terms} maxLength={60} placeholder="Net 30" onChange={(e) => setF({ ...f, default_terms: e.target.value })} />
+          </Field>
         </div>
+        <LogoUpload value={f.logo_url} name={f.name} onChange={(url) => setF({ ...f, logo_url: url })} />
         <Field label="Payment details (optional)" hint="Printed on invoices. Typed by you and stored only on this company.">
           <Textarea rows={3} value={f.payment_details} onChange={(e) => setF({ ...f, payment_details: e.target.value })} />
         </Field>

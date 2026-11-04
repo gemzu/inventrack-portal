@@ -9,7 +9,7 @@ export type SalesStatus = "draft" | "sent" | "invoiced" | "paid" | "void";
 
 export interface BillingCompany {
   id: string; name: string; address?: string | null; email?: string | null; phone?: string | null;
-  invoice_prefix: string; logo_url?: string | null; payment_details?: string | null; pay_link?: string | null; archived: boolean;
+  invoice_prefix: string; logo_url?: string | null; payment_details?: string | null; pay_link?: string | null; default_terms?: string | null; archived: boolean;
 }
 export interface Customer {
   id: string; name: string; contact_name?: string | null; email?: string | null; phone?: string | null;

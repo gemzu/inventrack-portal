@@ -20,12 +20,13 @@ import EmptyState from "@/components/EmptyState";
 import { Panel, CrateSkeleton } from "@/components/console/surfaces";
 import { Action, Chip, Field, Input, Textarea } from "@/components/console/controls";
 import { CompanyModal } from "@/components/sales/SalesModals";
+import LogoUpload from "@/components/sales/LogoUpload";
 import { dueFromTerms, todayIso, why, type BillingCompany, type SalesInvoice, type SalesInvoiceLine } from "@/lib/sales";
 
-type Form = { name: string; address: string; email: string; phone: string; invoice_prefix: string; logo_url: string; payment_details: string; pay_link: string };
+type Form = { name: string; address: string; email: string; phone: string; invoice_prefix: string; logo_url: string; payment_details: string; pay_link: string; default_terms: string };
 const toForm = (c: BillingCompany): Form => ({
   name: c.name || "", address: c.address || "", email: c.email || "", phone: c.phone || "",
-  invoice_prefix: c.invoice_prefix || "INV", logo_url: c.logo_url || "", payment_details: c.payment_details || "", pay_link: c.pay_link || "",
+  invoice_prefix: c.invoice_prefix || "INV", logo_url: c.logo_url || "", payment_details: c.payment_details || "", pay_link: c.pay_link || "", default_terms: c.default_terms || "",
 });
 
 export default function CompaniesPage() {
@@ -48,7 +49,6 @@ function Companies() {
   const [previewing, setPreviewing] = useState(false);
   const [adding, setAdding] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
-  const [logoOk, setLogoOk] = useState(true);
 
   const load = async (keep?: string) => {
     if (!orgId) return;
@@ -83,7 +83,6 @@ function Companies() {
     if (dirty && !confirm("Leave without saving the changes to this company?")) return;
     setSel(r.id);
     setF(toForm(r));
-    setLogoOk(true);
   };
 
   const save = async () => {
@@ -92,7 +91,7 @@ function Companies() {
     const { error } = await supabase.from("billing_companies").update({
       name: f.name.trim(), address: f.address.trim() || null, email: f.email.trim() || null, phone: f.phone.trim() || null,
       invoice_prefix: prefixLocked ? current.invoice_prefix : prefix, logo_url: f.logo_url.trim() || null,
-      payment_details: f.payment_details.trim() || null, pay_link: f.pay_link.trim() || null, updated_at: new Date().toISOString(),
+      payment_details: f.payment_details.trim() || null, pay_link: f.pay_link.trim() || null, default_terms: f.default_terms.trim() || null, updated_at: new Date().toISOString(),
     }).eq("id", current.id);
     setSaving(false);
     if (error) { toast(`Not saved: ${error.message}`, "error"); return; }
@@ -193,17 +192,10 @@ function Companies() {
                 <Field label="Phone"><Input type="tel" value={f.phone} onChange={set("phone")} /></Field>
               </div>
               <Field label="Address"><Textarea rows={2} value={f.address} onChange={set("address")} /></Field>
-              <div className="grid items-start gap-4 md:grid-cols-[1fr_9rem]">
-                <Field label="Logo link (PNG or JPG)" hint={logoBad ? "The link must start with https://" : "Printed at the top of the invoice. Leave empty for the name only."}>
-                  <Input value={f.logo_url} onChange={(e) => { set("logo_url")(e); setLogoOk(true); }} placeholder="https://" aria-invalid={logoBad} className={logoBad ? "border-destructive" : ""} />
-                </Field>
-                <div className="flex h-20 items-center justify-center rounded-md border border-dashed border-border bg-white p-2">
-                  {f.logo_url.trim() && !logoBad && logoOk
-                    // eslint-disable-next-line @next/next/no-img-element -- the owner's own link, any host
-                    ? <img src={f.logo_url.trim()} alt={`${f.name} logo preview`} className="max-h-16 max-w-full object-contain" onError={() => setLogoOk(false)} />
-                    : <span className="text-center text-[11px] text-neutral-500">{logoOk ? "No logo" : "Could not load that image"}</span>}
-                </div>
-              </div>
+              <LogoUpload value={f.logo_url} name={f.name} onChange={(url) => setF({ ...f, logo_url: url })} />
+              <Field label="Default payment terms" hint="New orders from this company start with these terms, e.g. Net 30. A customer's own terms replace them once the customer is chosen.">
+                <Input value={f.default_terms} onChange={set("default_terms")} maxLength={60} placeholder="Net 30" />
+              </Field>
               <Field label="Payment link (for the Scan to pay code)" hint={payBad ? "The link must start with https:// and have no spaces." : "Optional. Your Clover or other payment link. Unpaid invoices print a QR code that opens it. Leave empty for no code."}>
                 <Input value={f.pay_link} onChange={set("pay_link")} placeholder="https://" maxLength={500} aria-invalid={payBad} className={payBad ? "border-destructive" : ""} />
               </Field>
