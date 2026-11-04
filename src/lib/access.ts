@@ -22,7 +22,10 @@ export interface Member {
   user_id: string; email: string | null; name: string | null; role: "admin" | "worker";
   active: boolean; is_owner: boolean; can_sales: boolean; can_delete: boolean; can_entry: boolean;
   grants: number; last_active_at: string | null; perms: Perms;
+  /* Areas switched off for a while: area -> when it comes back on by itself. */
+  perms_until?: Partial<Record<Area, string>>;
 }
+export interface AccessRequest { id: string; user_id: string; name: string | null; email: string | null; area: Area | "sales"; created_at: string }
 export interface Grant {
   grant_id: string; user_id: string; order_id: string; number: string; status: string;
   company_name: string | null; customer_name: string | null; expires_at: string | null; created_at: string;
@@ -51,8 +54,11 @@ export function areaAllowed(role: string | null, perms: Perms | null, permsSet: 
 
 export const resetArea = (org: string, user: string) =>
   rpc<number>("access_reset_perms", { p_org_id: org, p_user_id: user });
-export const setArea = (org: string, user: string, area: Area, on: boolean) =>
-  rpc<boolean>("access_set_perm", { p_org_id: org, p_user_id: user, p_perm: area, p_allowed: on });
+export const setArea = (org: string, user: string, area: Area, on: boolean, until: string | null = null) =>
+  rpc<boolean>("access_set_perm", { p_org_id: org, p_user_id: user, p_perm: area, p_allowed: on, p_until: until });
+export const accessRequests = (org: string) => rpc<AccessRequest[]>("access_requests_pending", { p_org_id: org });
+export const resolveRequest = (org: string, id: string, approve: boolean) =>
+  rpc<boolean>("access_request_resolve", { p_org_id: org, p_request: id, p_approve: approve });
 export const setSales = (org: string, user: string, on: boolean) =>
   rpc<boolean>("org_set_sales_access", { p_org_id: org, p_user_id: user, p_on: on });
 export const setDelete = (org: string, user: string, on: boolean) =>

@@ -26,9 +26,9 @@ import { useToast } from "@/components/Toast";
 import { Panel, Figure, ColHead, ListSkeleton } from "@/components/console/surfaces";
 import { Action, Drawer, Field, Input, Modal, Select, Toggle } from "@/components/console/controls";
 import {
-  accessGrantable, accessGrants, accessHistory, accessOverview, describeAccess, grantOrder, revokeOrder,
+  accessGrantable, accessGrants, accessHistory, accessOverview, accessRequests, describeAccess, grantOrder, resolveRequest, revokeOrder,
   resetArea, setArea, setDelete, setEntry, setSales,
-  type Area, type Grant, type GrantableOrder, type HistoryRow, type Member,
+  type AccessRequest, type Area, type Grant, type GrantableOrder, type HistoryRow, type Member,
 } from "@/lib/access";
 import { fmtDate } from "@/lib/sales";
 import { DELETE_ACCESS_ORGS } from "@/lib/roles";
@@ -47,6 +47,17 @@ const SWITCHES: { key: SwitchKey; label: string; short: string; hint: string; gr
   { key: "can_entry", label: "Invoice entry", short: "Entry", group: "other", hint: "May add and change items on the invoices you share with them, and nothing else. Workers only." },
   { key: "can_delete", label: "Delete", short: "Delete", group: "other", hint: "May delete stock and records. Admins and workers." },
 ];
+/* One click sets the four areas (and Sales for the bookkeeper) the way a job needs them. */
+const PRESETS: { key: string; label: string; areas: Record<Area, boolean>; sales?: boolean }[] = [
+  { key: "full", label: "Everything", areas: { stock: true, purchase_orders: true, orders: true, settings: true } },
+  { key: "stock", label: "Stock clerk", areas: { stock: true, purchase_orders: false, orders: false, settings: false } },
+  { key: "purchasing", label: "Purchasing", areas: { stock: true, purchase_orders: true, orders: false, settings: false } },
+  { key: "orders", label: "Order desk", areas: { stock: false, purchase_orders: false, orders: true, settings: false } },
+  { key: "books", label: "Bookkeeper", areas: { stock: false, purchase_orders: false, orders: false, settings: false }, sales: true },
+];
+const AREA_NAME: Record<string, string> = { stock: "Stock", purchase_orders: "Purchase orders", orders: "Orders", settings: "Settings and setup", sales: "Sales and invoices" };
+const untilLabel = (iso: string) => new Date(iso).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+const AREAS_LIST: Area[] = ["stock", "purchase_orders", "orders", "settings"];
 const isArea = (k: SwitchKey): k is Area => k === "stock" || k === "purchase_orders" || k === "orders" || k === "settings";
 const valueOf = (m: Member, k: SwitchKey) => (isArea(k) ? m.perms?.[k] === true : m[k]);
 
@@ -98,11 +109,14 @@ function AccessEditor({ orgId }: { orgId: string }) {
   const [error, setError] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
   const [helperOpen, setHelperOpen] = useState(false);
+  const [requests, setRequests] = useState<AccessRequest[]>([]);
+  /* How long an area stays off when the owner switches it off from this page. */
+  const [offFor, setOffFor] = useState<"forever" | "24h" | "7d">("forever");
 
   const load = useCallback(async () => {
     try {
-      const [m, g, h] = await Promise.all([accessOverview(orgId), accessGrants(orgId), accessHistory(orgId, 40)]);
-      setMembers(m); setGrants(g); setHistory(h); setError("");
+      const [m, g, h, r] = await Promise.all([accessOverview(orgId), accessGrants(orgId), accessHistory(orgId, 40), accessRequests(orgId).catch(() => [] as AccessRequest[])]);
+      setMembers(m); setGrants(g); setHistory(h); setRequests(r); setError("");
     } catch (e) {
       setError((e as Error).message);
       setMembers((prev) => prev ?? []);
@@ -124,16 +138,35 @@ function AccessEditor({ orgId }: { orgId: string }) {
   const flip = async (m: Member, key: SwitchKey, on: boolean) => {
     setMembers((prev) => (prev || []).map((x) => (x.user_id === m.user_id ? apply(x, key, on) : x)));
     try {
-      if (isArea(key)) await setArea(orgId, m.user_id, key, on);
+      if (isArea(key)) await setArea(orgId, m.user_id, key, on, !on && offFor !== "forever" ? new Date(Date.now() + (offFor === "24h" ? 24 : 168) * 3600 * 1000).toISOString() : null);
       else if (key === "can_sales") await setSales(orgId, m.user_id, on);
       else if (key === "can_delete") await setDelete(orgId, m.user_id, on);
       else await setEntry(orgId, m.user_id, on);
-      toast(`${m.name || m.email}: ${SWITCHES.find((s) => s.key === key)!.label} ${on ? "on" : "off"}`, "success");
+      toast(`${m.name || m.email}: ${SWITCHES.find((s) => s.key === key)!.label} ${on ? "on" : !isArea(key) || offFor === "forever" ? "off" : offFor === "24h" ? "off for 24 hours" : "off for 7 days"}`, "success");
       load();
     } catch (e) {
       setMembers((prev) => (prev || []).map((x) => (x.user_id === m.user_id ? apply(x, key, !on) : x)));
       toast((e as Error).message, "error");
     }
+  };
+
+  const applyPreset = async (m: Member, p: (typeof PRESETS)[number]) => {
+    try {
+      for (const a of AREAS_LIST) {
+        if ((m.perms?.[a] === true) !== p.areas[a] || m.perms_until?.[a]) await setArea(orgId, m.user_id, a, p.areas[a]);
+      }
+      if (p.sales !== undefined && m.can_sales !== p.sales) await setSales(orgId, m.user_id, p.sales);
+      toast(`${m.name || m.email} is set up as ${p.label}`, "success");
+    } catch (e) { toast((e as Error).message, "error"); }
+    load();
+  };
+  const answer = async (r: AccessRequest, approve: boolean) => {
+    setRequests((prev) => prev.filter((x) => x.id !== r.id));
+    try {
+      await resolveRequest(orgId, r.id, approve);
+      toast(approve ? `${AREA_NAME[r.area]} is on for ${r.name || r.email}` : "Request dismissed", "success");
+    } catch (e) { toast((e as Error).message, "error"); }
+    load();
   };
 
   const defaults: Record<string, Record<Area, boolean>> = {
@@ -171,6 +204,28 @@ function AccessEditor({ orgId }: { orgId: string }) {
             <Figure label="People" value={members.length} />
             <Figure label="Set differently from their role" value={withAccess} tone={withAccess ? "brand" : undefined} />
             <Figure label="Invoices shared" value={grants.length} />
+          </div>
+
+          {requests.length > 0 ? (
+            <Panel className="reveal border-[var(--brand-2)]/40">
+              <div className="border-b border-border px-5 py-3"><p className="text-sm font-semibold">{requests.length} request{requests.length === 1 ? "" : "s"} for access</p></div>
+              {requests.map((r) => (
+                <div key={r.id} className="row-line flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+                  <p className="min-w-0 text-sm"><span className="font-medium">{r.name || r.email}</span> asked for {AREA_NAME[r.area] || r.area} <span className="text-[12px] text-muted-foreground">{fmtDate(r.created_at)}</span></p>
+                  <div className="flex gap-2">
+                    <Action solid onClick={() => answer(r, true)}>Switch it on</Action>
+                    <Action onClick={() => answer(r, false)}>Not now</Action>
+                  </div>
+                </div>
+              ))}
+            </Panel>
+          ) : null}
+
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            <label htmlFor="off-for" className="text-muted-foreground">When I switch an area off here, it stays off</label>
+            <div className="w-52"><Select id="off-for" value={offFor} onChange={(e) => setOffFor(e.target.value as typeof offFor)}>
+              <option value="forever">until I switch it on</option><option value="24h">for 24 hours</option><option value="7d">for 7 days</option>
+            </Select></div>
           </div>
 
           {members.length === 0 ? (
@@ -235,7 +290,7 @@ function AccessEditor({ orgId }: { orgId: string }) {
       <PersonDrawer
         orgId={orgId} switches={switches} member={open} grants={grants.filter((g) => open && g.user_id === open.user_id)}
         history={history.filter((h) => open && h.target_user_id === open.user_id)}
-        onClose={() => setOpenId(null)} onFlip={flip} onChanged={load} onReset={resetPerson}
+        onClose={() => setOpenId(null)} onFlip={flip} onChanged={load} onReset={resetPerson} onPreset={applyPreset}
       />
       <HelperModal open={helperOpen} orgId={orgId} members={members || []} onClose={() => setHelperOpen(false)} onDone={() => { setHelperOpen(false); load(); }} />
     </PageShell>
@@ -245,10 +300,10 @@ function AccessEditor({ orgId }: { orgId: string }) {
 /* ── One person ───────────────────────────────────────────────── */
 
 function PersonDrawer({
-  orgId, switches, member, grants, history, onClose, onFlip, onChanged, onReset,
+  orgId, switches, member, grants, history, onClose, onFlip, onChanged, onReset, onPreset,
 }: {
   orgId: string; switches: typeof SWITCHES; member: Member | null; grants: Grant[]; history: HistoryRow[];
-  onClose: () => void; onFlip: (m: Member, key: SwitchKey, on: boolean) => void; onChanged: () => void; onReset: (m: Member) => void;
+  onClose: () => void; onFlip: (m: Member, key: SwitchKey, on: boolean) => void; onChanged: () => void; onReset: (m: Member) => void; onPreset: (m: Member, p: (typeof PRESETS)[number]) => void;
 }) {
   const { toast } = useToast();
   const [orders, setOrders] = useState<GrantableOrder[]>([]);
@@ -302,6 +357,15 @@ function PersonDrawer({
           </ul>
         </section>
 
+        {member.role === "admin" && !member.is_owner && member.active ? (
+          <section>
+            <h3 className="mb-2 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Quick setup</h3>
+            <div className="flex flex-wrap gap-2">
+              {PRESETS.map((p) => <button key={p.key} type="button" onClick={() => onPreset(member, p)} className="rounded-md border border-border px-3 py-1.5 text-[12px] font-semibold transition-colors hover:border-[var(--brand-2)]">{p.label}</button>)}
+            </div>
+          </section>
+        ) : null}
+
         {(["areas", "other"] as const).map((group) => (
         <section key={group}>
           <h3 className="mb-3 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">{group === "areas" ? "Areas" : "Sales, invoice entry and delete"}</h3>
@@ -312,7 +376,7 @@ function PersonDrawer({
                 <div key={s.key} className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <p className="text-sm font-medium">{s.label}</p>
-                    <p className="text-[12px] leading-relaxed text-muted-foreground">{why || s.hint}</p>
+                    <p className="text-[12px] leading-relaxed text-muted-foreground">{why || (isArea(s.key) && member.perms_until?.[s.key] ? `Off until ${untilLabel(member.perms_until[s.key]!)}, then back on` : s.hint)}</p>
                   </div>
                   {why ? null : <Toggle value={valueOf(member, s.key)} onChange={(v) => onFlip(member, s.key, v)} label={`${s.label} for ${member.name || member.email}`} />}
                 </div>
