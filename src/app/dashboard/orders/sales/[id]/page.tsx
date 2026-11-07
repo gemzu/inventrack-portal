@@ -23,7 +23,7 @@ import { Panel, ColHead, CrateSkeleton } from "@/components/console/surfaces";
 import { Action, Field, Input, Modal, Select, Textarea } from "@/components/console/controls";
 import {
   centsToInput, createInvoice, createSalesOrder, dueFromTerms, fmtDate, fmtMoney, invoiceState, saveSalesOrder, sendSalesOrder,
-  STATUS_LABEL, STATUS_TONE, taxLine, taxOn, toCents, todayIso, unsendSalesOrder, voidSalesOrder, why,
+  STATUS_LABEL, STATUS_TONE, suggestParts, taxLine, taxOn, toCents, todayIso, unsendSalesOrder, voidSalesOrder, why,
   type BillingCompany, type Customer, type SalesInvoice, type SalesLine, type SalesOrder,
 } from "@/lib/sales";
 import ImportLinesButton from "@/components/sales/ImportLines";
@@ -231,11 +231,34 @@ function SalesOrderEditor() {
     autoTimer.current = setTimeout(run, 700);
   };
 
-  const quickAdd = () => {
-    const desc = quick.desc.trim();
+  const [fillNote, setFillNote] = useState("");
+  /* Typing a part number fills the description and price from what was billed before (same customer's price first,
+     then the last price billed, then the stock price). Only empty boxes are filled, and it says so. */
+  const fillFromPart = async () => {
+    const part = quick.part.trim();
+    if (!part || !order || (quick.desc.trim() && quick.price.trim())) return null;
+    try {
+      const s = (await suggestParts(order.id, [part]))[0];
+      if (!s) { setFillNote(""); return null; }
+      setQuick((q) => ({
+        ...q,
+        desc: q.desc.trim() ? q.desc : (s.description ?? q.desc),
+        price: q.price.trim() || s.unit_price_cents == null ? q.price : centsToInput(s.unit_price_cents),
+      }));
+      setFillNote(`Filled from ${s.price_source === "stock price" ? "your stock" : "an earlier invoice"}${s.price_source ? ` (price: ${s.price_source})` : ""}. Change it if it differs.`);
+      return s;
+    } catch { return null; }
+  };
+  const quickAdd = async () => {
+    let desc = quick.desc.trim();
+    let cents = toCents(quick.price);
+    if (!desc && quick.part.trim()) {
+      const s = await fillFromPart();
+      if (s?.description) { desc = s.description; if (cents == null && s.unit_price_cents != null) cents = s.unit_price_cents; }
+    }
     if (!desc) { descRef.current?.focus(); return; }
+    setFillNote("");
     const qty = Math.max(1, parseInt(quick.qty, 10) || 1);
-    const cents = toCents(quick.price);
     setLines((prev) => [...prev, {
       key: nextKey(), source_item_id: null, description: desc.slice(0, 300), part_number: quick.part.trim() || null,
       brand: null, quantity: qty, unit_price_cents: cents, priceText: centsToInput(cents),
@@ -378,7 +401,7 @@ function SalesOrderEditor() {
               Open invoice {liveInvoice.number}
             </Link>
           )}
-          {editable && <ImportLinesButton onImport={importLines} disabled={!!busy} />}
+          {editable && <ImportLinesButton onImport={importLines} disabled={!!busy} orderId={order.id} />}
           {editable && (
             <>
               <Action onClick={() => save()} disabled={!!busy || !dirty || taxBad}>{busy === "save" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}Save draft</Action>
@@ -533,7 +556,7 @@ function SalesOrderEditor() {
                 <Input ref={descRef} value={quick.desc} onChange={(e) => setQuick((q) => ({ ...q, desc: e.target.value }))} onKeyDown={quickKey}
                   placeholder="Description" aria-label="New item description" maxLength={300} className="min-w-0 flex-1 basis-full lg:basis-auto" />
                 <Input value={quick.part} onChange={(e) => setQuick((q) => ({ ...q, part: e.target.value }))} onKeyDown={quickKey}
-                  placeholder="Part #" aria-label="New item part number" maxLength={60} className="mono w-full sm:w-36" />
+                  placeholder="Part #" aria-label="New item part number" maxLength={60} className="mono w-full sm:w-36" onBlur={fillFromPart} />
                 <Input value={quick.qty} onChange={(e) => setQuick((q) => ({ ...q, qty: e.target.value.replace(/[^\d]/g, "") }))} onKeyDown={quickKey}
                   onFocus={(e) => e.currentTarget.select()} inputMode="numeric" placeholder="Qty" aria-label="New item quantity" className="mono w-20 text-right" />
                 <Input value={quick.price} onChange={(e) => setQuick((q) => ({ ...q, price: e.target.value }))} onKeyDown={quickKey}
@@ -542,7 +565,7 @@ function SalesOrderEditor() {
               </div>
               <p className="mt-2 text-[12px] text-muted-foreground">
                 {lastAdded ? <>Last added: <span className="text-foreground">{lastAdded}</span>. </> : null}
-                Press Enter to add. The order saves by itself.{" "}
+                {fillNote ? <span className="mr-2 font-semibold text-[var(--brand-2)]">{fillNote}</span> : null}Press Enter to add. The order saves by itself.{" "}
                 <Link href="/dashboard/inventory" className="underline-offset-2 hover:underline">Adding stock from Inventory instead?</Link>
               </p>
             </div>

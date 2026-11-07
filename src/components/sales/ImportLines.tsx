@@ -6,13 +6,15 @@
  * nothing is saved by surprise. Adding only puts the lines on the page; the page's own autosave does the rest.
  */
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FileSpreadsheet } from "lucide-react";
 import { Action, Modal, Textarea } from "@/components/console/controls";
 import { combineRepeats, parseLines, type ImportLine } from "@/lib/importLines";
-import { fmtMoney } from "@/lib/sales";
+import { fmtMoney, suggestParts, type PartSuggestion } from "@/lib/sales";
 
-export default function ImportLinesButton({ onImport, disabled }: { onImport: (lines: ImportLine[]) => void; disabled?: boolean }) {
+const NO_FILLS: Record<string, PartSuggestion> = {};
+
+export default function ImportLinesButton({ onImport, disabled, orderId }: { onImport: (lines: ImportLine[]) => void; disabled?: boolean; orderId?: string }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [combine, setCombine] = useState(false);
@@ -20,7 +22,41 @@ export default function ImportLinesButton({ onImport, disabled }: { onImport: (l
   const pick = useRef<HTMLInputElement>(null);
 
   const res = useMemo(() => parseLines(text), [text]);
-  const lines = useMemo(() => (combine ? combineRepeats(res.lines) : res.lines), [res.lines, combine]);
+  const merged = useMemo(() => (combine ? combineRepeats(res.lines) : res.lines), [res.lines, combine]);
+
+  /* Autofill by part number: what was billed before for these part numbers. Fills only what the sheet left empty
+     (no description, no price), and shows what it filled; the person can switch it off. */
+  const [useFill, setUseFill] = useState(true);
+  const [fetched, setFetched] = useState<{ key: string; map: Record<string, PartSuggestion> } | null>(null);
+  const needing = useMemo(() => {
+    const set = new Set<string>();
+    for (const l of res.lines) if (l.part && (l.noDescription || l.cents == null)) set.add(l.part);
+    return [...set].slice(0, 500);
+  }, [res.lines]);
+  const needingKey = needing.join("");
+  useEffect(() => {
+    if (!open || !orderId || needing.length === 0) return undefined;
+    let live = true;
+    const t = setTimeout(() => {
+      suggestParts(orderId, needing).then((rows) => {
+        if (!live) return;
+        const map: Record<string, PartSuggestion> = {};
+        for (const r of rows) map[r.part.toLowerCase()] = r;
+        setFetched({ key: needingKey, map });
+      }).catch(() => { if (live) setFetched({ key: needingKey, map: {} }); });
+    }, 400);
+    return () => { live = false; clearTimeout(t); };
+  }, [open, orderId, needing, needingKey]);
+  /* Only what was asked for THIS sheet counts: an answer for older text is ignored, not reset. */
+  const fills: Record<string, PartSuggestion> = open && orderId && fetched && fetched.key === needingKey ? fetched.map : NO_FILLS;
+  const lines = useMemo(() => merged.map((l) => {
+    const f = useFill ? fills[l.part.toLowerCase()] : undefined;
+    if (!f) return l;
+    const description = l.noDescription && f.description ? f.description : l.description;
+    const cents = l.cents == null && f.unit_price_cents != null ? f.unit_price_cents : l.cents;
+    return { ...l, description, noDescription: l.noDescription && !f.description, cents };
+  }), [merged, fills, useFill]);
+  const filledCount = lines.filter((l, i) => l.description !== merged[i].description || l.cents !== merged[i].cents).length;
   const units = lines.reduce((n, l) => n + l.qty, 0);
   const noPrice = lines.filter((l) => l.cents == null).length;
   const noDesc = lines.filter((l) => l.noDescription).length;
@@ -65,6 +101,13 @@ export default function ImportLinesButton({ onImport, disabled }: { onImport: (l
                 {noPrice ? <span className="ml-2 font-semibold text-amber-700 dark:text-amber-300">{noPrice} without a price (type them on the invoice)</span> : null}
               </p>
               {noDesc ? <p className="text-[12px] text-muted-foreground">{noDesc} without a description: the part number is used until you change it.</p> : null}
+              {orderId && Object.keys(fills).length > 0 ? (
+                <label className="flex cursor-pointer items-start gap-2 text-[13px]">
+                  <input type="checkbox" checked={useFill} onChange={(e) => setUseFill(e.target.checked)} className="mt-1" />
+                  <span>Fill in descriptions and prices from earlier invoices
+                    <span className="block text-[12px] text-muted-foreground">{Object.keys(fills).length} part number{Object.keys(fills).length === 1 ? "" : "s"} found. Only what your sheet left empty is filled.{useFill ? ` ${filledCount} line${filledCount === 1 ? "" : "s"} filled.` : ""}</span></span>
+                </label>
+              ) : null}
               {res.repeats > 0 ? (
                 <label className="flex cursor-pointer items-start gap-2 text-[13px]">
                   <input type="checkbox" checked={combine} onChange={(e) => setCombine(e.target.checked)} className="mt-1" />

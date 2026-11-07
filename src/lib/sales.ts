@@ -92,6 +92,11 @@ async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
   return data as T;
 }
 
+/* Autofill by part number: what was billed for these part numbers before (description, price). The database decides what
+   this person may see: a helper gets descriptions and only the same customer's price. */
+export interface PartSuggestion { part: string; description: string | null; unit_price_cents: number | null; price_source: string | null }
+export const suggestParts = (order: string, parts: string[]) =>
+  rpc<PartSuggestion[]>("part_suggest", { p_order: order, p_parts: parts });
 export const createBlankSalesOrder = (company: string, customer: string | null) =>
   rpc<string>("sales_order_create_blank", { p_company: company, p_customer: customer });
 export const createSalesOrder = (company: string, customer: string | null, items: { id: string; qty?: number }[]) =>

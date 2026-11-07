@@ -20,7 +20,7 @@ import PageShell from "@/components/page-shell";
 import { Panel, ColHead, CrateSkeleton } from "@/components/console/surfaces";
 import { Action, Input } from "@/components/console/controls";
 import { entryLinesSave, entryOrderGet, type EntryLine, type EntryOrder } from "@/lib/access";
-import { centsToInput, fmtMoney, toCents, why } from "@/lib/sales";
+import { centsToInput, fmtMoney, suggestParts, toCents, why } from "@/lib/sales";
 import ImportLinesButton from "@/components/sales/ImportLines";
 import type { ImportLine } from "@/lib/importLines";
 
@@ -50,6 +50,7 @@ function EntrySheet() {
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [quick, setQuick] = useState({ desc: "", part: "", qty: "1", price: "" });
   const [lastAdded, setLastAdded] = useState<string | null>(null);
+  const [fillNote, setFillNote] = useState("");
 
   const descRef = useRef<HTMLInputElement>(null);
   const changeSeq = useRef(0);
@@ -130,11 +131,33 @@ function EntrySheet() {
     touch();
   };
 
-  const quickAdd = () => {
-    const desc = quick.desc.trim();
+  /* Typing a part number fills the description and price from what was billed before (the database decides what this
+     person may see). Only empty boxes are filled, and it says so; whatever is typed is left alone. */
+  const fillFromPart = async () => {
+    const part = quick.part.trim();
+    if (!part || !order || (quick.desc.trim() && quick.price.trim())) return null;
+    try {
+      const s = (await suggestParts(order.id, [part]))[0];
+      if (!s) { setFillNote(""); return null; }
+      setQuick((q) => ({
+        ...q,
+        desc: q.desc.trim() ? q.desc : (s.description ?? q.desc),
+        price: q.price.trim() || s.unit_price_cents == null ? q.price : centsToInput(s.unit_price_cents),
+      }));
+      setFillNote(`Filled from an earlier invoice${s.price_source ? ` (price: ${s.price_source})` : ""}. Change it if it differs.`);
+      return s;
+    } catch { return null; }
+  };
+  const quickAdd = async () => {
+    let desc = quick.desc.trim();
+    let cents = toCents(quick.price);
+    if (!desc && quick.part.trim()) {
+      const s = await fillFromPart();
+      if (s?.description) { desc = s.description; if (cents == null && s.unit_price_cents != null) cents = s.unit_price_cents; }
+    }
     if (!desc) { descRef.current?.focus(); return; }
+    setFillNote("");
     const qty = Math.max(1, parseInt(quick.qty, 10) || 1);
-    const cents = toCents(quick.price);
     setRows((prev) => [...prev, { key: nextKey(), description: desc.slice(0, 300), part: quick.part.trim().slice(0, 60), qty, cents, priceText: centsToInput(cents) }]);
     setLastAdded(`${desc} · ${qty} × ${cents == null ? "no price yet" : fmtMoney(cents)}`);
     setQuick({ desc: "", part: "", qty: "1", price: "" });
@@ -183,7 +206,7 @@ function EntrySheet() {
     <PageShell
       title={order.number}
       subtitle={[order.company, order.customer].filter(Boolean).join(" → ") || "Invoice"}
-      actions={editable ? <ImportLinesButton onImport={importLines} /> : undefined}
+      actions={editable ? <ImportLinesButton onImport={importLines} orderId={order.id} /> : undefined}
     >
       {!editable ? (
         <p className="mb-4 rounded-md bg-amber-500/10 p-3 text-[13px] text-amber-800 dark:text-amber-200">
@@ -285,7 +308,7 @@ function EntrySheet() {
               <Input ref={descRef} value={quick.desc} onChange={(e) => setQuick((q) => ({ ...q, desc: e.target.value }))} onKeyDown={quickKey}
                 placeholder="Description" aria-label="New item description" maxLength={300} autoFocus className="min-w-0 flex-1 basis-full lg:basis-auto" />
               <Input value={quick.part} onChange={(e) => setQuick((q) => ({ ...q, part: e.target.value }))} onKeyDown={quickKey}
-                placeholder="Part #" aria-label="New item part number" maxLength={60} className="mono w-full sm:w-36" />
+                placeholder="Part #" aria-label="New item part number" maxLength={60} className="mono w-full sm:w-36" onBlur={fillFromPart} />
               <Input value={quick.qty} onChange={(e) => setQuick((q) => ({ ...q, qty: e.target.value.replace(/[^\d]/g, "") }))} onKeyDown={quickKey}
                 onFocus={(e) => e.currentTarget.select()} inputMode="numeric" placeholder="Qty" aria-label="New item quantity" className="mono w-20 text-right" />
               <Input value={quick.price} onChange={(e) => setQuick((q) => ({ ...q, price: e.target.value }))} onKeyDown={quickKey}
@@ -294,7 +317,7 @@ function EntrySheet() {
             </div>
             <p className="mt-2 text-[12px] text-muted-foreground">
               {lastAdded ? <>Last added: <span className="text-foreground">{lastAdded}</span>. </> : null}
-              Press Enter to add. It saves by itself. Tab moves between the boxes.
+              {fillNote ? <span className="mr-2 font-semibold text-[var(--brand-2)]">{fillNote}</span> : null}Press Enter to add. It saves by itself. Tab moves between the boxes.
             </p>
           </div>
         ) : null}
