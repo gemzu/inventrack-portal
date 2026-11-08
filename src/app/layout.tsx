@@ -7,6 +7,7 @@ import { ToastProvider } from "@/components/Toast";
 import BootScript from "@/components/motion/BootScript";
 import BootGate from "@/components/motion/BootGate";
 import ScrollReveals from "@/components/motion/ScrollReveals";
+import ErrorReporter from "@/components/ErrorReporter";
 import "./globals.css";
 
 /* Quiet body face. Neutral by design and largely absent from generated sites,
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <BootScript />
         <BootGate />
         <ScrollReveals />
+        <ErrorReporter />
         <ThemeProvider>
           <AuthProvider>
             <CartProvider>

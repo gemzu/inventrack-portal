@@ -4,6 +4,7 @@ import React from "react";
 import { AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { reportError } from "@/lib/errorReport";
 
 interface Props {
   children: React.ReactNode;
@@ -25,6 +26,7 @@ export default class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error("ErrorBoundary caught:", error, info);
+    reportError(error, { kind: "screen-crash", componentStack: info.componentStack || "" });
   }
 
   handleReset = () => {
