@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowUpRight, Download, Loader2, Mail, Printer } from "lucide-react";
+import { ArrowUpRight, BellRing, Download, Loader2, Mail, Printer } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
 import SalesGuard from "@/components/SalesGuard";
@@ -47,16 +47,17 @@ function InvoiceView() {
   const [pay, setPay] = useState<{ on: string; method: PayMethod | ""; ref: string }>({ on: todayIso(), method: "", ref: "" });
   const [voidReason, setVoidReason] = useState("");
   const [mailOpen, setMailOpen] = useState(false);
+  const [remind, setRemind] = useState(false);   // the email modal sends a payment reminder instead of the invoice
   const [note, setNote] = useState("");
   const [copyMe, setCopyMe] = useState(true);
-  const [sent, setSent] = useState<{ to_email: string; created_at: string }[]>([]);
+  const [sent, setSent] = useState<{ to_email: string; created_at: string; kind?: string }[]>([]);
 
   const load = useCallback(async () => {
     if (!id) return;
     const [i, l, m] = await Promise.all([
       supabase.from("sales_invoices").select("*").eq("id", id).maybeSingle(),
       supabase.from("sales_invoice_lines").select("*").eq("invoice_id", id).order("sort"),
-      supabase.from("sales_invoice_emails").select("to_email, created_at").eq("invoice_id", id).order("created_at", { ascending: false }),
+      supabase.from("sales_invoice_emails").select("to_email, created_at, kind").eq("invoice_id", id).order("created_at", { ascending: false }),
     ]);
     setSent((m.data || []) as { to_email: string; created_at: string }[]);
     const row = i.data as SalesInvoice | null;
@@ -110,14 +111,14 @@ function InvoiceView() {
       let bin = "";
       for (let k = 0; k < bytes.length; k += 0x8000) bin += String.fromCharCode(...bytes.subarray(k, k + 0x8000));
       const { data, error } = await supabase.functions.invoke("send-invoice-email", {
-        body: { invoiceId: inv.id, note: note.trim(), copyMe, pdfBase64: btoa(bin) },
+        body: { invoiceId: inv.id, note: note.trim(), copyMe, pdfBase64: btoa(bin), reminder: remind },
       });
       if (error) {
         let msg = error.message || "The email did not send";
         try { const b = await (error as { context?: Response }).context?.json(); if (b?.error) msg = b.error; } catch { /* keep generic */ }
         throw new Error(msg);
       }
-      toast(`Emailed to ${data?.to || inv.bill_to_email}`, "success");
+      toast(`${remind ? "Reminder sent" : "Emailed"} to ${data?.to || inv.bill_to_email}`, "success");
       setMailOpen(false);
       setNote("");
       await load();
@@ -211,8 +212,13 @@ function InvoiceView() {
           <Action onClick={openToPrint} disabled={!!busy} aria-label="Open the PDF to print">
             {busy === "print" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Printer className="h-3.5 w-3.5" />} Print
           </Action>
+          {inv.status === "issued" && (
+            <Action onClick={() => { setRemind(true); setMailOpen(true); }} disabled={!!busy} aria-label="Email the customer a payment reminder">
+              <BellRing className="h-3.5 w-3.5" /> Remind
+            </Action>
+          )}
           {inv.status !== "void" && (
-            <Action onClick={() => setMailOpen(true)} disabled={!!busy} aria-label="Email the invoice to the customer">
+            <Action onClick={() => { setRemind(false); setMailOpen(true); }} disabled={!!busy} aria-label="Email the invoice to the customer">
               <Mail className="h-3.5 w-3.5" /> Email
             </Action>
           )}
@@ -251,6 +257,10 @@ function InvoiceView() {
           {st.key === "overdue" && (
             <p role="status" className="rounded-md bg-destructive/10 p-3 text-[13px] text-destructive">
               {st.label}. {inv.bill_to_email ? <>Billing email: <a className="underline" href={`mailto:${inv.bill_to_email}?subject=${encodeURIComponent(`Invoice ${inv.number}`)}`}>{inv.bill_to_email}</a></> : "No billing email on file for this customer."}
+              {inv.bill_to_email ? (() => {
+                const last = sent.find((m) => m.kind === "reminder");
+                return <> {last ? `Last reminder ${new Date(last.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}. ` : ""}<button type="button" className="font-semibold underline" onClick={() => { setRemind(true); setMailOpen(true); }}>Send a payment reminder</button></>;
+              })() : null}
             </p>
           )}
 
@@ -260,7 +270,7 @@ function InvoiceView() {
               <ul className="space-y-1.5">
                 {sent.slice(0, 5).map((m, k) => (
                   <li key={k} className="flex justify-between gap-3">
-                    <span className="min-w-0 truncate">{m.to_email}</span>
+                    <span className="min-w-0 truncate">{m.kind === "reminder" ? <span className="mr-1.5 text-muted-foreground">Reminder ·</span> : null}{m.to_email}</span>
                     <span className="shrink-0 text-muted-foreground">{new Date(m.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
                   </li>
                 ))}
@@ -299,17 +309,18 @@ function InvoiceView() {
         </div>
       </div>
 
-      <Modal open={mailOpen} onClose={() => setMailOpen(false)} title={`Email ${inv.number}`}
-        subtitle={inv.bill_to_email ? `To ${inv.bill_to_email}, with the PDF attached` : "No billing email on this invoice"}>
+      <Modal open={mailOpen} onClose={() => setMailOpen(false)} title={remind ? `Payment reminder for ${inv.number}` : `Email ${inv.number}`}
+        subtitle={inv.bill_to_email ? `To ${inv.bill_to_email}, with the PDF attached${remind ? `. It says ${fmtMoney(inv.total_cents)} is ${st.key === "overdue" ? "overdue" : "due"} and asks them to ignore it if already paid` : ""}` : "No billing email on this invoice"}>
         {inv.bill_to_email ? (
           <div className="space-y-4">
             <ul className="list-disc space-y-1 pl-5 text-[13px] text-muted-foreground">
               <li>Sent from {inv.from_name}; replies go to {inv.from_email || "support@invems.com"}.</li>
               <li>It always goes to the billing email on the invoice. To use another address, change the customer and issue the invoice again, or use Download PDF.</li>
+              {remind ? <li>One reminder per invoice a day.</li> : null}
               {sent.length > 0 ? <li>Already emailed {sent.length} time{sent.length === 1 ? "" : "s"}; the last went to {sent[0].to_email}.</li> : null}
             </ul>
             <Field label="A line for the customer (optional)">
-              <Textarea rows={3} maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Thanks for the order. Pickup is ready Friday." />
+              <Textarea rows={3} maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} placeholder={remind ? "Could you let us know when payment is on the way?" : "Thanks for the order. Pickup is ready Friday."} />
             </Field>
             <label className="flex cursor-pointer select-none items-center gap-2 text-[13px]">
               <input type="checkbox" checked={copyMe} onChange={(e) => setCopyMe(e.target.checked)} className="h-3.5 w-3.5 cursor-pointer accent-[var(--brand-2)]" />
@@ -325,7 +336,7 @@ function InvoiceView() {
           <Action onClick={() => setMailOpen(false)}>Cancel</Action>
           {inv.bill_to_email ? (
             <Action solid onClick={sendEmail} disabled={busy === "mail"}>
-              {busy === "mail" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5" />} Send email
+              {busy === "mail" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5" />} {remind ? "Send reminder" : "Send email"}
             </Action>
           ) : null}
         </div>
