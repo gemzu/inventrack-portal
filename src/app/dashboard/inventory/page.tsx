@@ -16,6 +16,7 @@ import Status from "@/components/Status";
 import { SalesOrderButton } from "@/components/sales/CreateSalesOrder";
 import { BulkPriceButton } from "@/components/sales/BulkPrice";
 import { Panel, Figure, Rule, ColHead, CrateSkeleton } from "@/components/console/surfaces";
+import { thumbUrl, onThumbError } from "@/lib/thumbs";
 import {
   Action, Chip, Drawer, Field, Input, Modal, SearchInput, Segmented, Select,
 } from "@/components/console/controls";
@@ -811,7 +812,8 @@ export default function InventoryPage() {
                       {item.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          src={item.imageUrl}
+                          src={thumbUrl(item.imageUrl)}
+                          onError={onThumbError(item.imageUrl)}
                           alt=""
                           loading="lazy"
                           decoding="async"
@@ -1050,7 +1052,8 @@ export default function InventoryPage() {
                     <div key={`${url}-${i}`} className="group relative">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={url}
+                        src={thumbUrl(url)}
+                        onError={onThumbError(url)}
                         alt=""
                         loading="lazy"
                         decoding="async"

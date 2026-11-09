@@ -13,6 +13,7 @@ import EmptyState from "@/components/EmptyState";
 import { Figure, CrateSkeleton } from "@/components/console/surfaces";
 import PhotoViewer from "@/components/PhotoViewer";
 import { Action, Chip, SearchInput } from "@/components/console/controls";
+import { thumbUrl, onThumbError } from "@/lib/thumbs";
 
 interface Item {
   id: string;
@@ -198,7 +199,8 @@ export default function BuyerCatalogPage() {
                         {item.imageUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={item.imageUrl}
+                            src={thumbUrl(item.imageUrl)}
+                            onError={onThumbError(item.imageUrl)}
                             alt=""
                             loading="lazy"
                             decoding="async"
