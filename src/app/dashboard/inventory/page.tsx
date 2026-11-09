@@ -17,6 +17,7 @@ import { SalesOrderButton } from "@/components/sales/CreateSalesOrder";
 import { BulkPriceButton } from "@/components/sales/BulkPrice";
 import { Panel, Figure, Rule, ColHead, CrateSkeleton } from "@/components/console/surfaces";
 import { thumbUrl, onThumbError } from "@/lib/thumbs";
+import StockHistory from "@/components/inventory/StockHistory";
 import {
   Action, Chip, Drawer, Field, Input, Modal, SearchInput, Segmented, Select,
 } from "@/components/console/controls";
@@ -1309,6 +1310,8 @@ export default function InventoryPage() {
                   ))}
                 </div>
               </Field>
+
+              <StockHistory key={`h-${editItem.id}`} itemId={editItem.id} />
             </div>
           )}
         </Drawer>
