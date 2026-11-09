@@ -37,7 +37,12 @@ function SalesInvoices() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<Filter>("all");
+  /* ?show=overdue (the Overview's overdue chip) opens straight on the overdue invoices. */
+  const [filter, setFilter] = useState<Filter>(() => {
+    if (typeof window === "undefined") return "all";
+    const v = new URLSearchParams(window.location.search).get("show");
+    return v === "overdue" || v === "unpaid" ? v : "all";
+  });
 
   useEffect(() => {
     if (!orgId) return;

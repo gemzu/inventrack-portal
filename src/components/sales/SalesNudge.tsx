@@ -33,7 +33,7 @@ export default function SalesNudge() {
 
   if (!canSales || !s || s.owed <= 0) return null;
   return (
-    <Link href="/dashboard/invoices/sales"
+    <Link href={s.late ? "/dashboard/invoices/sales?show=overdue" : "/dashboard/invoices/sales?show=unpaid"}
       className={`reveal panel flex flex-wrap items-center gap-x-6 gap-y-1 p-4 transition-colors hover:border-[var(--brand-2)] ${s.late ? "panel-live" : ""}`}>
       <span className="text-[12px] text-muted-foreground">Owed to you</span>
       <span className="font-display text-lg font-bold tabular-nums">{fmtMoney(s.owed)}</span>
@@ -42,7 +42,7 @@ export default function SalesNudge() {
           {s.late} invoice{s.late === 1 ? "" : "s"} overdue · {fmtMoney(s.overdue)}
         </span>
       ) : <span className="text-[12px] text-muted-foreground">Nothing overdue</span>}
-      <span className="ml-auto inline-flex items-center gap-1 text-[12px] font-medium text-[var(--brand-2)]">Sales invoices <ArrowUpRight className="h-3 w-3" /></span>
+      <span className="ml-auto inline-flex items-center gap-1 text-[12px] font-medium text-[var(--brand-2)]">{s.late ? "See overdue and send reminders" : "Sales invoices"} <ArrowUpRight className="h-3 w-3" /></span>
     </Link>
   );
 }
