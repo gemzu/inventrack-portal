@@ -347,7 +347,7 @@ export default function ChatPage() {
                               aria-label="View photo"
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={msg.image_url} alt="" className="max-h-64 w-full max-w-xs object-cover" />
+                              <img src={msg.image_url} alt="" loading="lazy" decoding="async" className="max-h-64 w-full max-w-xs object-cover" />
                             </button>
                           ) : null}
                           <div className="px-3.5 py-2.5">

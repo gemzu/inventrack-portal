@@ -813,6 +813,8 @@ export default function InventoryPage() {
                         <img
                           src={item.imageUrl}
                           alt=""
+                          loading="lazy"
+                          decoding="async"
                           role="button"
                           title="View photo"
                           onClick={(e) => {
@@ -1050,6 +1052,8 @@ export default function InventoryPage() {
                       <img
                         src={url}
                         alt=""
+                        loading="lazy"
+                        decoding="async"
                         role="button"
                         title="View photo"
                         onClick={() => setViewer({ photos: editItem.imageUrls || [url], start: i })}

@@ -400,7 +400,7 @@ export default function BoxDetailPage() {
                         <button type="button" onClick={() => setViewer({ photos, start: 0 })} aria-label="View photos"
                           className="h-10 w-10 shrink-0 cursor-zoom-in overflow-hidden rounded-md border border-border transition-[border-color] duration-300 hover:border-[var(--brand-2)]">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={photos[0]} alt="" className="h-full w-full object-cover" />
+                          <img src={photos[0]} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                         </button>
                       ) : (
                         <span className="h-10 w-10 shrink-0 rounded-md border border-dashed border-border" aria-hidden />

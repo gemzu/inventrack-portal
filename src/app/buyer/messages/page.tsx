@@ -357,7 +357,7 @@ export default function BuyerMessagesPage() {
                           {m.imageUrl ? (
                             <button type="button" onClick={() => setViewer(m.imageUrl as string)} className="block cursor-zoom-in" aria-label="View photo">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={m.imageUrl} alt="" className="max-h-64 w-full max-w-xs object-cover" />
+                              <img src={m.imageUrl} alt="" loading="lazy" decoding="async" className="max-h-64 w-full max-w-xs object-cover" />
                             </button>
                           ) : null}
                           <div className="px-3.5 py-2.5">

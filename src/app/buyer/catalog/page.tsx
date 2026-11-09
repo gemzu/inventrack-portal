@@ -200,6 +200,8 @@ export default function BuyerCatalogPage() {
                           <img
                             src={item.imageUrl}
                             alt=""
+                            loading="lazy"
+                            decoding="async"
                             role="button"
                             title="View photo"
                             onClick={(e) => { e.stopPropagation(); e.preventDefault(); setViewer(item.imageUrl || null); }}

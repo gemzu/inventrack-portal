@@ -269,7 +269,7 @@ function ApprovalsContent() {
                       className="relative h-12 w-12 shrink-0 cursor-zoom-in overflow-hidden rounded-md border border-border transition-[border-color] duration-300 hover:border-[var(--brand-2)]"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={photos[0]} alt="" className="h-full w-full object-cover" />
+                      <img src={photos[0]} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                       {photos.length > 1 && (
                         <span className="mono absolute bottom-0 right-0 rounded-tl-sm bg-background/85 px-1 text-[10px]">{photos.length}</span>
                       )}
