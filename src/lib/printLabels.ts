@@ -33,3 +33,21 @@ export async function printLabels(items: LabelItem[], tab: Window | null) {
   tab.document.write(html);
   tab.document.close();
 }
+
+/* One storage-box label, as the phone prints it: the big code, its name, the QR of the code (scanning it in the app
+   selects the box). */
+export async function printBoxLabel(box: { code: string; label?: string | null; category?: string | null }, tab: Window | null) {
+  const svg = await QRCode.toString(box.code || " ", { type: "svg", errorCorrectionLevel: "M", margin: 1, width: 260 });
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Box ${esc(box.code)}</title><style>
+    @page { margin: 12mm; }
+    body { margin: 0; font-family: Arial, Helvetica, sans-serif; text-align: center; padding: 10mm 0; }
+    .code { font-size: 54px; font-weight: 800; letter-spacing: 1px; overflow-wrap: anywhere; }
+    .label { font-size: 22px; color: #444; margin: 4px 0 14px; }
+    .q svg { width: 70mm; height: 70mm; }
+    .cat { display: inline-block; margin-top: 12px; padding: 6px 14px; border-radius: 999px; background: #eef; color: #335; font-size: 13px; font-weight: 700; text-transform: uppercase; }
+  </style></head><body><div class="code">${esc(box.code)}</div>${box.label ? `<div class="label">${esc(box.label)}</div>` : ""}<div class="q">${svg}</div>${box.category ? `<div class="cat">${esc(box.category)}</div>` : ""}<script>window.onload=function(){setTimeout(function(){window.print()},250)}</script></body></html>`;
+  if (!tab) throw new Error("Your browser blocked the label window. Allow pop-ups for this site and try again.");
+  tab.document.open();
+  tab.document.write(html);
+  tab.document.close();
+}

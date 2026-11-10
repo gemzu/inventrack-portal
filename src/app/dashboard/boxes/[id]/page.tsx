@@ -18,7 +18,8 @@ import {
   type Box,
   type BoxStats,
 } from "@/lib/dataService";
-import { ArrowLeft, Trash2, Edit2, Plus, Package, PackageMinus } from "lucide-react";
+import { ArrowLeft, Trash2, Edit2, Plus, Package, PackageMinus, Printer } from "lucide-react";
+import { printBoxLabel } from "@/lib/printLabels";
 import PageShell from "@/components/page-shell";
 import Status from "@/components/Status";
 import { Panel, Figure, ColHead, ListSkeleton } from "@/components/console/surfaces";
@@ -260,6 +261,15 @@ export default function BoxDetailPage() {
         }
         actions={
           <>
+            <Action
+              onClick={async () => {
+                const tab = window.open("", "_blank");   // opened from the click, or the browser blocks it
+                try { await printBoxLabel(box, tab); } catch (e) { tab?.close(); toast(e instanceof Error ? e.message : "Could not make the label", "error"); }
+              }}
+              aria-label="Print this box's label"
+            >
+              <Printer className="h-3.5 w-3.5" /> Label
+            </Action>
             <Action onClick={openEdit}>
               <Edit2 className="h-3.5 w-3.5" /> Edit
             </Action>
