@@ -25,7 +25,7 @@ import { flatten, visibleSections, type Dest } from "./nav";
 import { lockScroll } from "@/lib/scrollLock";
 import type { Perms } from "@/lib/access";
 
-type Hit = { href: string; label: string; meta: string; kind: "stock" | "order" };
+type Hit = { href: string; label: string; meta: string; kind: "stock" | "order" | "invoice" | "customer" | "sales order" };
 
 export default function ConsoleIndex({
   open,
@@ -103,13 +103,17 @@ export default function ConsoleIndex({
     setSearching(true);
     const t = window.setTimeout(async () => {
       try {
-        const like = `%${q}%`;
-        const [stock, orders] = await Promise.all([
+        /* Commas and brackets would break the filter below; they are never part of a barcode or a name worth typing. */
+        const safe = q.replace(/[,()%*\\]/g, " ").trim();
+        if (safe.length < 2) { setHits([]); return; }
+        const like = `%${safe}%`;
+        const none = Promise.resolve({ data: [] as Record<string, unknown>[] });
+        const [stock, orders, invoices, customers, salesOrders] = await Promise.all([
           supabase
             .from("inventory")
             .select("id,barcode,model_id,display_name,quantity,status")
             .eq("org_id", orgId)
-            .or(`barcode.ilike.${like},model_id.ilike.${like},display_name.ilike.${like}`)
+            .or(`barcode.ilike.${like},model_id.ilike.${like},display_name.ilike.${like},part_number.ilike.${like},brand.ilike.${like}`)
             .limit(6),
           supabase
             .from("orders")
@@ -117,6 +121,14 @@ export default function ConsoleIndex({
             .eq("org_id", orgId)
             .or(`buyer_name.ilike.${like},buyer_email.ilike.${like}`)
             .limit(4),
+          /* Sales: only for people with Sales and invoices on (the database refuses everyone else anyway). */
+          canSales ? supabase.from("sales_invoices").select("id,number,bill_to_name,status,total_cents,due_on,customer_po")
+            .eq("org_id", orgId).or(`number.ilike.${like},bill_to_name.ilike.${like},customer_po.ilike.${like}`)
+            .order("issued_on", { ascending: false }).limit(5) : none,
+          canSales ? supabase.from("customers").select("id,name,email")
+            .eq("org_id", orgId).or(`name.ilike.${like},email.ilike.${like}`).limit(4) : none,
+          canSales ? supabase.from("sales_orders").select("id,number,status,total_cents")
+            .eq("org_id", orgId).ilike("number", like).order("number", { ascending: false }).limit(4) : none,
         ]);
 
         const stockHits: Hit[] = (stock.data || []).map((r) => {
@@ -126,7 +138,7 @@ export default function ConsoleIndex({
             barcode: r.barcode as string | null,
           });
           return {
-            href: `/dashboard/inventory?q=${encodeURIComponent((r.barcode as string) || id.title)}`,
+            href: `/dashboard/inventory?${r.barcode ? `q=${encodeURIComponent(r.barcode as string)}&` : ""}item=${r.id}`,
             label: id.title,
             meta: `${r.quantity ?? 0} in stock · ${String(r.status || "unknown")}`,
             kind: "stock",
@@ -140,7 +152,28 @@ export default function ConsoleIndex({
           kind: "order",
         }));
 
-        setHits([...stockHits, ...orderHits]);
+        const usd = (c: unknown) => ((Number(c) || 0) / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
+        const today = new Date().toISOString().slice(0, 10);
+        const invoiceHits: Hit[] = ((invoices.data || []) as Record<string, unknown>[]).map((r) => ({
+          href: `/dashboard/invoices/sales/${r.id}`,
+          label: `${r.number} · ${r.bill_to_name || "No customer"}`,
+          meta: `${usd(r.total_cents)} · ${r.status === "issued" ? (String(r.due_on) < today ? "overdue" : "unpaid") : r.status}`,
+          kind: "invoice",
+        }));
+        const customerHits: Hit[] = ((customers.data || []) as Record<string, unknown>[]).map((r) => ({
+          href: `/dashboard/sales/customers/${r.id}`,
+          label: String(r.name || "Customer"),
+          meta: String(r.email || "Customer"),
+          kind: "customer",
+        }));
+        const salesOrderHits: Hit[] = ((salesOrders.data || []) as Record<string, unknown>[]).map((r) => ({
+          href: `/dashboard/orders/sales/${r.id}`,
+          label: String(r.number),
+          meta: `${usd(r.total_cents)} · ${String(r.status || "draft")}`,
+          kind: "sales order",
+        }));
+
+        setHits([...stockHits, ...invoiceHits, ...customerHits, ...salesOrderHits, ...orderHits]);
       } catch {
         setHits([]);
       } finally {
@@ -148,11 +181,13 @@ export default function ConsoleIndex({
       }
     }, 220);
     return () => window.clearTimeout(t);
-  }, [query, open, orgId]);
+  }, [query, open, orgId, canSales]);
 
   const go = useCallback(
     (href: string) => {
       onClose();
+      /* Already on that page (say, Inventory, picking another item): a plain load, so the page reads the new search. */
+      if (href.includes("?") && href.split("?")[0] === window.location.pathname) { window.location.assign(href); return; }
       router.push(href);
     },
     [onClose, router]

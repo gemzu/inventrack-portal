@@ -83,7 +83,13 @@ function StorefrontOrders() {
   const { orgId, canSales } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [filtered, setFiltered] = useState<Order[]>([]);
+  /* ?q= (the Ctrl+K search) arrives already searched. */
   const [search, setSearch] = useState("");
+  useEffect(() => {
+    // Read after the page is up: during an in-app jump the address has not changed yet when the page first draws.
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (q) setSearch(q);
+  }, []);
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);

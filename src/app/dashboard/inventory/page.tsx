@@ -110,7 +110,13 @@ export default function InventoryPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [boxes, setBoxes] = useState<Array<Record<string, unknown>>>([]);
   const [filtered, setFiltered] = useState<Item[]>([]);
+  /* ?q= (the Ctrl+K search) arrives already searched; ?item=<id> also opens that item. */
   const [search, setSearch] = useState("");
+  useEffect(() => {
+    // Read after the page is up: during an in-app jump the address has not changed yet when the page first draws.
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (q) setSearch(q);
+  }, []);
   const [histResults, setHistResults] = useState<Array<Record<string, unknown>>>([]);
   const [statusFilter, setStatusFilter] = useState("all");
   const [facilityFilter, setFacilityFilter] = useState("all");
@@ -301,6 +307,9 @@ export default function InventoryPage() {
       setFiltered(mapped);
       setBoxes((bData as Array<Record<string, unknown>>) || []);
       setLoading(false);
+      const want = new URLSearchParams(window.location.search).get("item");
+      const found = want ? mapped.find((i) => i.id === want) : null;
+      if (found) { setEditItem(found); setEditQty(found.quantity); }
     };
     load();
   }, [orgId]);
