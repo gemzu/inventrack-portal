@@ -17,6 +17,7 @@ import { SalesOrderButton } from "@/components/sales/CreateSalesOrder";
 import { BulkPriceButton } from "@/components/sales/BulkPrice";
 import { Panel, Figure, Rule, ColHead, CrateSkeleton } from "@/components/console/surfaces";
 import { thumbUrl, onThumbError } from "@/lib/thumbs";
+import { printLabels } from "@/lib/printLabels";
 import StockHistory from "@/components/inventory/StockHistory";
 import {
   Action, Chip, Drawer, Field, Input, Modal, SearchInput, Segmented, Select,
@@ -142,6 +143,18 @@ export default function InventoryPage() {
     });
   };
   const clearSelection = () => setSelected(new Set());
+
+  /* Labels for the selected items, many to a page. The tab opens first (a pop-up must start from the click). */
+  const bulkLabels = async () => {
+    if (selected.size === 0) return;
+    const tab = window.open("", "_blank");
+    try {
+      await printLabels(items.filter((i) => selected.has(i.id)), tab);
+    } catch (e) {
+      tab?.close();
+      toast(e instanceof Error ? e.message : "Could not make the labels", "error");
+    }
+  };
 
   const bulkDelete = async () => {
     if (selected.size === 0) return;
@@ -745,6 +758,7 @@ export default function InventoryPage() {
                     </option>
                   ))}
                 </Select>
+                <Chip onClick={bulkLabels}>Print labels</Chip>
                 <button
                   onClick={bulkDelete}
                   className="rounded-md border border-destructive/40 px-3 py-1.5 text-[12px] text-destructive transition-colors duration-300 hover:bg-destructive/10"
