@@ -23,10 +23,11 @@ import { CompanyModal } from "@/components/sales/SalesModals";
 import LogoUpload from "@/components/sales/LogoUpload";
 import { dueFromTerms, todayIso, why, type BillingCompany, type SalesInvoice, type SalesInvoiceLine } from "@/lib/sales";
 
-type Form = { name: string; address: string; email: string; phone: string; invoice_prefix: string; logo_url: string; payment_details: string; pay_link: string; default_terms: string };
+type Form = { name: string; address: string; email: string; phone: string; invoice_prefix: string; logo_url: string; payment_details: string; pay_link: string; default_terms: string; show_date_activity: boolean };
 const toForm = (c: BillingCompany): Form => ({
   name: c.name || "", address: c.address || "", email: c.email || "", phone: c.phone || "",
   invoice_prefix: c.invoice_prefix || "INV", logo_url: c.logo_url || "", payment_details: c.payment_details || "", pay_link: c.pay_link || "", default_terms: c.default_terms || "",
+  show_date_activity: c.show_date_activity === true,
 });
 
 export default function CompaniesPage() {
@@ -73,6 +74,8 @@ function Companies() {
   const current = rows.find((r) => r.id === sel) || null;
   const visible = useMemo(() => rows.filter((r) => showArchived || !r.archived), [rows, showArchived]);
   const dirty = !!current && !!f && JSON.stringify(toForm(current)) !== JSON.stringify(f);
+  /* The Date/Activity setting exists only once the database has its column (it comes back with the company). */
+  const hasSetting = !!current && "show_date_activity" in current;
   const prefix = (f?.invoice_prefix || "").trim().toUpperCase();
   const prefixLocked = !!current && (issued[current.id] || 0) > 0;
   const prefixBad = !/^[A-Z0-9]{1,8}$/.test(prefix);
@@ -92,6 +95,7 @@ function Companies() {
       name: f.name.trim(), address: f.address.trim() || null, email: f.email.trim() || null, phone: f.phone.trim() || null,
       invoice_prefix: prefixLocked ? current.invoice_prefix : prefix, logo_url: f.logo_url.trim() || null,
       payment_details: f.payment_details.trim() || null, pay_link: f.pay_link.trim() || null, default_terms: f.default_terms.trim() || null, updated_at: new Date().toISOString(),
+      ...(hasSetting ? { show_date_activity: f.show_date_activity } : {}),
     }).eq("id", current.id);
     setSaving(false);
     if (error) { toast(`Not saved: ${error.message}`, "error"); return; }
@@ -132,7 +136,7 @@ function Companies() {
         paid_on: null, paid_method: null, paid_reference: null, void_reason: null, created_at: today,
       };
       const { invoicePdf } = await import("@/components/sales/InvoicePdf");
-      const url = URL.createObjectURL(await invoicePdf(inv, lines, "SO-SAMPLE"));
+      const url = URL.createObjectURL(await invoicePdf(inv, lines, "SO-SAMPLE", f.show_date_activity));
       if (tab) tab.location.href = url; else window.location.href = url;
       setTimeout(() => URL.revokeObjectURL(url), 120_000);
     } catch (e) {
@@ -199,6 +203,21 @@ function Companies() {
               <Field label="Payment link (for the Scan to pay code)" hint={payBad ? "The link must start with https:// and have no spaces." : "Optional. Your Clover or other payment link. Unpaid invoices print a QR code that opens it. Leave empty for no code."}>
                 <Input value={f.pay_link} onChange={set("pay_link")} placeholder="https://" maxLength={500} aria-invalid={payBad} className={payBad ? "border-destructive" : ""} />
               </Field>
+              <label className={`flex items-start gap-2.5 text-[13px] ${hasSetting ? "cursor-pointer" : "opacity-60"}`}>
+                <input
+                  type="checkbox" checked={f.show_date_activity} disabled={!hasSetting}
+                  onChange={(e) => setF({ ...f, show_date_activity: e.target.checked })}
+                  className="mt-0.5 h-4 w-4 cursor-pointer accent-[var(--brand-2)]"
+                />
+                <span>
+                  <span className="font-medium">Show Date and Activity columns on invoices</span>
+                  <span className="block text-[12px] text-muted-foreground">
+                    {hasSetting
+                      ? "Off by default. When on, this company's invoices (on screen and PDF) get a Date column (ship date, else invoice date) and an Activity column (part number and brand). Applies to existing invoices too when viewed or printed."
+                      : "Available after the next database update."}
+                  </span>
+                </span>
+              </label>
               <Field label="How to pay (printed on unpaid invoices)" hint="Typed by you and stored only on this company. Shown to customers on their invoice.">
                 <Textarea rows={4} maxLength={1000} value={f.payment_details} onChange={set("payment_details")} />
               </Field>

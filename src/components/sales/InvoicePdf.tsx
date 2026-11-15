@@ -14,7 +14,7 @@
 
 import QRCode from "qrcode";
 import { Document, Font, Image, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer";
-import { daysBetween, fmtDate, fmtMoney, partLine, PAY_METHOD_LABEL, taxLine, type SalesInvoice, type SalesInvoiceLine } from "@/lib/sales";
+import { activityLines, breakLong, daysBetween, fmtDate, fmtMoney, fmtShortDate, lineDate, partLine, PAY_METHOD_LABEL, taxLine, type SalesInvoice, type SalesInvoiceLine } from "@/lib/sales";
 
 const INK = "#14121f";
 const MUTE = "#4b4760";
@@ -71,6 +71,9 @@ const s = StyleSheet.create({
   thText: { fontWeight: 700, fontSize: 9.5, letterSpacing: 0.8, textTransform: "uppercase" },
   tr: { flexDirection: "row", borderBottomWidth: 0.75, borderBottomColor: HAIR, paddingVertical: 8, paddingHorizontal: 8 },
   cDesc: { flex: 1, paddingRight: 10 },
+  cDate: { width: 62, paddingRight: 6 },
+  cAct: { width: 88, paddingRight: 8 },
+  dateText: { fontFamily: "Mono", fontSize: 9 },
   cQty: { width: 52, textAlign: "right" },
   cUnit: { width: 76, textAlign: "right" },
   cAmt: { width: 90, textAlign: "right" },
@@ -111,7 +114,7 @@ function Field({ label, value }: { label: string; value: string | null | undefin
   );
 }
 
-function InvoiceDoc({ inv, lines, orderNumber, logo, qr }: { inv: SalesInvoice; lines: SalesInvoiceLine[]; orderNumber: string | null; logo: string | null; qr: string | null }) {
+function InvoiceDoc({ inv, lines, orderNumber, logo, qr, extra }: { inv: SalesInvoice; lines: SalesInvoiceLine[]; orderNumber: string | null; logo: string | null; qr: string | null; extra: boolean }) {
   const paid = inv.status === "paid";
   const isVoid = inv.status === "void";
   const days = daysBetween(inv.issued_on, inv.due_on);
@@ -125,10 +128,18 @@ function InvoiceDoc({ inv, lines, orderNumber, logo, qr }: { inv: SalesInvoice; 
   const tail = lines.length > 2 ? lines.slice(lines.length - 2) : lines;
   const row = (l: SalesInvoiceLine) => (
     <View key={l.id} style={s.tr} wrap={false}>
+      {extra ? <Text style={[s.dateText, s.cDate]}>{fmtShortDate(lineDate(inv))}</Text> : null}
+      {extra ? (
+        <View style={s.cAct}>
+          {activityLines(l).map((a, i) => (
+            <Text key={i} style={i === 0 && l.part_number ? s.part : s.small}>{breakLong(a, i === 0 && l.part_number ? 14 : 16)}</Text>
+          ))}
+        </View>
+      ) : null}
       <View style={s.cDesc}>
         <Text style={s.item}>{l.description}</Text>
-        {partLine(l) ? <Text style={s.part}>{partLine(l)}</Text> : null}
-        {l.brand ? <Text style={s.small}>{l.brand}</Text> : null}
+        {!extra && partLine(l) ? <Text style={s.part}>{partLine(l)}</Text> : null}
+        {!extra && l.brand ? <Text style={s.small}>{l.brand}</Text> : null}
       </View>
       <Text style={[s.mono, s.cQty]}>{l.quantity.toLocaleString("en-US")}</Text>
       <Text style={[s.mono, s.cUnit]}>{fmtMoney(l.unit_price_cents)}</Text>
@@ -182,6 +193,8 @@ function InvoiceDoc({ inv, lines, orderNumber, logo, qr }: { inv: SalesInvoice; 
 
         {/* The band repeats on each page */}
         <View style={s.th} fixed>
+          {extra ? <Text style={[s.thText, s.cDate]}>Date</Text> : null}
+          {extra ? <Text style={[s.thText, s.cAct]}>Activity</Text> : null}
           <Text style={[s.thText, s.cDesc]}>Description</Text>
           <Text style={[s.thText, s.cQty]}>Qty</Text>
           <Text style={[s.thText, s.cUnit]}>Rate</Text>
@@ -277,12 +290,13 @@ async function logoData(url: string | null): Promise<string | null> {
   }
 }
 
-export async function invoicePdf(inv: SalesInvoice, lines: SalesInvoiceLine[], orderNumber: string | null): Promise<Blob> {
+/** `extra` = the company's "Date and Activity columns" setting; off (the default) prints exactly as before. */
+export async function invoicePdf(inv: SalesInvoice, lines: SalesInvoiceLine[], orderNumber: string | null, extra = false): Promise<Blob> {
   registerFonts();
   const logo = await logoData(inv.from_logo_url);
   // Only a secure link becomes a code; anything else is ignored.
   const qr = inv.pay_link && /^https:\/\//i.test(inv.pay_link)
     ? await QRCode.toDataURL(inv.pay_link, { margin: 1, width: 300, errorCorrectionLevel: "M" }).catch(() => null)
     : null;
-  return pdf(<InvoiceDoc inv={inv} lines={lines} orderNumber={orderNumber} logo={logo} qr={qr} />).toBlob();
+  return pdf(<InvoiceDoc inv={inv} lines={lines} orderNumber={orderNumber} logo={logo} qr={qr} extra={extra} />).toBlob();
 }
