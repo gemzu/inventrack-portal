@@ -10,6 +10,9 @@ export type SalesStatus = "draft" | "sent" | "invoiced" | "paid" | "void";
 export interface BillingCompany {
   id: string; name: string; address?: string | null; email?: string | null; phone?: string | null;
   invoice_prefix: string; logo_url?: string | null; payment_details?: string | null; pay_link?: string | null; default_terms?: string | null; archived: boolean;
+  /** Extra Date and Activity columns on this company's invoices. Off unless the owner turns it on (column added by
+      migration 20261115; companies read before that have no value, which means off). */
+  show_date_activity?: boolean | null;
 }
 export interface Customer {
   id: string; name: string; contact_name?: string | null; email?: string | null; phone?: string | null;
@@ -57,6 +60,8 @@ export const partLine = (l: { description: string; part_number: string | null })
   const part = (l.part_number || "").trim();
   return part && !l.description.toLowerCase().includes(part.toLowerCase()) ? part : null;
 };
+/* The optional Date and Activity columns (a company setting): the rules live in invoiceColumns.ts. */
+export { lineDate, fmtShortDate, breakLong, activityLines } from "./invoiceColumns";
 export const fmtMoney = (cents: number | null | undefined) =>
   ((Number(cents) || 0) / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
 

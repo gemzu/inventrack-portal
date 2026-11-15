@@ -11,7 +11,7 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { daysBetween, fmtDate, fmtMoney, partLine, PAY_METHOD_LABEL, taxLine, type SalesInvoice, type SalesInvoiceLine } from "@/lib/sales";
+import { activityLines, daysBetween, fmtDate, fmtMoney, fmtShortDate, lineDate, partLine, PAY_METHOD_LABEL, taxLine, type SalesInvoice, type SalesInvoiceLine } from "@/lib/sales";
 
 const label = "mb-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[#14121f]";
 const hl = "inline-block bg-[#fff3b0] px-1.5 py-px text-[14px] font-bold text-[#14121f]";
@@ -25,7 +25,7 @@ function Strip({ title, value }: { title: string; value: string | null | undefin
   );
 }
 
-export default function InvoiceSheet({ inv, lines, orderNumber }: { inv: SalesInvoice; lines: SalesInvoiceLine[]; orderNumber: string | null }) {
+export default function InvoiceSheet({ inv, lines, orderNumber, extra = false }: { inv: SalesInvoice; lines: SalesInvoiceLine[]; orderNumber: string | null; extra?: boolean }) {
   const paid = inv.status === "paid";
   const isVoid = inv.status === "void";
   const onReceipt = daysBetween(inv.issued_on, inv.due_on) === 0;
@@ -97,18 +97,30 @@ export default function InvoiceSheet({ inv, lines, orderNumber }: { inv: SalesIn
       <table className="mt-5 w-full border-collapse">
         <thead className="hidden sm:table-header-group">
           <tr className="bg-[#d9d9d9] text-left">
-            {["Description", "Qty", "Rate", "Amount"].map((h, i) => (
-              <th key={h} scope="col" className={`px-2 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] ${i >= 1 ? "text-right" : ""}`}>{h}</th>
+            {(extra ? ["Date", "Activity", "Description", "Qty", "Rate", "Amount"] : ["Description", "Qty", "Rate", "Amount"]).map((h) => (
+              <th key={h} scope="col" className={`px-2 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] ${["Qty", "Rate", "Amount"].includes(h) ? "text-right" : ""}`}>{h}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {lines.map((l) => (
             <tr key={l.id} className="flex flex-wrap border-b border-[#c9c6d6] py-3 sm:table-row sm:py-0">
+              {extra ? <td className="mono hidden whitespace-nowrap px-2 text-[12px] sm:table-cell sm:py-3">{fmtShortDate(lineDate(inv))}</td> : null}
+              {extra ? (
+                <td className="hidden px-2 sm:table-cell sm:py-3">
+                  {activityLines(l).map((a, i) => <p key={i} className={`max-w-[9rem] break-all text-[12px] text-[#4b4760] ${i === 0 && l.part_number ? "mono" : ""}`}>{a}</p>)}
+                </td>
+              ) : null}
               <td className="w-full px-2 sm:w-auto sm:py-3">
                 <p className="text-[15px] font-bold">{l.description}</p>
-                {partLine(l) ? <p className="mono text-[12px] text-[#4b4760]">{partLine(l)}</p> : null}
-                {l.brand ? <p className="text-[12px] text-[#4b4760]">{l.brand}</p> : null}
+                {extra ? (
+                  <p className="text-[12px] text-[#4b4760] sm:hidden">{[fmtShortDate(lineDate(inv)), ...activityLines(l)].filter(Boolean).join(" · ")}</p>
+                ) : (
+                  <>
+                    {partLine(l) ? <p className="mono text-[12px] text-[#4b4760]">{partLine(l)}</p> : null}
+                    {l.brand ? <p className="text-[12px] text-[#4b4760]">{l.brand}</p> : null}
+                  </>
+                )}
               </td>
               <td className="mono ml-auto px-2 text-right tabular-nums sm:ml-0 sm:py-3">
                 <span className="sm:hidden">{l.quantity.toLocaleString("en-US")} × {fmtMoney(l.unit_price_cents)} = </span>

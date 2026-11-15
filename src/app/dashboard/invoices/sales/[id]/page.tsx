@@ -40,6 +40,7 @@ function InvoiceView() {
   const [inv, setInv] = useState<SalesInvoice | null>(null);
   const [lines, setLines] = useState<SalesInvoiceLine[]>([]);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
+  const [extra, setExtra] = useState(false);   // the company's "Date and Activity columns" setting; off by default
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [payOpen, setPayOpen] = useState(false);
@@ -68,6 +69,9 @@ function InvoiceView() {
     if (row) {
       const { data: o } = await supabase.from("sales_orders").select("number").eq("id", row.order_id).maybeSingle();
       setOrderNumber(o?.number || null);
+      /* "*" so a database without the setting's column yet simply has no value (off), instead of failing the page. */
+      const { data: c } = await supabase.from("billing_companies").select("*").eq("id", row.billing_company_id).maybeSingle();
+      setExtra((c as { show_date_activity?: boolean | null } | null)?.show_date_activity === true);
     }
     setLoading(false);
   }, [id]);
@@ -77,7 +81,7 @@ function InvoiceView() {
   const makePdf = async () => {
     if (!inv) return null;
     const { invoicePdf } = await import("@/components/sales/InvoicePdf");
-    return invoicePdf(inv, lines, orderNumber);
+    return invoicePdf(inv, lines, orderNumber, extra);
   };
 
   const download = async () => {
@@ -234,7 +238,7 @@ function InvoiceView() {
       }
     >
       <div className="grid items-start gap-5 xl:grid-cols-[1fr_20rem]">
-        <InvoiceSheet inv={inv} lines={lines} orderNumber={orderNumber} />
+        <InvoiceSheet inv={inv} lines={lines} orderNumber={orderNumber} extra={extra} />
 
         <div className="space-y-4 xl:sticky xl:top-20">
           <Panel className="p-5">
